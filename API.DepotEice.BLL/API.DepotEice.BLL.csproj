@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\" />
-    <Folder Include="IManagers\" />
-    <Folder Include="Managers\" />
+    <Folder Include="IServices\" />
+    <Folder Include="Services\" />
+    <Folder Include="Profiles\" />
   </ItemGroup>
 
   <ItemGroup>
