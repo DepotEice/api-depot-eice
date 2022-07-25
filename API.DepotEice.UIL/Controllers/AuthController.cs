@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using API.DepotEice.UIL.Models.Forms;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
@@ -13,9 +14,21 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpPost(nameof(SignIn))]
-        public IActionResult SignIn()
+        public IActionResult SignIn([FromBody] LoginForm form)
         {
             throw new NotImplementedException();
+        }
+
+        [HttpPost(nameof(SignUp))]
+        public IActionResult SignUp([FromBody] RegisterForm form)
+        {
+            return Ok();
+        }
+
+        [HttpPost("{email}/"+nameof(PasswordRequest))]
+        public IActionResult PasswordRequest(string email)
+        {
+            return Ok();
         }
     }
 }
