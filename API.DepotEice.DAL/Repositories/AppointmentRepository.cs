@@ -26,6 +26,7 @@ namespace API.DepotEice.DAL.Repositories
             _connection = connection;
         }
 
+        // TODO : Add possibility to removed accepted
         /// <summary>
         /// Set the <c>Accepted</c> column's value to <c>true</c> for <c>Appointments</c> table in
         /// the database for the record selected by its ID given in parameter.
