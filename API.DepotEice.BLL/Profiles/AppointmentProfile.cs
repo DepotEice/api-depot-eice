@@ -13,11 +13,16 @@ namespace API.DepotEice.BLL.Profiles
     {
         public AppointmentProfile()
         {
-            CreateMap<AppointmentEntity, AppointmentModel>();
-            CreateMap<UserModel, AppointmentModel>()
+            // AppointmentModel -> AppointmentEntity
+
+            CreateMap<AppointmentModel, AppointmentEntity>()
                 .ForMember(
-                    dest => dest.User,
-                    opt => opt.MapFrom(src => src));
+                    dest => dest.UserId,
+                    opt => opt.MapFrom(src => src.User.Id));
+
+            // AppointmentEntity -> AppointmentModel
+
+            CreateMap<AppointmentEntity, AppointmentModel>();
         }
     }
 }
