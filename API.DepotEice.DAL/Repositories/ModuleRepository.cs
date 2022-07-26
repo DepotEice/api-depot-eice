@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.DAL.Repositories
 {
+    // TODO : Create an entity UserModule ?
     public class ModuleRepository : IModuleRepository
     {
         private readonly Connection _connection;
@@ -45,7 +46,7 @@ namespace API.DepotEice.DAL.Repositories
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool AddUser(int id, string userId)
+        public bool AddUser(int id, string userId, bool isAccepted)
         {
             if (id <= 0)
             {

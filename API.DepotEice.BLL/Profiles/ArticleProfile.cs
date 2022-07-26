@@ -13,7 +13,17 @@ namespace API.DepotEice.BLL.Profiles
     {
         public ArticleProfile()
         {
+            // ArticleModel --> ArticleEntity
+            CreateMap<ArticleModel, ArticleEntity>()
+                .ForMember(
+                    dest => dest.UserId,
+                    opt => opt.MapFrom(src => src.User.Id));
+
+            // ArticleEntity --> Article Model
+
             CreateMap<ArticleEntity, ArticleModel>();
+
+            // ArticleModel --> Other objects
 
             CreateMap<ArticleModel, ArticleCommentModel>()
                 .ForMember(

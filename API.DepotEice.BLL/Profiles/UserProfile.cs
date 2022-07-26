@@ -13,14 +13,27 @@ namespace API.DepotEice.BLL.Profiles
     {
         public UserProfile()
         {
+            // UserEntity --> UserModel
+
             CreateMap<UserEntity, UserModel>();
+
+            // UserModel --> AppointmentModel
 
             CreateMap<UserModel, AppointmentModel>()
                 .ForMember(
                     dest => dest.User,
                     opt => opt.MapFrom(src => src));
 
+            // UserModel --> ArticleCommentModel
+
             CreateMap<UserModel, ArticleCommentModel>()
+                .ForMember(
+                    dest => dest.User,
+                    opt => opt.MapFrom(src => src));
+
+            // UserModel --> ArticleModel
+
+            CreateMap<UserModel, ArticleModel>()
                 .ForMember(
                     dest => dest.User,
                     opt => opt.MapFrom(src => src));

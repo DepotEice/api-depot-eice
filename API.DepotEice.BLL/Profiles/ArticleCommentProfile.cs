@@ -26,6 +26,13 @@ namespace API.DepotEice.BLL.Profiles
             // ArticleCommentEntity -> ArticleCommentModel
 
             CreateMap<ArticleCommentEntity, ArticleCommentModel>();
+
+            // IEnumerable<ArticleCommentModel> --> ArticleModel
+
+            CreateMap<IEnumerable<ArticleCommentModel>, ArticleModel>()
+                .ForMember(
+                    dest => dest.ArticleComments,
+                    opt => opt.MapFrom(src => src));
         }
     }
 }

@@ -124,6 +124,7 @@ namespace API.DepotEice.DAL.Repositories
                 .SingleOrDefault();
         }
 
+        // TODO : Implement PinArticle
         public bool PinArticle(int id, bool isPinned)
         {
             throw new NotImplementedException();
