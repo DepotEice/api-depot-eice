@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models.Forms;
+﻿using API.DepotEice.UIL.Models;
+using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,14 +9,15 @@ namespace API.DepotEice.UIL.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        public AuthController()
-        {
-
-        }
 
         [HttpPost(nameof(SignIn))]
         public IActionResult SignIn([FromBody] LoginForm form)
         {
+            var LoggedInUser = new LoggedInUserModel()
+            {
+
+            };
+
             throw new NotImplementedException();
         }
 

@@ -1,4 +1,4 @@
-﻿namespace API.DepotEice.UIL.Models.Forms
+﻿namespace API.DepotEice.UIL.Models
 {
     public class ArticleModel
     {

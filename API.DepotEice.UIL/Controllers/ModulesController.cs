@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models.Forms;
+﻿using API.DepotEice.UIL.Models;
+using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
@@ -7,18 +8,26 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class ModulesController : ControllerBase
     {
+        private List<ModuleModel> _listModule { get; set; } = new List<ModuleModel>()
+        {
+            new ModuleModel()
+            {
+                Id = 1,
+                Name = "Module 1",
+                Description = "Description of module 1"
+            },
+            new ModuleModel()
+            {
+                Id = 2,
+                Name = "Module 2",
+                Description = "Description of module 2"
+            },
+        };
+
         [HttpGet]
         public IActionResult Get()
         {
-            var test = new List<string>()
-            {
-                "Module1",
-                "Module2",
-                "Module3",
-                "Module4",
-            };
-
-            return Ok(test);
+            return Ok(_listModule);
         }
 
         [HttpGet("{id}")]
@@ -95,6 +104,36 @@ namespace API.DepotEice.UIL.Controllers
 
         [HttpDelete("{mId}/Schedules/{sId}/Files/{fId}")]
         public IActionResult DeleteScheduleFiles(int mId, int sId, int fId)
+        {
+            return Ok();
+        }
+
+        [HttpPost("{mId}/Teachers/{tId}")]
+        public IActionResult AssignTeacher(int mId, string tId)
+        {
+            return Ok();
+        }
+
+        [HttpDelete("{mId}/Teachers/{tId}")]
+        public IActionResult DischargeTeacher(int mId, string tId)
+        {
+            return Ok();
+        }
+
+        [HttpPost("{mId}/Students/{sId}")]
+        public IActionResult StudentApply(int mId, string sId)
+        {
+            return Ok();
+        }
+
+        [HttpPut("{mId}/Students/{sId}")]
+        public IActionResult StudentAccept(int mId, string sId)
+        {
+            return Ok();
+        }
+
+        [HttpDelete("{mId}/Students/{sId}")]
+        public IActionResult StudentExempt(int mId, string sId)
         {
             return Ok();
         }
