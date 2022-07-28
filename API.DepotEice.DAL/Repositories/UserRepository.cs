@@ -126,6 +126,31 @@ namespace API.DepotEice.DAL.Repositories
                 .SingleOrDefault();
         }
 
+        // TODO : Verify if the spGetModuleUsers is implemented
+        /// <summary>
+        /// Retrieve all users linked to a module
+        /// </summary>
+        /// <param name="id">
+        /// Module ID
+        /// </param>
+        /// <returns>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="UserEntity"/>
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public IEnumerable<UserEntity> GetModuleUsers(int id)
+        {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            Command command = new Command("spGetModuleUsers", true);
+
+            command.AddParameter("moduleId", id);
+
+            return _connection.ExecuteReader(command, user => Mapper.DbToUser(user));
+        }
+
         /// <inheritdoc/>
         /// <exception cref="ArgumentNullException"></exception>
         public bool Update(UserEntity entity)

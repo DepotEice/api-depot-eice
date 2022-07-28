@@ -35,5 +35,7 @@ namespace API.DepotEice.DAL.IRepositories
         /// <c>true</c> If user's password has been updated. <c>false</c> Otherwise
         /// </returns>
         bool UpdatePassword(string id, string oldPassword, string newPassword, string salt);
+
+        IEnumerable<UserEntity> GetModuleUsers(int id);
     }
 }
