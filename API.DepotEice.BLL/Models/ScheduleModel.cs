@@ -14,6 +14,6 @@ namespace API.DepotEice.BLL.Models
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
         public ModuleModel Module { get; set; }
-        public IEnumerable<ScheduleFile> ScheduleFiles { get; set; }
+        public IEnumerable<ScheduleFileModel> ScheduleFiles { get; set; }
     }
 }
