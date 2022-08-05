@@ -75,15 +75,22 @@ namespace API.DepotEice.DAL.Repositories
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Not implemented
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <inheritdoc/>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public MessageEntity? GetByKey(int key)
         {
-            throw new NotImplementedException();
+            if (key <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(key));
+            }
+
+            Command command = new Command("spGetMessage", true);
+
+            command.AddParameter("id", key);
+
+            return _connection
+                .ExecuteReader(command, message => Mapper.DbToMessage(message))
+                .SingleOrDefault();
         }
 
         /// <summary>
