@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API.DepotEice.BLL.IServices;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
 {
@@ -6,6 +7,13 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class AppointmentsController : ControllerBase
     {
+        private readonly IAppointmentService _appointmentService;
+
+        public AppointmentsController(IAppointmentService appointmentService)
+        {
+            _appointmentService = appointmentService;
+        }
+
         [HttpGet]
         public IActionResult Get()
         {

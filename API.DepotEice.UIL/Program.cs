@@ -98,6 +98,18 @@ namespace API.DepotEice.UIL
             });
 
             /****************/
+            /*  AutoMapper  */
+            /****************/
+
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            /*************/
+            /*  Logging  */
+            /*************/
+
+            builder.Services.AddLogging();
+
+            /****************/
             /*  Singletons  */
             /****************/
 
@@ -138,6 +150,8 @@ namespace API.DepotEice.UIL
             builder.Services.AddScoped<IScheduleFileService, ScheduleFileService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IUserTokenService, UserTokenService>();
+
+
 
             var app = builder.Build();
 

@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models;
+﻿using API.DepotEice.BLL.IServices;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,10 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class ModulesController : ControllerBase
     {
+        private readonly IModuleService _moduleService;
+        private readonly IScheduleService _scheduleService;
+        private readonly IScheduleFileService _scheduleFileService;
+
         private List<ModuleModel> _listModule { get; set; } = new List<ModuleModel>()
         {
             new ModuleModel()
@@ -23,6 +28,13 @@ namespace API.DepotEice.UIL.Controllers
                 Description = "Description of module 2"
             },
         };
+
+        public ModulesController(IModuleService moduleService, IScheduleService scheduleService, IScheduleFileService scheduleFileService)
+        {
+            _moduleService = moduleService;
+            _scheduleService = scheduleService;
+            _scheduleFileService = scheduleFileService;
+        }
 
         [HttpGet]
         public IActionResult Get()
