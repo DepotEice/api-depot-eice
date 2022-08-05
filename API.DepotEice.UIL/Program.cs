@@ -1,3 +1,4 @@
+using API.DepotEice.UIL.Hubs;
 using API.DepotEice.UIL.IManagers;
 using API.DepotEice.UIL.Managers;
 using DevHopTools.Connection;
@@ -5,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Data.SqlClient;
+using System.Reflection;
 using System.Text;
 
 namespace API.DepotEice.UIL
@@ -16,18 +18,13 @@ namespace API.DepotEice.UIL
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddCors();
-
-            // Add services to the container.
-
             builder.Services.AddControllers();
-
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddSignalR();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Depot.Eice", Version = "v1" });
 
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer { token }\"",
                     Name = "Authorization",
@@ -36,7 +33,7 @@ namespace API.DepotEice.UIL
                     Scheme = "Bearer"
                 });
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement()
                 {
                     {
                         new OpenApiSecurityScheme
@@ -53,6 +50,28 @@ namespace API.DepotEice.UIL
                         new List<string>()
                     }
                 });
+
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "Depot Eice API",
+                    Description = "An ASP.NET Core Web API for managing DepotEice.",
+                    TermsOfService = new Uri("https://example.com/terms"),
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Example Contact",
+                        Url = new Uri("https://example.com/contact")
+                    },
+                    License = new OpenApiLicense
+                    {
+                        Name = "Example License",
+                        Url = new Uri("https://example.com/license")
+                    }
+                });
+
+                // using System.Reflection;
+                var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
             });
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -67,6 +86,11 @@ namespace API.DepotEice.UIL
                     ValidateAudience = true,
                     ValidAudience = builder.Configuration["AppSettings:Audience"]
                 };
+            });
+
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
             });
 
             /****************/
@@ -99,6 +123,8 @@ namespace API.DepotEice.UIL
             app.UseAuthorization();
 
             app.MapControllers();
+
+            app.MapHub<ChatHub>("/chat-hub");
 
             app.Run();
         }
