@@ -113,7 +113,11 @@ namespace API.DepotEice.UIL
             /*  Singletons  */
             /****************/
 
+#if DEBUG
+            string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
+#else
             string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+#endif
 
             builder.Services.AddSingleton(sp => new Connection(connectionString, SqlClientFactory.Instance));
 

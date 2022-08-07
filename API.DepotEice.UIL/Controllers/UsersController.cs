@@ -22,7 +22,13 @@ namespace API.DepotEice.UIL.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok();
+            IEnumerable<BLL.Models.UserModel>? users = _userService.GetUsers();
+            foreach (var item in users)
+            {
+                item.BirthDate.ToString();
+            }
+            
+            return Ok(users);
         }
 
         [HttpGet("{id}")]

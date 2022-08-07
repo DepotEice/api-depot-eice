@@ -209,17 +209,21 @@ namespace API.DepotEice.BLL.Services
         {
             IEnumerable<ModuleEntity> modulesFromRepo = _moduleRepository.GetAll();
 
-            foreach (ModuleEntity moduleFromRepo in modulesFromRepo)
-            {
-                ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
+            return _moduleRepository.GetAll().Select(x => _mapper.Map<ModuleModel>(x));
 
-                IEnumerable<UserEntity> moduleUsers =
-                    _userRepository.GetModuleUsers(moduleModel.Id);
+            // TODO - Modules modifié pour test
 
-                moduleModel.Users = _mapper.Map<IEnumerable<UserModel>>(moduleUsers);
+            //foreach (ModuleEntity moduleFromRepo in modulesFromRepo)
+            //{
+            //    ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
 
-                yield return moduleModel;
-            }
+            //    IEnumerable<UserEntity> moduleUsers =
+            //        _userRepository.GetModuleUsers(moduleModel.Id);
+
+            //    moduleModel.Users = _mapper.Map<IEnumerable<UserModel>>(moduleUsers);
+
+            //    yield return moduleModel;
+            //}
         }
 
         /// <summary>

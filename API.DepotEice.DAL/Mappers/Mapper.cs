@@ -93,15 +93,15 @@ namespace API.DepotEice.DAL.Mappers
         public static UserEntity DbToUser(this IDataRecord record)
         {
             return new UserEntity(
-                (string)record["Id"],
+                record["Id"].ToString(),
                 (string)record["Email"],
                 (string)record["NormalizedEmail"],
                 (string)record["FirstName"],
                 (string)record["LastName"],
                 (string)record["ProfilePicture"],
-                (DateOnly)record["BirthDate"],
-                (string)record["ConcurrencyStamp"],
-                (string)record["SecurityStamp"],
+                DateOnly.FromDateTime((DateTime)record["BirthDate"]),
+                record["ConcurrencyStamp"].ToString(),
+                record["SecurityStamp"].ToString(),
                 (bool)record["IsActive"],
                 (DateTime)record["CreatedAt"],
                 (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
