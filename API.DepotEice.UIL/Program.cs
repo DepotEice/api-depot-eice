@@ -1,3 +1,7 @@
+using API.DepotEice.BLL.IServices;
+using API.DepotEice.BLL.Services;
+using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.DAL.Repositories;
 using API.DepotEice.UIL.Hubs;
 using API.DepotEice.UIL.IManagers;
 using API.DepotEice.UIL.Managers;
@@ -94,14 +98,64 @@ namespace API.DepotEice.UIL
             });
 
             /****************/
+            /*  AutoMapper  */
+            /****************/
+
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            /*************/
+            /*  Logging  */
+            /*************/
+
+            builder.Services.AddLogging();
+
+            /****************/
             /*  Singletons  */
             /****************/
 
+#if DEBUG
+            string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
+#else
             string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+#endif
 
             builder.Services.AddSingleton(sp => new Connection(connectionString, SqlClientFactory.Instance));
 
             builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
+
+            /******************/
+            /*  Repositories  */
+            /******************/
+
+            builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            builder.Services.AddScoped<IArticleCommentRepository, ArticleCommentRepository>();
+            builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
+            builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+            builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
+            builder.Services.AddScoped<IOpeningHoursRepository, OpeningHoursRepository>();
+            builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+            builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+            builder.Services.AddScoped<IScheduleFileRepository, ScheduleFileRepository>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+
+            /**************/
+            /*  Services  */
+            /**************/
+
+            builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+            builder.Services.AddScoped<IArticleCommentService, ArticleCommentService>();
+            builder.Services.AddScoped<IArticleService, ArticleService>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
+            builder.Services.AddScoped<IModuleService, ModuleService>();
+            builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
+            builder.Services.AddScoped<IRoleService, RoleService>();
+            builder.Services.AddScoped<IScheduleService, ScheduleService>();
+            builder.Services.AddScoped<IScheduleFileService, ScheduleFileService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IUserTokenService, UserTokenService>();
+
+
 
             var app = builder.Build();
 

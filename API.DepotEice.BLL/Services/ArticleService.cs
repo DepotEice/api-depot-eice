@@ -21,7 +21,7 @@ namespace API.DepotEice.BLL.Services
         private readonly IUserRepository _userRepository;
         private readonly IArticleCommentRepository _articleCommentRepository;
 
-        public ArticleService(ILogger logger, IMapper mapper, IArticleRepository articleRepository,
+        public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
             IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
         {
             if (logger is null)

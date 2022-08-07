@@ -3,11 +3,6 @@ using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Mappers;
 using API.DepotEice.Helpers.Exceptions;
 using DevHopTools.Connection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.DAL.Repositories
 {
@@ -105,7 +100,7 @@ namespace API.DepotEice.DAL.Repositories
 
             Command command = new Command(query);
 
-            return _connection.ExecuteReader(command, user => Mapper.DbToUser(user));
+            return _connection.ExecuteReader(command, user => user.DbToUser());
         }
 
         /// <inheritdoc/>
@@ -122,7 +117,7 @@ namespace API.DepotEice.DAL.Repositories
             command.AddParameter("id", key);
 
             return _connection
-                .ExecuteReader(command, user => Mapper.DbToUser(user))
+                .ExecuteReader(command, user => user.DbToUser())
                 .SingleOrDefault();
         }
 
@@ -148,7 +143,7 @@ namespace API.DepotEice.DAL.Repositories
 
             command.AddParameter("moduleId", id);
 
-            return _connection.ExecuteReader(command, user => Mapper.DbToUser(user));
+            return _connection.ExecuteReader(command, user => user.DbToUser());
         }
 
         /// <inheritdoc/>

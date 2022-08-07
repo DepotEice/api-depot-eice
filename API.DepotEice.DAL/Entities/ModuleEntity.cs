@@ -36,7 +36,7 @@ namespace API.DepotEice.DAL.Entities
         /// <exception cref="ArgumentNullException"></exception>
         public ModuleEntity(int id, string name, string description)
         {
-            if (id <= 0)
+            if (id < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(id));
             }

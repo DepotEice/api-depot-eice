@@ -18,7 +18,7 @@ namespace API.DepotEice.BLL.Services
         private readonly IMapper _mapper;
         private readonly IOpeningHoursRepository _openingHoursRepository;
 
-        public OpeningHoursService(ILogger logger, IMapper mapper,
+        public OpeningHoursService(ILogger<OpeningHoursService> logger, IMapper mapper,
             IOpeningHoursRepository openingHoursRepository)
         {
             if (logger is null)

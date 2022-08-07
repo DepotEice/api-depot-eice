@@ -1,5 +1,8 @@
-﻿using API.DepotEice.UIL.Models;
+﻿using API.DepotEice.BLL.IServices;
+using API.DepotEice.UIL.Mapper;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
@@ -8,6 +11,11 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class ModulesController : ControllerBase
     {
+        private readonly IModuleService _moduleService;
+        private readonly IScheduleService _scheduleService;
+        private readonly IScheduleFileService _scheduleFileService;
+        private readonly IMapper _mapper;
+
         private List<ModuleModel> _listModule { get; set; } = new List<ModuleModel>()
         {
             new ModuleModel()
@@ -24,10 +32,20 @@ namespace API.DepotEice.UIL.Controllers
             },
         };
 
+        public ModulesController(IModuleService moduleService, IScheduleService scheduleService, IScheduleFileService scheduleFileService, IMapper mapper)
+        {
+            _moduleService = moduleService;
+            _scheduleService = scheduleService;
+            _scheduleFileService = scheduleFileService;
+            _mapper = mapper;
+        }
+
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(_listModule);
+            var modules = _moduleService.GetModules();
+
+            return Ok(modules);
         }
 
         [HttpGet("{id}")]
@@ -39,7 +57,17 @@ namespace API.DepotEice.UIL.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] ModuleForm form)
         {
-            return Ok();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                ModuleModel? result = _moduleService.CreateModule(form.ToBll())?.ToUil();
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpPut("{id}")]

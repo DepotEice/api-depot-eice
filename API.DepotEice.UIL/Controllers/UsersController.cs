@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models.Forms;
+﻿using API.DepotEice.BLL.IServices;
+using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
@@ -7,10 +8,27 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
+        private readonly IUserService _userService;
+        private readonly IUserTokenService _userTokenService;
+        private readonly IRoleService _roleService;
+
+        public UsersController(IUserService userService, IUserTokenService userTokenService, IRoleService roleService)
+        {
+            _userService = userService;
+            _userTokenService = userTokenService;
+            _roleService = roleService;
+        }
+
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok();
+            IEnumerable<BLL.Models.UserModel>? users = _userService.GetUsers();
+            foreach (var item in users)
+            {
+                item.BirthDate.ToString();
+            }
+            
+            return Ok(users);
         }
 
         [HttpGet("{id}")]

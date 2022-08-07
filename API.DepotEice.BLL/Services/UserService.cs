@@ -120,7 +120,9 @@ namespace API.DepotEice.BLL.Services
 
         public IEnumerable<UserModel> GetUsers()
         {
-            throw new NotImplementedException();
+            var repoUsers = _userRepository.GetAll();
+            var mapperUsers  = _mapper.Map<IEnumerable<UserModel>>(repoUsers);
+            return mapperUsers;
         }
 
         public bool UpdatePassword(string id, string oldPassword, string newPassword, string salt)

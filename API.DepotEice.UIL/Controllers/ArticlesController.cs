@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models;
+﻿using API.DepotEice.BLL.IServices;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,9 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class ArticlesController : ControllerBase
     {
+        private readonly IArticleService _articleService;
+        private readonly IArticleCommentService _articleCommentService;
+
         public List<ArticleModel> Articles { get; set; } = new List<ArticleModel>()
         {
             new ArticleModel()
@@ -25,6 +29,12 @@ namespace API.DepotEice.UIL.Controllers
                 Pinned = false
             },
         };
+
+        public ArticlesController(IArticleService articleService, IArticleCommentService articleCommentService)
+        {
+            _articleService = articleService;
+            _articleCommentService = articleCommentService;
+        }
 
         [HttpGet]
         public IActionResult Get()

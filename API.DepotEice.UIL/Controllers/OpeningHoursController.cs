@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API.DepotEice.BLL.IServices;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
 {
@@ -6,6 +7,13 @@ namespace API.DepotEice.UIL.Controllers
     [ApiController]
     public class OpeningHoursController : ControllerBase
     {
+        private readonly IOpeningHoursService _openingHoursService;
+
+        public OpeningHoursController(IOpeningHoursService openingHoursService)
+        {
+            _openingHoursService = openingHoursService;
+        }
+
         /// <summary>
         /// Retrieves the opening hours of the educational institution.
         /// </summary>
