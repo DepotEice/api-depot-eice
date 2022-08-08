@@ -1,6 +1,4 @@
-﻿using API.DepotEice.UIL.Models.Forms;
-
-namespace API.DepotEice.UIL.Models
+﻿namespace API.DepotEice.UIL.Models
 {
     public class ModuleModel
     {

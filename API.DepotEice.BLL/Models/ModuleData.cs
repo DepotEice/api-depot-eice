@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Models
 {
-    public class ModuleModel
+    public class ModuleData
     {
         public int Id { get; set; }
         public string Name { get; set; }

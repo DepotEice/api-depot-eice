@@ -117,7 +117,7 @@ namespace API.DepotEice.BLL.Services
 
             ScheduleModel scheduleModel = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleModel>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
                 _mapper.Map<IEnumerable<ScheduleFileModel>>(scheduleFilesFromRepo);
@@ -193,7 +193,7 @@ namespace API.DepotEice.BLL.Services
                 schedule.ScheduleFiles =
                     _mapper.Map<IEnumerable<ScheduleFileModel>>(scheduleFilesFromRepo);
 
-                schedule.Module = _mapper.Map<ModuleModel>(moduleFromRepo);
+                schedule.Module = _mapper.Map<ModuleData>(moduleFromRepo);
 
                 yield return schedule;
             }
@@ -245,7 +245,7 @@ namespace API.DepotEice.BLL.Services
 
             ScheduleModel scheduleModel = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleModel>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
                 _mapper.Map<IEnumerable<ScheduleFileModel>>(scheduleFilesFromRepo);
@@ -310,7 +310,7 @@ namespace API.DepotEice.BLL.Services
 
             ScheduleModel scheduleModel = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleModel>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
                 _mapper.Map<IEnumerable<ScheduleFileModel>>(scheduleFilesFromRepo);

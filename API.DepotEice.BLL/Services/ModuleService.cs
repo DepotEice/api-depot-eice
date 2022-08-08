@@ -4,11 +4,6 @@ using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -88,10 +83,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the module creation failed. Otherwise an instance of 
-        /// <see cref="ModuleModel"/> of the newly created Module
+        /// <see cref="ModuleData"/> of the newly created Module
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ModuleModel? CreateModule(ModuleModel model)
+        public ModuleData? CreateModule(ModuleData model)
         {
             if (model is null)
             {
@@ -122,7 +117,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
+            ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
             moduleModel.Users = _mapper
                 .Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(newID));
@@ -170,10 +165,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If no module matches <paramref name="id"/>. Otherwise, an instance of 
-        /// <see cref="ModuleModel"/>
+        /// <see cref="ModuleData"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ModuleModel? GetModule(int id)
+        public ModuleData? GetModule(int id)
         {
             if (id <= 0)
             {
@@ -191,10 +186,10 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
+            ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
-            moduleModel.Users = _mapper
-                .Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(id));
+            // Handle them from UIL by authorization.
+            // moduleModel.Users = _mapper.Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(id));
 
             return moduleModel;
         }
@@ -205,11 +200,11 @@ namespace API.DepotEice.BLL.Services
         /// <returns>
         /// An <see cref="IEnumerable{T}"/> of <see cref="UserModel"/>
         /// </returns>
-        public IEnumerable<ModuleModel> GetModules()
+        public IEnumerable<ModuleData> GetModules()
         {
             IEnumerable<ModuleEntity> modulesFromRepo = _moduleRepository.GetAll();
 
-            return _moduleRepository.GetAll().Select(x => _mapper.Map<ModuleModel>(x));
+            return _moduleRepository.GetAll().Select(x => _mapper.Map<ModuleData>(x));
 
             // TODO - Modules modifié pour test
 
@@ -233,10 +228,10 @@ namespace API.DepotEice.BLL.Services
         /// The ID of the user
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ModuleModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ModuleData"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public IEnumerable<ModuleModel> GetUserModules(string userId)
+        public IEnumerable<ModuleData> GetUserModules(string userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -247,7 +242,7 @@ namespace API.DepotEice.BLL.Services
 
             foreach (ModuleEntity moduleFromRepo in modulesFromRepo)
             {
-                ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
+                ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
                 IEnumerable<UserEntity> moduleUsers =
                     _userRepository.GetModuleUsers(moduleModel.Id);
@@ -295,10 +290,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the module does not exist or if the update failed. Otherwise an instance
-        /// of <see cref="ModuleModel"/>
+        /// of <see cref="ModuleData"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ModuleModel? UpdateModule(ModuleModel model)
+        public ModuleData? UpdateModule(ModuleData model)
         {
             if (model is null)
             {
@@ -340,12 +335,72 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ModuleModel moduleModel = _mapper.Map<ModuleModel>(moduleFromRepo);
+            ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
             moduleModel.Users = _mapper
                 .Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(model.Id));
 
             return moduleModel;
+        }
+
+        public IEnumerable<ModuleData> GetAll()
+        {
+            IEnumerable<ModuleData> modules = _moduleRepository.GetAll().Select(x => _mapper.Map<ModuleData>(x));
+            return modules;
+        }
+
+        public ModuleData? Create(ModuleData data)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            ModuleEntity? mappedData = _mapper.Map<ModuleEntity>(data);
+            int moduleId = _moduleRepository.Create(mappedData);
+
+            if (moduleId == 0)
+            {
+                return null;
+            }
+
+            ModuleData? retrievedItem = GetByKey(moduleId);
+
+            if (retrievedItem is null)
+            {
+                return null;
+            }
+
+            return retrievedItem;
+        }
+
+        public ModuleData? GetByKey(int key)
+        {
+            if (key == 0)
+            {
+                return null;
+            }
+
+            ModuleEntity? item = _moduleRepository.GetByKey(key);
+            ModuleData? mappedItem = _mapper.Map<ModuleData>(item);
+            return mappedItem;
+        }
+
+        public ModuleData? Update(int key, ModuleData data)
+        {
+            data.Id = key;
+            var mappedItem = _mapper.Map<ModuleEntity>(data);
+            bool success = _moduleRepository.Update(mappedItem);
+            if (!success) return null;
+            return GetByKey(key);
+        }
+
+        public bool Delete(int key)
+        {
+            ModuleData? item = GetByKey(key);
+            ModuleEntity? mappedItem = _mapper.Map<ModuleEntity>(item);
+            bool result = _moduleRepository.Delete(mappedItem);
+            return result;
         }
     }
 }

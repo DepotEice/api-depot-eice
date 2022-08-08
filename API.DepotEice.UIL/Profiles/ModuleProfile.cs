@@ -1,7 +1,7 @@
-﻿using API.DepotEice.UIL.Models;
-using BLL = API.DepotEice.BLL;
-using AutoMapper;
+﻿using API.DepotEice.BLL.Models;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 
 namespace API.DepotEice.UIL.Profiles
 {
@@ -9,8 +9,8 @@ namespace API.DepotEice.UIL.Profiles
     {
         public ModuleProfile()
         {
-            CreateMap<BLL.Models.ModuleModel, ModuleModel>();
-            CreateMap<ModuleForm, BLL.Models.ModuleModel>();
+            CreateMap<ModuleData, ModuleModel>();
+            CreateMap<ModuleForm, ModuleData>();
         }
     }
 }

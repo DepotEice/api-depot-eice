@@ -13,7 +13,7 @@ namespace API.DepotEice.BLL.Models
         public string Details { get; set; }
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
-        public ModuleModel Module { get; set; }
+        public ModuleData Module { get; set; }
         public IEnumerable<ScheduleFileModel> ScheduleFiles { get; set; }
     }
 }
