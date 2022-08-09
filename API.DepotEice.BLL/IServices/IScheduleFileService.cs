@@ -9,9 +9,9 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IScheduleFileService
     {
-        ScheduleFileModel? CreateScheduleFile(ScheduleFileModel model);
+        ScheduleFileData? CreateScheduleFile(ScheduleFileData model);
         bool DeleteScheduleFile(int id);
-        ScheduleFileModel? GetScheduleFile(int id);
-        IEnumerable<ScheduleFileModel> GetScheduleFiles(int scheduleId);
+        ScheduleFileData? GetScheduleFile(int id);
+        IEnumerable<ScheduleFileData> GetScheduleFiles(int scheduleId);
     }
 }

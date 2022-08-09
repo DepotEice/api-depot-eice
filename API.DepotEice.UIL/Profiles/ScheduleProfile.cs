@@ -8,8 +8,9 @@ namespace API.DepotEice.UIL.Profiles
     {
         public ScheduleProfile()
         {
-            CreateMap<ScheduleModel, BLL.Models.ScheduleModel>();
-            CreateMap<ScheduleForm, BLL.Models.ScheduleModel>();
+            CreateMap<ScheduleModel, BLL.Models.ScheduleData>();
+            CreateMap<BLL.Models.ScheduleData, ScheduleModel>();
+            CreateMap<ScheduleForm, BLL.Models.ScheduleData>();
         }
     }
 }

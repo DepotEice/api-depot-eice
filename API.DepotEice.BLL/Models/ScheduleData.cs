@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Models
 {
-    public class ScheduleModel
+    public class ScheduleData
     {
         public int Id { get; set; }
         public string Title { get; set; }
@@ -14,6 +14,6 @@ namespace API.DepotEice.BLL.Models
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
         public ModuleData Module { get; set; }
-        public IEnumerable<ScheduleFileModel> ScheduleFiles { get; set; }
+        public IEnumerable<ScheduleFileData> ScheduleFiles { get; set; }
     }
 }

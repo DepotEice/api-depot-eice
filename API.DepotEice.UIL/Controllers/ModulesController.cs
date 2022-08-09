@@ -173,15 +173,15 @@ namespace API.DepotEice.UIL.Controllers
             }
         }
 
-        [HttpPost("{mId}/Schedules/{sId}")]
-        public IActionResult PostSchedule(int mId, int sId, [FromBody] ScheduleForm form)
+        [HttpPost("{mId}/Schedules/")]
+        public IActionResult PostSchedule(int mId, [FromBody] ScheduleForm form)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                var response = _scheduleService.CreateSchedule(_mapper.Map<BLL.Models.ScheduleModel>(form));
+                var response = _scheduleService.CreateSchedule(mId, _mapper.Map<BLL.Models.ScheduleData>(form));
 
                 return Ok(response);
             }
@@ -192,14 +192,15 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpPut("{mId}/Schedules/{sId}")]
-        public IActionResult PutSchedule(int mId, int sId, [FromBody] ModuleForm form)
+        public IActionResult PutSchedule(int mId, int sId, [FromBody] ScheduleForm form)
         {
             if (!ModelState.IsValid) 
                 return BadRequest(ModelState);
 
             try
             {
-                return Ok();
+                ScheduleModel? item = _scheduleService.Update(sId, form.ToBll())?.ToUil();
+                return Ok(item);
             }
             catch (Exception e)
             {
@@ -212,7 +213,12 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
-                return Ok();
+                var result = _scheduleService.Delete(sId);
+
+                if (!result)
+                    return BadRequest();
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -225,6 +231,7 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
+                IEnumerable<BLL.Models.ScheduleFileData>? items = _scheduleFileService.GetScheduleFiles(sId);
                 return Ok();
             }
             catch (Exception e)
@@ -234,13 +241,19 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpPost("{mId}/Schedules/{sId}/Files")]
-        public IActionResult PostScheduleFiles(int mId, int sId)
+        public IActionResult PostScheduleFiles(int mId, int sId, [FromForm]ScheduleFileForm file)
         {
             if (!ModelState.IsValid) 
                 return BadRequest(ModelState);
 
             try
             {
+                string fileName = file.File.FileName;
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+
+                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", fileName);
+                file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+
                 return Ok();
             }
             catch (Exception e)
@@ -267,6 +280,19 @@ namespace API.DepotEice.UIL.Controllers
 
         [HttpDelete("{mId}/Schedules/{sId}/Files/{fId}")]
         public IActionResult DeleteScheduleFiles(int mId, int sId, int fId)
+        {
+            try
+            {
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("{mId}/Teachers/")]
+        public IActionResult GetTeachers(int mId)
         {
             try
             {

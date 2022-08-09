@@ -111,7 +111,7 @@ namespace API.DepotEice.DAL.Repositories
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public IEnumerable<ScheduleEntity> GetModuleSchedules(int moduleId)
         {
-            if (moduleId <= 0)
+            if (moduleId < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(moduleId));
             }
