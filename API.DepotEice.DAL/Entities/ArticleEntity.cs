@@ -19,12 +19,12 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// <see cref="ArticleEntity"/>'s title
         /// </summary>
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="ArticleEntity"/>'s body content
         /// </summary>
-        public string Body { get; set; }
+        public string Body { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="ArticleEntity"/>'s creation date and time (hh:mm)
@@ -44,6 +44,6 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// <see cref="UserEntity"/>'s ID
         /// </summary>
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

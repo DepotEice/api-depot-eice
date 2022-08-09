@@ -13,16 +13,16 @@
         /// <summary>
         /// <see cref="MessageEntity"/>'s content
         /// </summary>
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
 
         /// <summary>
         /// ID of <see cref="UserEntity"/> sending the message
         /// </summary>
-        public string SenderId { get; set; }
+        public string SenderId { get; set; } = string.Empty;
 
         /// <summary>
         /// ID of <see cref="UserEntity"/> receving the message
         /// </summary>
-        public string ReceiverId { get; set; }
+        public string ReceiverId { get; set; } = string.Empty;
     }
 }

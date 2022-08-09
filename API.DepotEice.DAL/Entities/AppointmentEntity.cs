@@ -34,6 +34,6 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// Appointment linked user's ID
         /// </summary>
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

@@ -21,7 +21,7 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// User's review text
         /// </summary>
-        public string Review { get; set; }
+        public string Review { get; set; } = string.Empty;
 
         /// <summary>
         /// Date and time at which this article's comment was created in the database
@@ -43,6 +43,6 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// ID of the user writing the comment
         /// </summary>
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

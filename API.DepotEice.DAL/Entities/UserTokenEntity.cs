@@ -14,17 +14,17 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s ID
         /// </summary>
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s type
         /// </summary>
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s value
         /// </summary>
-        public string Value { get; set; }
+        public string Value { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s delivery date and time
@@ -39,7 +39,7 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// Linked <see cref="UserEntity"/>'s <see cref="UserEntity.Id"/> property
         /// </summary>
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         /// <summary>
         /// Linked <see cref="UserEntity"/>'s <see cref="UserEntity.SecurityStamp"/> property. This

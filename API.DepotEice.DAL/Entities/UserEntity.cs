@@ -14,42 +14,42 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// Represent <c>Users</c> table's <c>Id</c> column
         /// </summary>
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>Email</c> column
         /// </summary>
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>NormalizedEmail</c> column
         /// </summary>
-        public string NormalizedEmail { get; set; }
+        public string NormalizedEmail { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>PasswordHash</c> column
         /// </summary>
-        public string Password { get; set; }
+        public string Password { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>Salt</c> column
         /// </summary>
-        public string Salt { get; set; }
+        public string Salt { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>FirstName</c> column
         /// </summary>
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>LastName</c> column
         /// </summary>
-        public string LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>ProfilePicture</c> column
         /// </summary>
-        public string ProfilePicture { get; set; }
+        public string ProfilePicture { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>BirthDate</c> column
@@ -59,12 +59,12 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// Represent <c>Users</c> table's <c>ConcurrencyStamp</c> column
         /// </summary>
-        public string ConcurrencyStamp { get; set; }
+        public string ConcurrencyStamp { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>SecurityStamp</c> column
         /// </summary>
-        public string SecurityStamp { get; set; }
+        public string SecurityStamp { get; set; } = string.Empty;
 
         /// <summary>
         /// Represent <c>Users</c> table's <c>IsActive</c> column

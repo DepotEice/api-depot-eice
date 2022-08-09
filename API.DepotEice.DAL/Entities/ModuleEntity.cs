@@ -19,11 +19,11 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// <see cref="ModuleEntity"/>'s name column in the database
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// <see cref="ModuleEntity"/>'s description column in the database
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
     }
 }

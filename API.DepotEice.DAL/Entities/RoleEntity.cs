@@ -14,16 +14,11 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// The ID of the role
         /// </summary>
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// The name of the role
         /// </summary>
-        public string Name { get; set; }
-
-        public RoleEntity()
-        {
-
-        }
+        public string Name { get; set; } = string.Empty;
     }
 }
