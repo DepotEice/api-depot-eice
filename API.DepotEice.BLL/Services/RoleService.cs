@@ -220,7 +220,16 @@ namespace API.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(roleName));
             }
 
-            return _roleRepository.GetAll().SingleOrDefault(r => r.Name.Equals(roleName));
+            RoleEntity? RoleFromRepo = _roleRepository
+                .GetAll()
+                .SingleOrDefault(r => r.Name.Equals(roleName));
+
+            if (RoleFromRepo is null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<RoleDto>(RoleFromRepo);
         }
 
         /// <summary>

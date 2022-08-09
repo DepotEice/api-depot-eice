@@ -38,7 +38,25 @@ namespace API.DepotEice.UIL.Controllers
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Register a new User
+        /// </summary>
+        /// <param name="form">
+        /// The user form for registration
+        /// </param>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the user was correctly created.
+        /// <para/>
+        /// <see cref="StatusCodes.Status400BadRequest"/> If the email is already used or if the 
+        /// user creation failed.
+        /// <para/>
+        /// <see cref="StatusCodes.Status204NoContent"/> If The role Guest could not be created or
+        /// if the user couldn't be added to the role
+        /// </returns>
         [HttpPost(nameof(SignUp))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult SignUp([FromBody] RegisterForm form)
         {
             if (!ModelState.IsValid)
