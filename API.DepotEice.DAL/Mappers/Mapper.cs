@@ -85,8 +85,8 @@ namespace API.DepotEice.DAL.Mappers
                 (int)record["Id"],
                 (record["Title"] is DBNull) ? null : (string)record["Title"],
                 (record["Details"] is DBNull) ? null : (string)record["Details"],
-                (DateTime)record["CreatedAt"],
-                (DateTime)record["CreatedAt"],
+                (DateTime)record["StartsAt"],
+                (DateTime)record["EndsAt"],
                 (int)record["ModuleId"]);
         }
 

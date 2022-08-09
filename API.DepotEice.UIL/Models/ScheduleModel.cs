@@ -1,18 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace API.DepotEice.UIL.Models.Forms
+﻿namespace API.DepotEice.UIL.Models
 {
-    public class ScheduleForm
+    public class ScheduleModel
     {
-        [MaxLength(100)]
+        public int Id { get; set; }
         public string Title { get; set; }
-
         public string Details { get; set; }
-
-        [Required]
         public DateTime StartsAt { get; set; }
-
-        [Required]
         public DateTime EndsAt { get; set; }
     }
 }

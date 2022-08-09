@@ -166,6 +166,8 @@ namespace API.DepotEice.UIL
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Depot.Eice v1"));
             }
 
+            app.UseStaticFiles();
+
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
             app.UseRouting();

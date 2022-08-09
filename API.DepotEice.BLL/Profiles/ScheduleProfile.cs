@@ -15,11 +15,11 @@ namespace API.DepotEice.BLL.Profiles
         {
             // ScheduleEntity --> ScheduleModel
 
-            CreateMap<ScheduleEntity, ScheduleModel>();
+            CreateMap<ScheduleEntity, ScheduleData>();
 
             // ScheduleModel --> ScheduleEntity
 
-            CreateMap<ScheduleModel, ScheduleEntity>()
+            CreateMap<ScheduleData, ScheduleEntity>()
                 .ForMember(
                     dest => dest.ModuleId,
                     opt => opt.MapFrom(src => src.Module.Id));
