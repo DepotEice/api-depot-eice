@@ -48,6 +48,22 @@ namespace API.DepotEice.DAL.Repositories
             return _connection.ExecuteNonQuery(command) > 0;
         }
 
+        public UserEntity? LogIn(UserEntity entity)
+        {
+            if (entity is null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            Command command = new Command("spLogIn", true);
+
+            command.AddParameter("email", entity.Email);
+            command.AddParameter("password", entity.Password);
+
+            return _connection.ExecuteReader(command, u => u.DbToUser())
+                .SingleOrDefault();
+        }
+
         /// <inheritdoc/>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="DatabaseScalarNullException"></exception>

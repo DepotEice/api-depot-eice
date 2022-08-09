@@ -33,12 +33,33 @@ namespace API.DepotEice.UIL.Controllers
         [HttpPost(nameof(SignUp))]
         public IActionResult SignUp([FromBody] RegisterForm form)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(form);
+            }
+
+
             return Ok();
         }
 
-        [HttpPost("{email}/"+nameof(PasswordRequest))]
+        [HttpPost("{email}/" + nameof(PasswordRequest))]
         public IActionResult PasswordRequest(string email)
         {
+            return Ok();
+        }
+
+        public IActionResult Activate(string id, string token)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest(id);
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(token);
+            }
+
             return Ok();
         }
     }
