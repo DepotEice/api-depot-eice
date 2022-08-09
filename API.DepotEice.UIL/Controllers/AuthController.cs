@@ -48,6 +48,7 @@ namespace API.DepotEice.UIL.Controllers
             return Ok();
         }
 
+        [HttpPost(nameof(Activate))]
         public IActionResult Activate(string id, string token)
         {
             if (string.IsNullOrEmpty(id))
