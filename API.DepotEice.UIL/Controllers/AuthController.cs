@@ -1,6 +1,7 @@
 ﻿using API.DepotEice.BLL.IServices;
 using API.DepotEice.BLL.Models;
 using API.DepotEice.UIL.Data;
+using API.DepotEice.UIL.Managers;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
@@ -132,7 +133,23 @@ namespace API.DepotEice.UIL.Controllers
                 return NoContent();
             }
 
-            // TODO : Send a activation email
+            UserTokenDto? userTokenDto = _userTokenService.GetUserToken
+                (
+                    BLL.UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
+                    DateTime.Now.Date,
+                    createdUser.Id
+                );
+
+            if (userTokenDto is null)
+            {
+                _logger.LogError(
+                    "{date} - Could not retrieve user token email!",
+                    DateTime.Now);
+
+                return NoContent();
+            }
+
+            MailManager.SendActivationEmail(createdUser.Id, userTokenDto.Value, createdUser.Email);
 
             UserModel user = _mapper.Map<UserModel>(createdUser);
 
@@ -151,6 +168,16 @@ namespace API.DepotEice.UIL.Controllers
             {
                 return BadRequest(token);
             }
+
+            UserDto? user = _userService.GetUser(id);
+
+            if (user is null)
+            {
+                return NotFound(id);
+            }
+
+
+
 
             return Ok();
         }

@@ -111,6 +111,19 @@ namespace API.DepotEice.DAL.Repositories
                 .ExecuteReader(command, userToken => Mapper.DbToUserToken(userToken));
         }
 
+        public bool ApproveToken(string userId, string tokenValue)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            if (string.IsNullOrEmpty(tokenValue))
+            {
+                throw new ArgumentNullException(nameof(tokenValue));
+            }
+        }
+
         /// <summary>
         /// Not implemented
         /// </summary>

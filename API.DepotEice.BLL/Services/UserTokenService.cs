@@ -94,14 +94,55 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
-        public UserTokenDto? GetUserToken(string id)
+        public UserTokenDto? GetUserToken(string tokenType, DateTime deliveryDate, string userId)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(tokenType))
+            {
+                throw new ArgumentNullException(nameof(tokenType));
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            UserTokenEntity? userTokenFromRepo = _userTokenRepository
+                .GetUserTokens(userId)
+                .SingleOrDefault(ut =>
+                    (ut.DeliveryDateTime > deliveryDate) &&
+                    ut.Type.Equals(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN));
+
+            if (userTokenFromRepo is null)
+            {
+                _logger.LogWarning(
+                    "{date} - There is no user token with type \"{tokenType}\" delivered " +
+                    "at \"{deliveryDate}\"!",
+                    DateTime.Now, tokenType, deliveryDate);
+
+                return null;
+            }
+
+            UserTokenDto userToken = _mapper.Map<usertokendto>(userTokenFromRepo);
+
+            return userToken;
         }
 
         public IEnumerable<UserTokenDto> GetUserTokens(string id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            IEnumerable<UserTokenEntity> userTokensFromRepo =
+                _userTokenRepository.GetUserTokens(id);
+
+            foreach (UserTokenEntity userTokenFromRepo in userTokensFromRepo)
+            {
+                UserTokenDto userToken = _mapper.Map<UserTokenDto>(userTokenFromRepo);
+
+                yield return userToken;
+            }
         }
     }
 }
