@@ -122,6 +122,8 @@ namespace API.DepotEice.DAL.Repositories
             {
                 throw new ArgumentNullException(nameof(tokenValue));
             }
+
+            return false;
         }
 
         /// <summary>

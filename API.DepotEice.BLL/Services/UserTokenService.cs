@@ -122,7 +122,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            UserTokenDto userToken = _mapper.Map<usertokendto>(userTokenFromRepo);
+            UserTokenDto userToken = _mapper.Map<UserTokenDto>(userTokenFromRepo);
 
             return userToken;
         }
