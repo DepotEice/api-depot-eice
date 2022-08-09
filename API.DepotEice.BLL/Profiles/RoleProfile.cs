@@ -15,11 +15,11 @@ namespace API.DepotEice.BLL.Profiles
         {
             // RoleModel --> RoleEntity
 
-            CreateMap<RoleModel, RoleEntity>();
+            CreateMap<RoleDto, RoleEntity>();
 
             // RoleEntity --> RoleModel
 
-            CreateMap<RoleEntity, RoleModel>();
+            CreateMap<RoleEntity, RoleDto>();
         }
     }
 }

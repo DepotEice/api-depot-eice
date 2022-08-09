@@ -22,7 +22,7 @@ namespace API.DepotEice.BLL.Models
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        public IEnumerable<RoleModel>? Roles { get; set; }
+        public IEnumerable<RoleDto>? Roles { get; set; }
         public IEnumerable<ModuleData>? Modules { get; set; }
         public IEnumerable<MessageModel>? Messages { get; set; }
         public IEnumerable<AppointmentModel>? Appointments { get; set; }

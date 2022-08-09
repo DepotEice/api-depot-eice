@@ -11,11 +11,12 @@ namespace API.DepotEice.BLL.IServices
     {
         bool AddUser(string id, string userId);
         bool RemoveUser(string id, string userId);
-        RoleModel? CreateRole(RoleModel model);
+        RoleDto? CreateRole(RoleDto model);
         bool DeleteRole(string id);
-        IEnumerable<RoleModel> GetRoles();
-        IEnumerable<RoleModel> GetUserRoles(string userId);
-        RoleModel? GetRole(string id);
-        RoleModel? UpdateRole(RoleModel model);
+        IEnumerable<RoleDto> GetRoles();
+        IEnumerable<RoleDto> GetUserRoles(string userId);
+        RoleDto? GetRole(string id);
+        RoleDto? UpdateRole(RoleDto model);
+        RoleDto? GetRoleByName(string roleName);
     }
 }

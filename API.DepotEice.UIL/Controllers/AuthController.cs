@@ -1,6 +1,9 @@
 ﻿using API.DepotEice.BLL.IServices;
+using API.DepotEice.BLL.Models;
+using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +13,16 @@ namespace API.DepotEice.UIL.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private readonly ILogger _logger;
+        private readonly IMapper _mapper;
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
 
-        public AuthController(IUserService userService, IRoleService roleService)
+        public AuthController(ILogger<AuthController> logger, IMapper mapper,
+            IUserService userService, IRoleService roleService)
         {
+            _logger = logger;
+            _mapper = mapper;
             _userService = userService;
             _roleService = roleService;
         }
@@ -38,18 +46,40 @@ namespace API.DepotEice.UIL.Controllers
                 return BadRequest(form);
             }
 
-            // TODO :
-            // 1. Check if email exist
-            // 2. Create user
-            // 3. Add user to guest role
-            // 4. Return created user
-
             if (_userService.EmailExist(form.Email))
             {
                 return BadRequest("There is already an account with this email!");
             }
 
-            return Ok();
+            UserDto? createdUser = _userService.CreateUser(_mapper.Map<UserDto>(form));
+
+            if (createdUser is null)
+            {
+                return BadRequest("User creation failed");
+            }
+
+            RoleDto? guestRole = _roleService.GetRoleByName(RolesData.GUEST_ROLE);
+
+            if (guestRole is null)
+            {
+                guestRole = _roleService.CreateRole(new RoleDto()
+                {
+                    Name = RolesData.GUEST_ROLE
+                });
+
+                if (guestRole is null)
+                {
+                    return NoContent();
+                }
+            }
+
+            if (!_roleService.AddUser(createdUser.Id, guestRole.Id))
+            {
+                // TODO : Return an error message with explanation of what happened
+                return NoContent();
+            }
+
+            return Ok(createdUser);
         }
 
         [HttpPost("{email}/" + nameof(PasswordRequest))]
