@@ -1,18 +1,13 @@
 ﻿using API.DepotEice.BLL.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.IServices
 {
-    public interface IScheduleService
+    public interface IScheduleService : IServiceBase<int, ScheduleData>
     {
-        ScheduleModel? CreateSchedule(ScheduleModel model);
+        ScheduleData? CreateSchedule(int moduleId, ScheduleData model);
         bool DeleteSchedule(int id);
-        ScheduleModel? GetSchedule(int id);
-        IEnumerable<ScheduleModel> GetModuleSchedules(int moduleId);
-        ScheduleModel? UpdateSchedule(ScheduleModel model);
+        ScheduleData? GetSchedule(int id);
+        IEnumerable<ScheduleData> GetModuleSchedules(int moduleId);
+        ScheduleData? UpdateSchedule(ScheduleData model);
     }
 }

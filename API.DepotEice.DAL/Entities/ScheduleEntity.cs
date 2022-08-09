@@ -57,7 +57,7 @@ namespace API.DepotEice.DAL.Entities
         public ScheduleEntity(int id, string? title, string? details, DateTime startsAt,
             DateTime endsAt, int moduleId)
         {
-            if (id <= 0)
+            if (id < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(id));
             }
@@ -67,10 +67,10 @@ namespace API.DepotEice.DAL.Entities
                 throw new ArgumentNullException(nameof(title));
             }
 
-            if (string.IsNullOrEmpty(details))
-            {
-                throw new ArgumentNullException(nameof(details));
-            }
+            //if (string.IsNullOrEmpty(details))
+            //{
+            //    throw new ArgumentNullException(nameof(details));
+            //}
 
             if (startsAt >= endsAt)
             {
@@ -82,7 +82,7 @@ namespace API.DepotEice.DAL.Entities
                 throw new ArgumentOutOfRangeException(nameof(endsAt));
             }
 
-            if (ModuleId <= 0)
+            if (ModuleId < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(moduleId));
             }

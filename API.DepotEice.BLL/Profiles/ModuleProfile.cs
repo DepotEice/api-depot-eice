@@ -15,11 +15,11 @@ namespace API.DepotEice.BLL.Profiles
         {
             // ModuleEntity --> ModuleModel
 
-            CreateMap<ModuleEntity, ModuleModel>();
+            CreateMap<ModuleEntity, ModuleData>();
 
             // ModuleModel --> ModuleEntity
 
-            CreateMap<ModuleModel, ModuleEntity>();
+            CreateMap<ModuleData, ModuleEntity>();
         }
     }
 }
