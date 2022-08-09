@@ -38,6 +38,16 @@ namespace API.DepotEice.UIL.Controllers
                 return BadRequest(form);
             }
 
+            // TODO :
+            // 1. Check if email exist
+            // 2. Create user
+            // 3. Add user to guest role
+            // 4. Return created user
+
+            if (_userService.EmailExist(form.Email))
+            {
+                return BadRequest("There is already an account with this email!");
+            }
 
             return Ok();
         }

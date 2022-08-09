@@ -9,7 +9,7 @@ namespace API.DepotEice.UIL.Profiles
     {
         public UserProfile()
         {
-            CreateMap<BLL.Models.UserModel, UserModel>();
+            CreateMap<UserDto, UserModel>();
         }
     }
 }

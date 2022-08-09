@@ -117,8 +117,8 @@ namespace API.DepotEice.BLL.Services
 
             MessageModel messageModel = _mapper.Map<MessageModel>(createdMessage);
 
-            messageModel.Sender = _mapper.Map<UserModel>(sender);
-            messageModel.Receiver = _mapper.Map<UserModel>(receiver);
+            messageModel.Sender = _mapper.Map<UserDto>(sender);
+            messageModel.Receiver = _mapper.Map<UserDto>(receiver);
 
             return messageModel;
         }
@@ -160,9 +160,9 @@ namespace API.DepotEice.BLL.Services
                 {
                     MessageModel messageModel = _mapper.Map<MessageModel>(messageFromRepo);
 
-                    messageModel.Sender = _mapper.Map<UserModel>(sender);
+                    messageModel.Sender = _mapper.Map<UserDto>(sender);
 
-                    messageModel.Receiver = _mapper.Map<UserModel>(receiver);
+                    messageModel.Receiver = _mapper.Map<UserDto>(receiver);
 
                     yield return messageModel;
                 }

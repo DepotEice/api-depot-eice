@@ -10,10 +10,12 @@ namespace API.DepotEice.BLL.IServices
     public interface IUserService
     {
         bool ActivateUser(string id, bool isActive);
-        UserModel? CreateUser(UserModel user);
+        UserDto? CreateUser(UserDto user);
         bool DeleteUser(string id);
-        IEnumerable<UserModel> GetUsers();
-        UserModel? GetUser(string id);
+        IEnumerable<UserDto> GetUsers();
+        UserDto? GetUser(string id);
         bool UpdatePassword(string id, string oldPassword, string newPassword, string salt);
+        public bool UserExist(string id);
+        public bool EmailExist(string email);
     }
 }

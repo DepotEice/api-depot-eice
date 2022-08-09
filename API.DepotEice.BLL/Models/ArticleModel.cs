@@ -14,7 +14,7 @@ namespace API.DepotEice.BLL.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsPinned { get; set; }
-        public UserModel User { get; set; }
+        public UserDto User { get; set; }
 
         public IEnumerable<ArticleCommentModel> ArticleComments { get; set; }
     }

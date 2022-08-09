@@ -69,7 +69,7 @@ namespace API.DepotEice.BLL.Services
             return _userRepository.ActivateUser(id, isActive);
         }
 
-        public UserModel? CreateUser(UserModel user)
+        public UserDto? CreateUser(UserDto user)
         {
             if (user is null)
             {
@@ -101,7 +101,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            UserModel userModel = _mapper.Map<UserModel>(userFromRepo);
+            UserDto userModel = _mapper.Map<UserDto>(userFromRepo);
 
 
 
@@ -113,21 +113,41 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
-        public UserModel? GetUser(string id)
+        public UserDto? GetUser(string id)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<UserModel> GetUsers()
+        public IEnumerable<UserDto> GetUsers()
         {
             var repoUsers = _userRepository.GetAll();
-            var mapperUsers  = _mapper.Map<IEnumerable<UserModel>>(repoUsers);
+            var mapperUsers = _mapper.Map<IEnumerable<UserDto>>(repoUsers);
             return mapperUsers;
         }
 
         public bool UpdatePassword(string id, string oldPassword, string newPassword, string salt)
         {
             throw new NotImplementedException();
+        }
+
+        public bool UserExist(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return _userRepository.GetByKey(id) is not null;
+        }
+
+        public bool EmailExist(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            return _userRepository.GetAll().Any(u => u.NormalizedEmail.Equals(email.ToUpper()));
         }
     }
 }

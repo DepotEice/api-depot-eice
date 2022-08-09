@@ -12,6 +12,6 @@ namespace API.DepotEice.BLL.Models
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
         public bool Accepted { get; set; }
-        public UserModel? User { get; set; }
+        public UserDto? User { get; set; }
     }
 }

@@ -120,7 +120,7 @@ namespace API.DepotEice.BLL.Services
             }
 
             AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
-                appointmentFromRepo, _mapper.Map<UserModel>(appointmentUser));
+                appointmentFromRepo, _mapper.Map<UserDto>(appointmentUser));
 
             return appointment;
         }
@@ -198,7 +198,7 @@ namespace API.DepotEice.BLL.Services
             }
 
             AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
-                 appointmentFromRepo, _mapper.Map<UserModel>(appointmentUser));
+                 appointmentFromRepo, _mapper.Map<UserDto>(appointmentUser));
 
             return appointment;
         }
@@ -226,7 +226,7 @@ namespace API.DepotEice.BLL.Services
                 else
                 {
                     AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
-                        appointmentEntity, _mapper.Map<UserModel>(appointmentUser));
+                        appointmentEntity, _mapper.Map<UserDto>(appointmentUser));
 
                     yield return appointment;
                 }

@@ -21,7 +21,7 @@ namespace API.DepotEice.BLL.Services
         private readonly IUserRepository _userRepository;
         private readonly IArticleCommentRepository _articleCommentRepository;
 
-        public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
+        public ArticleService(ILogger logger, IMapper mapper, IArticleRepository articleRepository,
             IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
         {
             if (logger is null)
@@ -117,7 +117,7 @@ namespace API.DepotEice.BLL.Services
 
             ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
                 createdArticle,
-                _mapper.Map<UserModel>(userFromRepo),
+                _mapper.Map<UserDto>(userFromRepo),
                 _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
 
             return articleModel;
@@ -190,7 +190,7 @@ namespace API.DepotEice.BLL.Services
 
             ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
                 articleFromRepo,
-                _mapper.Map<UserModel>(userFromRepo),
+                _mapper.Map<UserDto>(userFromRepo),
                 _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
 
             return articleModel;
@@ -224,7 +224,7 @@ namespace API.DepotEice.BLL.Services
 
                     ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
                         article,
-                        _mapper.Map<UserModel>(userFromRepo),
+                        _mapper.Map<UserDto>(userFromRepo),
                         _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
 
                     yield return articleModel;

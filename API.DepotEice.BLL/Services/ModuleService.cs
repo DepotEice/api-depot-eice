@@ -120,7 +120,7 @@ namespace API.DepotEice.BLL.Services
             ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
             moduleModel.Users = _mapper
-                .Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(newID));
+                .Map<IEnumerable<UserDto>>(_userRepository.GetModuleUsers(newID));
 
             return moduleModel;
         }
@@ -198,7 +198,7 @@ namespace API.DepotEice.BLL.Services
         /// Retrieve all modules from the database
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="UserModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="UserDto"/>
         /// </returns>
         public IEnumerable<ModuleData> GetModules()
         {
@@ -247,7 +247,7 @@ namespace API.DepotEice.BLL.Services
                 IEnumerable<UserEntity> moduleUsers =
                     _userRepository.GetModuleUsers(moduleModel.Id);
 
-                moduleModel.Users = _mapper.Map<IEnumerable<UserModel>>(moduleUsers);
+                moduleModel.Users = _mapper.Map<IEnumerable<UserDto>>(moduleUsers);
 
                 yield return moduleModel;
             }
@@ -338,7 +338,7 @@ namespace API.DepotEice.BLL.Services
             ModuleData moduleModel = _mapper.Map<ModuleData>(moduleFromRepo);
 
             moduleModel.Users = _mapper
-                .Map<IEnumerable<UserModel>>(_userRepository.GetModuleUsers(model.Id));
+                .Map<IEnumerable<UserDto>>(_userRepository.GetModuleUsers(model.Id));
 
             return moduleModel;
         }

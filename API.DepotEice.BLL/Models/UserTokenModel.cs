@@ -13,6 +13,6 @@ namespace API.DepotEice.BLL.Models
         public string Value { get; set; }
         public DateTime DeliveryDate { get; set; }
         public DateTime ExpirationDate { get; set; }
-        public UserModel User { get; set; }
+        public UserDto User { get; set; }
     }
 }
