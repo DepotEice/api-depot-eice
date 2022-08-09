@@ -26,7 +26,7 @@ namespace API.DepotEice.BLL.Models
         public IEnumerable<ModuleData>? Modules { get; set; }
         public IEnumerable<MessageModel>? Messages { get; set; }
         public IEnumerable<AppointmentModel>? Appointments { get; set; }
-        public IEnumerable<UserTokenModel>? UserTokens { get; set; }
+        public IEnumerable<UserTokenDto>? UserTokens { get; set; }
         public IEnumerable<ArticleModel>? Articles { get; set; }
         public IEnumerable<ArticleCommentModel>? ArticleComments { get; set; }
     }

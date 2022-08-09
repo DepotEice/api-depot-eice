@@ -21,9 +21,11 @@ namespace API.DepotEice.BLL.Services
         private readonly IMapper _mapper;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IUserTokenRepository _userTokenRepository;
 
         public UserService(ILogger<UserService> logger, IMapper mapper,
-            IUserRepository userRepository, IRoleRepository roleRepository)
+            IUserRepository userRepository, IRoleRepository roleRepository,
+            IUserTokenRepository userTokenRepository)
         {
             if (logger is null)
             {
@@ -45,10 +47,16 @@ namespace API.DepotEice.BLL.Services
                 throw new ArgumentNullException(nameof(roleRepository));
             }
 
+            if (userTokenRepository is null)
+            {
+                throw new ArgumentNullException(nameof(userTokenRepository));
+            }
+
             _logger = logger;
             _mapper = mapper;
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _userTokenRepository = userTokenRepository;
         }
 
         public bool ActivateUser(string id, bool isActive)
@@ -104,9 +112,24 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
+            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity
+                (
+                    UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
+                    DateTime.Now.AddDays(2),
+                    userFromRepo.Id,
+                    userFromRepo.SecurityStamp
+                ));
+
+            if (string.IsNullOrEmpty(createdUserTokenID))
+            {
+                _logger.LogWarning(
+                    "{date} - The UserToken creation failed!",
+                    DateTime.Now);
+
+                return null;
+            }
+
             UserDto userModel = _mapper.Map<UserDto>(userFromRepo);
-
-
 
             return userModel;
         }

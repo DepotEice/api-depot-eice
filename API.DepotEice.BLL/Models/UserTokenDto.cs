@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Models
 {
-    public class UserTokenModel
+    public class UserTokenDto
     {
         public string Id { get; set; }
         public string Type { get; set; }

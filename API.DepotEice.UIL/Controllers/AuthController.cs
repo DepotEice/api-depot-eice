@@ -17,25 +17,37 @@ namespace API.DepotEice.UIL.Controllers
         private readonly IMapper _mapper;
         private readonly IUserService _userService;
         private readonly IRoleService _roleService;
+        private readonly IUserTokenService _userTokenService;
 
         public AuthController(ILogger<AuthController> logger, IMapper mapper,
-            IUserService userService, IRoleService roleService)
+            IUserService userService, IRoleService roleService, IUserTokenService userTokenService)
         {
             _logger = logger;
             _mapper = mapper;
             _userService = userService;
             _roleService = roleService;
+            _userTokenService = userTokenService;
         }
 
+        /// <summary>
+        /// If user's credentials are correct, sign in the user by generating a JWT Token
+        /// </summary>
+        /// <param name="form"></param>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the user credentials are correct and a JWT 
+        /// token was generated
+        /// <para />
+        /// <see cref="StatusCodes.Status400BadRequest"/> If an error occured during authentication
+        /// </returns>
         [HttpPost(nameof(SignIn))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult SignIn([FromBody] LoginForm form)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState.ValidationState);
             }
-
-            // TODO : Retrieve correctly the Jwt token properties from Env variable or default variables
 
 #if DEBUG
             JwtTokenDto jwtToken = new JwtTokenDto("issuer", "audience", "secret", 1);
@@ -47,8 +59,16 @@ namespace API.DepotEice.UIL.Controllers
 
             if (string.IsNullOrEmpty(token))
             {
+                _logger.LogWarning(
+                    "{date} - The generated token is an empty string!",
+                    DateTime.Now);
+
                 return BadRequest();
             }
+
+            _logger.LogInformation(
+                "{date} - The JWT Token has been successfully generated : \"{token}\"!",
+                DateTime.Now, token);
 
             return Ok(token);
         }
@@ -112,15 +132,11 @@ namespace API.DepotEice.UIL.Controllers
                 return NoContent();
             }
 
+            // TODO : Send a activation email
+
             UserModel user = _mapper.Map<UserModel>(createdUser);
 
             return Ok(user);
-        }
-
-        [HttpPost("{email}/" + nameof(PasswordRequest))]
-        public IActionResult PasswordRequest(string email)
-        {
-            return Ok();
         }
 
         [HttpPost(nameof(Activate))]

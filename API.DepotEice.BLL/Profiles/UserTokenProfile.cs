@@ -15,11 +15,11 @@ namespace API.DepotEice.BLL.Profiles
         {
             // UserTokenEntity --> UserTokenModel
 
-            CreateMap<UserTokenEntity, UserTokenModel>();
+            CreateMap<UserTokenEntity, UserTokenDto>();
 
             // UserTokenModel --> UserTokenEntity
 
-            CreateMap<UserTokenModel, UserTokenEntity>()
+            CreateMap<UserTokenDto, UserTokenEntity>()
                 .ForMember(
                     dest => dest.UserId,
                     opt => opt.MapFrom(src => src.User.Id));

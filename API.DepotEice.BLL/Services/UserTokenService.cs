@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.BLL.IServices;
 using API.DepotEice.BLL.Models;
+using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
@@ -47,9 +48,45 @@ namespace API.DepotEice.BLL.Services
             _userRepository = userRepository;
         }
 
-        public UserTokenModel? CreateUserToken(UserTokenModel model)
+        public UserTokenDto? CreateUserToken(UserTokenDto model)
         {
-            throw new NotImplementedException();
+            if (model is null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
+            UserTokenEntity tokenToCreate = _mapper.Map<UserTokenEntity>(model);
+
+            string createdTokenId = _userTokenRepository.Create(tokenToCreate);
+
+            UserTokenEntity? tokenFromRepo = _userTokenRepository.GetByKey(createdTokenId);
+
+            if (tokenFromRepo is null)
+            {
+                _logger.LogError(
+                    "{date} - Retrieving User Token with ID \"{id}\" returned null!",
+                    DateTime.Now, createdTokenId);
+
+                return null;
+            }
+
+            UserTokenDto createdToken = _mapper.Map<UserTokenDto>(tokenFromRepo);
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(tokenFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                _logger.LogError(
+                    "{date} - The retrieval of a User with ID \"{userId}\" related to the " +
+                    "newly created with ID \"{tokenId}\" returned a null!",
+                    DateTime.Now, tokenFromRepo.UserId, tokenFromRepo.Id);
+
+                return null;
+            }
+
+            createdToken.User = _mapper.Map<UserDto>(userFromRepo);
+
+            return createdToken;
         }
 
         public bool DeleteUserToken(string id)
@@ -57,12 +94,12 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
-        public UserTokenModel? GetUserToken(string id)
+        public UserTokenDto? GetUserToken(string id)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<UserTokenModel> GetUserTokens(string id)
+        public IEnumerable<UserTokenDto> GetUserTokens(string id)
         {
             throw new NotImplementedException();
         }
