@@ -9,6 +9,7 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IUserService
     {
+        string LogIn(string email, string password, JwtTokenDto tokenDto);
         bool ActivateUser(string id, bool isActive);
         UserDto? CreateUser(UserDto user);
         bool DeleteUser(string id);

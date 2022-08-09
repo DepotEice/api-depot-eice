@@ -48,6 +48,6 @@ namespace API.DepotEice.DAL.IRepositories
         /// <c>null</c> If the login failed. Otherwise, an instance of <see cref="UserEntity"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        UserEntity? LogIn(UserEntity entity);
+        UserEntity? LogIn(string email, string password);
     }
 }

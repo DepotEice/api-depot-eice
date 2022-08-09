@@ -4,9 +4,12 @@ using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -138,6 +141,66 @@ namespace API.DepotEice.BLL.Services
             }
 
             return _userRepository.GetByKey(id) is not null;
+        }
+
+        /// <summary>
+        /// Verify if the User credentials are correct. Once it is done, create a new JWT Token
+        /// </summary>
+        /// <param name="email">
+        /// User's email address
+        /// </param>
+        /// <param name="password">
+        /// User's password
+        /// </param>
+        /// <param name="secret"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public string LogIn(string email, string password, JwtTokenDto tokenDto)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentNullException(nameof(password));
+            }
+
+            UserEntity? userFromRepo = _userRepository.LogIn(email, password);
+
+            if (userFromRepo is null)
+            {
+                return string.Empty;
+            }
+
+            List<Claim> claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.NameIdentifier, userFromRepo.Id),
+                new Claim(ClaimTypes.Email, userFromRepo.Email)
+            };
+
+            IEnumerable<Claim> roleClaims = _roleRepository
+                .GetUserRoles(userFromRepo.Id)
+                .Select(ur => new Claim(ClaimTypes.Role, ur.Name));
+
+            claims.AddRange(roleClaims);
+
+            SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenDto.Secret));
+            SigningCredentials credentials = new SigningCredentials(key, SecurityAlgorithms.Sha256);
+
+            DateTime expirationDate = DateTime.Now.AddDays(15);
+
+            JwtSecurityToken jwtToken = new JwtSecurityToken
+                (
+                    issuer: tokenDto.Issuer,
+                    audience: tokenDto.Audience,
+                    claims: claims,
+                    expires: expirationDate,
+                    signingCredentials: credentials
+                );
+
+            return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
 
         public bool EmailExist(string email)

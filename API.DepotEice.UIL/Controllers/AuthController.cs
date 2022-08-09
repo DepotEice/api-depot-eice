@@ -30,12 +30,27 @@ namespace API.DepotEice.UIL.Controllers
         [HttpPost(nameof(SignIn))]
         public IActionResult SignIn([FromBody] LoginForm form)
         {
-            var LoggedInUser = new LoggedInUserModel()
+            if (!ModelState.IsValid)
             {
+                return BadRequest(ModelState.ValidationState);
+            }
 
-            };
+            // TODO : Retrieve correctly the Jwt token properties from Env variable or default variables
 
-            throw new NotImplementedException();
+#if DEBUG
+            JwtTokenDto jwtToken = new JwtTokenDto("issuer", "audience", "secret", 1);
+#else
+            JwtTokenDto jwtToken = new JwtTokenDto();
+#endif
+
+            string token = _userService.LogIn(form.Email, form.Password, jwtToken);
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest();
+            }
+
+            return Ok(token);
         }
 
         /// <summary>
@@ -61,7 +76,7 @@ namespace API.DepotEice.UIL.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(form);
+                return BadRequest(ModelState.ValidationState);
             }
 
             if (_userService.EmailExist(form.Email))
@@ -97,7 +112,9 @@ namespace API.DepotEice.UIL.Controllers
                 return NoContent();
             }
 
-            return Ok(createdUser);
+            UserModel user = _mapper.Map<UserModel>(createdUser);
+
+            return Ok(user);
         }
 
         [HttpPost("{email}/" + nameof(PasswordRequest))]
