@@ -37,6 +37,8 @@ namespace API.DepotEice.BLL.Profiles
                 .ForMember(
                     dest => dest.User,
                     opt => opt.MapFrom(src => src));
+
+            CreateMap<UserDto, UserEntity>();
         }
     }
 }

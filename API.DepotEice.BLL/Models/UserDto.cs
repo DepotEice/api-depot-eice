@@ -14,7 +14,7 @@ namespace API.DepotEice.BLL.Models
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string ProfilePicture { get; set; } = string.Empty;
-        public DateOnly BirthDate { get; set; }
+        public DateTime BirthDate { get; set; }
         public string ConcurrencyStamp { get; set; } = string.Empty;
         public string SecurityStamp { get; set; } = string.Empty;
         public bool IsActive { get; set; }

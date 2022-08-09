@@ -93,7 +93,7 @@ namespace API.DepotEice.UIL.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public IActionResult SignUp([FromBody] RegisterForm form)
+        public IActionResult SignUp([FromForm] RegisterForm form)
         {
             if (!ModelState.IsValid)
             {

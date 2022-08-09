@@ -112,13 +112,13 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity
-                (
-                    UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
-                    DateTime.Now.AddDays(2),
-                    userFromRepo.Id,
-                    userFromRepo.SecurityStamp
-                ));
+            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
+            {
+                Type = UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
+                ExpirationDateTime = DateTime.Now.AddDays(2),
+                UserId = userFromRepo.Id,
+                UserSecurityStamp = userFromRepo.SecurityStamp
+            });
 
             if (string.IsNullOrEmpty(createdUserTokenID))
             {

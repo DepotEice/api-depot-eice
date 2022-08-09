@@ -92,31 +92,36 @@ namespace API.DepotEice.DAL.Mappers
 
         public static UserEntity DbToUser(this IDataRecord record)
         {
-            return new UserEntity(
-                record["Id"].ToString(),
-                (string)record["Email"],
-                (string)record["NormalizedEmail"],
-                (string)record["FirstName"],
-                (string)record["LastName"],
-                (string)record["ProfilePicture"],
-                DateOnly.FromDateTime((DateTime)record["BirthDate"]),
-                record["ConcurrencyStamp"].ToString(),
-                record["SecurityStamp"].ToString(),
-                (bool)record["IsActive"],
-                (DateTime)record["CreatedAt"],
-                (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
-                (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"]);
+            return new UserEntity()
+            {
+                Id = record["Id"].ToString(),
+                Email = (string)record["Email"],
+                NormalizedEmail = (string)record["NormalizedEmail"],
+                FirstName = (string)record["FirstName"],
+                LastName = (string)record["LastName"],
+                ProfilePicture = (string)record["ProfilePicture"],
+                BirthDate = (DateTime)record["BirthDate"],
+                ConcurrencyStamp = record["ConcurrencyStamp"].ToString(),
+                SecurityStamp = record["SecurityStamp"].ToString(),
+                IsActive = (bool)record["IsActive"],
+                CreatedAt = (DateTime)record["CreatedAt"],
+                UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
+                DeletedAt = (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"]
+            };
         }
 
         public static UserTokenEntity DbToUserToken(this IDataRecord record)
         {
-            return new UserTokenEntity(
-                (string)record["Id"],
-                (string)record["Type"],
-                (string)record["Value"],
-                (DateTime)record["DeliveryDate"],
-                (DateTime)record["ExpirationDate"],
-                (string)record["UserId"]);
+            return new UserTokenEntity()
+            {
+                Id = (string)record["Id"],
+                Type = (string)record["Type"],
+                Value = (string)record["Value"],
+                DeliveryDateTime = (DateTime)record["DeliveryDate"],
+                ExpirationDateTime = (DateTime)record["ExpirationDate"],
+                UserId = (string)record["UserId"]
+            };
+
         }
     }
 }

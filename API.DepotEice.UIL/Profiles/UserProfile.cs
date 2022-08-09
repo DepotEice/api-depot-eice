@@ -2,7 +2,7 @@
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
-using BLL = API.DepotEice.BLL;
+using API.DepotEice.BLL;
 
 
 namespace API.DepotEice.UIL.Profiles
