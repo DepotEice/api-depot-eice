@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.DAL.Entities;
 using System.Data;
+using System.Text;
 
 namespace API.DepotEice.DAL.Mappers
 {
@@ -144,12 +145,11 @@ namespace API.DepotEice.DAL.Mappers
                     throw new NullReferenceException("Record key Id return null!"),
 
                 Type = (string)record["Type"],
-                Value = record["Value"].ToString() ??
-                    throw new NullReferenceException("Record key Value returned null!"),
-
+                Value = Encoding.UTF8.GetString((byte[])record["Value"]),
                 DeliveryDateTime = (DateTime)record["DeliveryDate"],
                 ExpirationDateTime = (DateTime)record["ExpirationDate"],
-                UserId = (string)record["UserId"]
+                UserId = record["UserId"].ToString() ??
+                    throw new NullReferenceException("Record key UserId returned null!")
             };
 
         }

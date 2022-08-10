@@ -8,6 +8,7 @@ using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace API.DepotEice.UIL.Controllers
 {
@@ -79,7 +80,7 @@ namespace API.DepotEice.UIL.Controllers
         /// Register a new User
         /// </summary>
         /// <param name="form">
-        /// The user form for registration
+        /// The user form for registration in json format
         /// </param>
         /// <returns>
         /// <see cref="StatusCodes.Status200OK"/> If the user was correctly created.
@@ -94,7 +95,7 @@ namespace API.DepotEice.UIL.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public IActionResult SignUp([FromForm] RegisterForm form)
+        public IActionResult SignUp([FromBody] RegisterForm form)
         {
             if (!ModelState.IsValid)
             {
@@ -149,7 +150,22 @@ namespace API.DepotEice.UIL.Controllers
                 return NoContent();
             }
 
-            MailManager.SendActivationEmail(createdUser.Id, userTokenDto.Value, createdUser.Email);
+            try
+            {
+
+                if (!MailManager.SendActivationEmail(createdUser.Id, userTokenDto.Value, createdUser.Email))
+                {
+                    _logger.LogWarning($"{DateTime.Now} - Sending the activation email " +
+                        $"to user with ID \"{createdUser.Id}\" failed!");
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to send " +
+                    $"the action email for user with ID \"{createdUser.Id}\" with token value " +
+                    $"\"{userTokenDto.Value}\" at address \"{createdUser.Email}\". " +
+                    $"Exception message : \"{e.Message}\"");
+            }
 
             UserModel user = _mapper.Map<UserModel>(createdUser);
 
@@ -185,7 +201,6 @@ namespace API.DepotEice.UIL.Controllers
             }
 
             _userTokenService.VerifyUserToken(userToken);
-
 
             return Ok();
         }

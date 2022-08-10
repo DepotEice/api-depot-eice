@@ -57,7 +57,6 @@ namespace API.DepotEice.UIL.Managers
             }
             catch (Exception)
             {
-                return false;
                 throw;
             }
         }

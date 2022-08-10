@@ -18,7 +18,9 @@ namespace API.DepotEice.UIL.Models.Forms
         /// User's password. Must be 8 to 20 characters long, contains lower and uppercase and 
         /// special character
         /// </summary>
-        [RegularExpression("")]
+        [RegularExpression("(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-_+]).{8,20}$",
+            ErrorMessage = "The password must be 8 to 20 characters long, contains lower and " +
+            "uppercase and at least one special character!")]
         public string Password { get; set; } = string.Empty;
 
         /// <summary>
