@@ -139,9 +139,37 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Retrieve a User from the database and map it with related properties
+        /// </summary>
+        /// <param name="id">
+        /// User's ID
+        /// </param>
+        /// <returns>
+        /// <c>null</c> If there is no user with the given <paramref name="id"/>. Otherwise, An 
+        /// instance of <see cref="UserDto"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public UserDto? GetUser(string id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(id);
+
+            if (userFromRepo is null)
+            {
+                _logger.LogWarning($"{DateTime.Now} - Could not find any user with ID \"{id}\"!");
+                return null;
+            }
+
+            UserDto user = _mapper.Map<UserDto>(userFromRepo);
+
+            // TODO : Load all details
+
+            return user;
         }
 
         public IEnumerable<UserDto> GetUsers()
