@@ -145,7 +145,7 @@ namespace API.DepotEice.DAL.Mappers
                     throw new NullReferenceException("Record key Id return null!"),
 
                 Type = (string)record["Type"],
-                Value = Encoding.UTF8.GetString((byte[])record["Value"]),
+                Value = (string)record["Value"],
                 DeliveryDateTime = (DateTime)record["DeliveryDate"],
                 ExpirationDateTime = (DateTime)record["ExpirationDate"],
                 UserId = record["UserId"].ToString() ??
