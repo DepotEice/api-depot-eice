@@ -1,4 +1,5 @@
-﻿using API.DepotEice.BLL.IServices;
+﻿using API.DepotEice.BLL;
+using API.DepotEice.BLL.IServices;
 using API.DepotEice.BLL.Models;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Managers;
@@ -51,7 +52,7 @@ namespace API.DepotEice.UIL.Controllers
             }
 
 #if DEBUG
-            JwtTokenDto jwtToken = new JwtTokenDto("issuer", "audience", "secret", 1);
+            JwtTokenDto jwtToken = new("issuer", "audience", "secret", 1);
 #else
             JwtTokenDto jwtToken = new JwtTokenDto();
 #endif
@@ -127,7 +128,7 @@ namespace API.DepotEice.UIL.Controllers
                 }
             }
 
-            if (!_roleService.AddUser(createdUser.Id, guestRole.Id))
+            if (!_roleService.AddUser(guestRole.Id, createdUser.Id))
             {
                 // TODO : Return an error message with explanation of what happened
                 return NoContent();
@@ -135,8 +136,7 @@ namespace API.DepotEice.UIL.Controllers
 
             UserTokenDto? userTokenDto = _userTokenService.GetUserToken
                 (
-                    BLL.UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
-                    DateTime.Now.Date,
+                    UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
                     createdUser.Id
                 );
 
@@ -176,7 +176,15 @@ namespace API.DepotEice.UIL.Controllers
                 return NotFound(id);
             }
 
+            UserTokenDto? userToken =
+                _userTokenService.GetUserToken(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN, id);
 
+            if (userToken is null)
+            {
+                return NotFound(token);
+            }
+
+            _userTokenService.VerifyUserToken(userToken);
 
 
             return Ok();

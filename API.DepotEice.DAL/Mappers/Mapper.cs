@@ -80,7 +80,9 @@ namespace API.DepotEice.DAL.Mappers
         {
             return new RoleEntity()
             {
-                Id = (string)record["Id"],
+                Id = record["Id"].ToString() ??
+                    throw new NullReferenceException("Record key Id return null!"),
+
                 Name = (string)record["Name"]
             };
         }
@@ -138,9 +140,13 @@ namespace API.DepotEice.DAL.Mappers
         {
             return new UserTokenEntity()
             {
-                Id = (string)record["Id"],
+                Id = record["Id"].ToString() ??
+                    throw new NullReferenceException("Record key Id return null!"),
+
                 Type = (string)record["Type"],
-                Value = (string)record["Value"],
+                Value = record["Value"].ToString() ??
+                    throw new NullReferenceException("Record key Value returned null!"),
+
                 DeliveryDateTime = (DateTime)record["DeliveryDate"],
                 ExpirationDateTime = (DateTime)record["ExpirationDate"],
                 UserId = (string)record["UserId"]

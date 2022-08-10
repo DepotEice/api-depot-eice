@@ -11,7 +11,8 @@ namespace API.DepotEice.BLL.IServices
     {
         UserTokenDto? CreateUserToken(UserTokenDto model);
         bool DeleteUserToken(string id);
-        UserTokenDto? GetUserToken(string tokenType, DateTime deliveryDate, string userId);
+        UserTokenDto? GetUserToken(string tokenType, string userId);
         IEnumerable<UserTokenDto> GetUserTokens(string id);
+        bool VerifyUserToken(UserTokenDto userToken);
     }
 }

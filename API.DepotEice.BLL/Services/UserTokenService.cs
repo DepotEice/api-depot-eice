@@ -94,7 +94,7 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
-        public UserTokenDto? GetUserToken(string tokenType, DateTime deliveryDate, string userId)
+        public UserTokenDto? GetUserToken(string tokenType, string userId)
         {
             if (string.IsNullOrEmpty(tokenType))
             {
@@ -108,16 +108,14 @@ namespace API.DepotEice.BLL.Services
 
             UserTokenEntity? userTokenFromRepo = _userTokenRepository
                 .GetUserTokens(userId)
-                .SingleOrDefault(ut =>
-                    (ut.DeliveryDateTime > deliveryDate) &&
-                    ut.Type.Equals(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN));
+                .Where(ut => ut.Type.Equals(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN))
+                .MaxBy(ut => ut.DeliveryDateTime);
 
             if (userTokenFromRepo is null)
             {
                 _logger.LogWarning(
-                    "{date} - There is no user token with type \"{tokenType}\" delivered " +
-                    "at \"{deliveryDate}\"!",
-                    DateTime.Now, tokenType, deliveryDate);
+                    "{date} - There is no user token with type \"{tokenType}\"!",
+                    DateTime.Now, tokenType);
 
                 return null;
             }
@@ -143,6 +141,18 @@ namespace API.DepotEice.BLL.Services
 
                 yield return userToken;
             }
+        }
+
+        public bool VerifyUserToken(UserTokenDto userToken)
+        {
+            if (userToken is null)
+            {
+                throw new ArgumentNullException(nameof(userToken));
+            }
+
+            UserTokenEntity userTokenEntity = _mapper.Map<UserTokenEntity>(userToken);
+
+            return _userTokenRepository.ApproveToken(userTokenEntity);
         }
     }
 }
