@@ -231,8 +231,8 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
-                IEnumerable<BLL.Models.ScheduleFileData>? items = _scheduleFileService.GetScheduleFiles(sId);
-                return Ok();
+                IEnumerable<ScheduleFileModel>? items = _scheduleFileService.GetScheduleFiles(sId).Select(x => x.ToUil());
+                return Ok(items);
             }
             catch (Exception e)
             {
@@ -248,29 +248,19 @@ namespace API.DepotEice.UIL.Controllers
 
             try
             {
-                string fileName = file.File.FileName;
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+                var module = _moduleService.GetByKey(mId)?.ToUil();
+                if (module == null)
+                    return NotFound("Le module n'existe pas !");
 
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", fileName);
-                file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
+                if (schedule == null)
+                    return NotFound("Le schedule n'existe pas !");
 
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+                string imagePath = SaveImageAndGetPath(file);
 
-        [HttpPut("{mId}/Schedules/{sId}/Files/{fId}")]
-        public IActionResult PutScheduleFiles(int mId, int sId, int fId)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                ScheduleFileModel? resposne = _scheduleFileService.CreateScheduleFile(sId, new ScheduleFileModel() { FilePath = imagePath }.ToBll())?.ToUil();
 
-            try
-            {
-                return Ok();
+                return Ok(resposne);
             }
             catch (Exception e)
             {
@@ -283,7 +273,37 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
-                return Ok();
+                var module = _moduleService.GetByKey(mId)?.ToUil();
+                if (module == null)
+                    return NotFound("Le module n'existe pas !");
+
+                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
+                if (schedule == null)
+                    return NotFound("Le schedule n'existe pas !");
+
+                var item = _scheduleFileService.GetScheduleFile(fId)?.ToUil();
+                if (item == null)
+                    return NotFound("Aucune fichier existant !");
+
+                string filePath = item.FilePath;
+
+                FileInfo fileInfo = new FileInfo(filePath);
+
+                try
+                {
+                    var result = _scheduleFileService.DeleteScheduleFile(fId);
+
+                    if (!result)
+                        return BadRequest("Something went wrong ...");
+
+                    fileInfo.Delete();
+                }
+                catch (Exception e)
+                {
+                    return BadRequest(e.Message);
+                }
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -367,6 +387,16 @@ namespace API.DepotEice.UIL.Controllers
             {
                 return BadRequest(e.Message);
             }
+        }
+
+        private static string SaveImageAndGetPath(ScheduleFileForm file)
+        {
+            string fileName = file.File.FileName;
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+
+            var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
+            file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+            return imagePath;
         }
     }
 }

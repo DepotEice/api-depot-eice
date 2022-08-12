@@ -73,10 +73,16 @@ namespace API.DepotEice.DAL.Mappers
 
         public static ScheduleFileEntity DbToScheduleFile(this IDataRecord record)
         {
-            return new ScheduleFileEntity(
-                id: (int)record["Id"],
-                filePath: (string)record["FilePath"],
-                scheduleId: (int)record["ScheduleId"]);
+            return new ScheduleFileEntity()
+            {
+                Id = (int)record["Id"],
+                FilePath = (string)record["FilePath"],
+                ScheduleId = (int)record["ScheduleId"]
+            };
+            //return new ScheduleFileEntity(
+            //    id: (int)record["Id"],
+            //    filePath: (string)record["FilePath"],
+            //    scheduleId: (int)record["ScheduleId"]);
         }
 
         public static ScheduleEntity DbToSchedule(this IDataRecord record)
