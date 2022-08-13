@@ -178,10 +178,10 @@ namespace API.DepotEice.UIL.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+             
             try
             {
-                var response = _scheduleService.CreateSchedule(mId, _mapper.Map<BLL.Models.ScheduleData>(form));
+                ScheduleModel? response = _scheduleService.CreateSchedule(mId, form.ToBll())?.ToUil();
 
                 return Ok(response);
             }
@@ -350,12 +350,31 @@ namespace API.DepotEice.UIL.Controllers
             }
         }
 
+        [HttpGet("{mId}/Students")]
+        public IActionResult ModuleStudents(int mId)
+        {
+            try
+            {
+                IEnumerable<UserModel> students = _moduleService.GetModuleStudents(mId).Select(x => _mapper.Map<UserModel>(x));
+                return Ok(students);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         [HttpPost("{mId}/Students/{sId}")]
         public IActionResult StudentApply(int mId, string sId)
         {
             try
             {
-                return Ok();
+                bool result = _moduleService.StudentApply(sId, mId);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -364,11 +383,18 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpPut("{mId}/Students/{sId}")]
-        public IActionResult StudentAccept(int mId, string sId)
+        public IActionResult StudentAcceptExempt(int mId, string sId, bool decision)
         {
             try
             {
-                return Ok();
+                // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
+                // cannot be accessible by guests or students. Only by Teacher or Higher
+                bool result = _moduleService.StudentAcceptExempt(sId, mId, decision);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -377,11 +403,16 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpDelete("{mId}/Students/{sId}")]
-        public IActionResult StudentExempt(int mId, string sId)
+        public IActionResult StudentDelete(int mId, string sId)
         {
             try
             {
-                return Ok();
+                bool result = _moduleService.DeleteStudentFromModule(sId, mId);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
