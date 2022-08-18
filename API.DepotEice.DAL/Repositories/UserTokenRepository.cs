@@ -125,7 +125,7 @@ namespace API.DepotEice.DAL.Repositories
             command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
             // TODO : Check if the return function is correct
-            return _connection.ExecuteNonQuery(command) > 0;
+            return (int)_connection.ExecuteScalar(command) > 0;
         }
 
         /// <summary>

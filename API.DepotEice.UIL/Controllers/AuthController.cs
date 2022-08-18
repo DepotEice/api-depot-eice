@@ -200,7 +200,12 @@ namespace API.DepotEice.UIL.Controllers
                 return NotFound(token);
             }
 
-            _userTokenService.VerifyUserToken(userToken);
+            userToken.User = user;
+
+            if (!_userTokenService.VerifyUserToken(userToken))
+            {
+                return BadRequest("This token has already been used");
+            }
 
             return Ok();
         }
