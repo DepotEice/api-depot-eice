@@ -33,7 +33,7 @@ namespace API.DepotEice.UIL.Managers
                 //body.Append($"<a href=\"https://localhost:44332/api/auth/activation?id={userId}&token={token}\">Cliquez-ici</a>");
                 body.Append($"<a href=\"https://localhost:44332/account/activation?id={userId}&token={userToken}\">Cliquez-ici</a>");
 #else
-                body.Append($"<a href=\"https://www.domain.com/auth/activation?token={token}\">Cliquez-ici</a>");
+                body.Append($"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
 #endif
 
                 using (MailMessage mail = new())
