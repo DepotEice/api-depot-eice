@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using AutoMapper;
 using System;
@@ -15,7 +15,7 @@ namespace API.DepotEice.BLL.Profiles
         {
             // MessageModel --> MessageEntity
 
-            CreateMap<MessageModel, MessageEntity>()
+            CreateMap<MessageDto, MessageEntity>()
                 .ForMember(
                     dest => dest.SenderId,
                     opt => opt.MapFrom(src => src.Sender.Id))
@@ -25,7 +25,7 @@ namespace API.DepotEice.BLL.Profiles
 
             // MessageEntity --> MessageModel
 
-            CreateMap<MessageEntity, MessageModel>();
+            CreateMap<MessageEntity, MessageDto>();
         }
     }
 }

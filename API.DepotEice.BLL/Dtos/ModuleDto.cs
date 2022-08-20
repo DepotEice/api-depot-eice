@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
-    public class ModuleData
+    public class ModuleDto
     {
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public IEnumerable<ScheduleData> Schedules { get; set; }
+        public IEnumerable<ScheduleDto> Schedules { get; set; }
         public IEnumerable<UserDto> Users { get; set; }
     }
 }

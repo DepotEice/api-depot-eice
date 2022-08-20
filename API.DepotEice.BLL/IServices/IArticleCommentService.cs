@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +9,10 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IArticleCommentService
     {
-        ArticleCommentModel? CreateArticleComment(ArticleCommentModel model);
+        ArticleCommentDto? CreateArticleComment(ArticleCommentDto model);
         bool DeleteArticleComment(int id);
-        IEnumerable<ArticleCommentModel> GetAllArticleComments(int articleId);
-        ArticleCommentModel? GetArticleComment(int id);
-        ArticleCommentModel? UpdateArticleComment(ArticleCommentModel model);
+        IEnumerable<ArticleCommentDto> GetAllArticleComments(int articleId);
+        ArticleCommentDto? GetArticleComment(int id);
+        ArticleCommentDto? UpdateArticleComment(ArticleCommentDto model);
     }
 }

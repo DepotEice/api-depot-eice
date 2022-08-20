@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
     public class RoleDto
     {

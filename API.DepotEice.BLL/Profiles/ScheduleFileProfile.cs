@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using AutoMapper;
 using System;
@@ -15,14 +15,14 @@ namespace API.DepotEice.BLL.Profiles
         {
             // ScheduleFileModel --> ScheduleFileEntity
 
-            CreateMap<ScheduleFileData, ScheduleFileEntity>()
+            CreateMap<ScheduleFileDto, ScheduleFileEntity>()
                 .ForMember(
                     dest => dest.ScheduleId,
                     opt => opt.MapFrom(src => src.Schedule.Id));
 
             // ScheduleFileEntity --> ScheduleFileModel
 
-            CreateMap<ScheduleFileEntity, ScheduleFileData>();
+            CreateMap<ScheduleFileEntity, ScheduleFileDto>();
         }
     }
 }

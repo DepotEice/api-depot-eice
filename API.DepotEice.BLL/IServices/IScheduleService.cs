@@ -1,13 +1,13 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 
 namespace API.DepotEice.BLL.IServices
 {
-    public interface IScheduleService : IServiceBase<int, ScheduleData>
+    public interface IScheduleService : IServiceBase<int, ScheduleDto>
     {
-        ScheduleData? CreateSchedule(int moduleId, ScheduleData model);
+        ScheduleDto? CreateSchedule(int moduleId, ScheduleDto model);
         bool DeleteSchedule(int id);
-        ScheduleData? GetSchedule(int id);
-        IEnumerable<ScheduleData> GetModuleSchedules(int moduleId);
-        ScheduleData? UpdateSchedule(ScheduleData model);
+        ScheduleDto? GetSchedule(int id);
+        IEnumerable<ScheduleDto> GetModuleSchedules(int moduleId);
+        ScheduleDto? UpdateSchedule(ScheduleDto model);
     }
 }

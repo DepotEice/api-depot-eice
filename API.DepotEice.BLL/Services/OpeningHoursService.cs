@@ -1,5 +1,5 @@
 ﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -49,10 +49,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the creation failed or if an error occured during retrieval. Otherwise 
-        /// an instance of <see cref="OpeningHoursModel"/>
+        /// an instance of <see cref="OpeningHoursDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public OpeningHoursModel? CreateOpeningHours(OpeningHoursModel model)
+        public OpeningHoursDto? CreateOpeningHours(OpeningHoursDto model)
         {
             if (model is null)
             {
@@ -82,8 +82,8 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            OpeningHoursModel openingHoursModel =
-                _mapper.Map<OpeningHoursModel>(openingHoursFromRepo);
+            OpeningHoursDto openingHoursModel =
+                _mapper.Map<OpeningHoursDto>(openingHoursFromRepo);
 
             return openingHoursModel;
         }
@@ -125,13 +125,13 @@ namespace API.DepotEice.BLL.Services
         /// <returns>
         /// An <see cref="IEnumerable{T}"/> of <see cref="Openinghours"/>
         /// </returns>
-        public IEnumerable<OpeningHoursModel> GetOpeningHours()
+        public IEnumerable<OpeningHoursDto> GetOpeningHours()
         {
             IEnumerable<OpeningHoursEntity> openingHoursFromRepo = _openingHoursRepository.GetAll();
 
             foreach (OpeningHoursEntity? openinghours in openingHoursFromRepo)
             {
-                OpeningHoursModel openingHoursModel = _mapper.Map<OpeningHoursModel>(openinghours);
+                OpeningHoursDto openingHoursModel = _mapper.Map<OpeningHoursDto>(openinghours);
 
                 yield return openingHoursModel;
             }
@@ -145,10 +145,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the update failed. Otherwise, an instance of 
-        /// <see cref="OpeningHoursModel"/>
+        /// <see cref="OpeningHoursDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public OpeningHoursModel? UpdateOpeningHours(OpeningHoursModel model)
+        public OpeningHoursDto? UpdateOpeningHours(OpeningHoursDto model)
         {
             if (model is null)
             {
@@ -178,8 +178,8 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            OpeningHoursModel openingHoursModel =
-                _mapper.Map<OpeningHoursModel>(openingHoursFromRepo);
+            OpeningHoursDto openingHoursModel =
+                _mapper.Map<OpeningHoursDto>(openingHoursFromRepo);
 
             return openingHoursModel;
         }

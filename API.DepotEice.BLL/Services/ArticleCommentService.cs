@@ -1,6 +1,6 @@
 ﻿using API.DepotEice.BLL.Extensions;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -61,14 +61,14 @@ namespace API.DepotEice.BLL.Services
         /// Create a new ArticleComment in the database
         /// </summary>
         /// <param name="model">
-        /// An instance of <see cref="ArticleCommentModel"/>
+        /// An instance of <see cref="ArticleCommentDto"/>
         /// </param>
         /// <returns>
         /// <c>null</c> If the article comment couldn't be created or if the linked Article does not
-        /// exist in the database. An instance of <see cref="ArticleCommentModel"/> otherwise.
+        /// exist in the database. An instance of <see cref="ArticleCommentDto"/> otherwise.
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ArticleCommentModel? CreateArticleComment(ArticleCommentModel model)
+        public ArticleCommentDto? CreateArticleComment(ArticleCommentDto model)
         {
             if (model is null)
             {
@@ -111,11 +111,11 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ArticleCommentModel articleComment =
-                _mapper.MergeInto<ArticleCommentModel>(
+            ArticleCommentDto articleComment =
+                _mapper.MergeInto<ArticleCommentDto>(
                     articleCommentFromRepo,
-                    _mapper.Map<ArticleModel>(articleEntity),
-                    _mapper.Map<ArticleModel>(userEntity));
+                    _mapper.Map<ArticleDto>(articleEntity),
+                    _mapper.Map<ArticleDto>(userEntity));
 
             return articleComment;
         }
@@ -159,11 +159,11 @@ namespace API.DepotEice.BLL.Services
         /// Related Article's primary key
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleCommentModel"/>. If an
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleCommentDto"/>. If an
         /// ArticleComment's related Article does not exist in the database, the element is skipped
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public IEnumerable<ArticleCommentModel> GetAllArticleComments(int articleId)
+        public IEnumerable<ArticleCommentDto> GetAllArticleComments(int articleId)
         {
             if (articleId <= 0)
             {
@@ -196,11 +196,11 @@ namespace API.DepotEice.BLL.Services
                 }
                 else
                 {
-                    ArticleCommentModel articleCommentModel =
-                        _mapper.MergeInto<ArticleCommentModel>(
+                    ArticleCommentDto articleCommentModel =
+                        _mapper.MergeInto<ArticleCommentDto>(
                             articleComment,
-                            _mapper.Map<ArticleModel>(articleFromRepo),
-                            _mapper.Map<ArticleModel>(userFromRepo));
+                            _mapper.Map<ArticleDto>(articleFromRepo),
+                            _mapper.Map<ArticleDto>(userFromRepo));
 
                     yield return articleCommentModel;
                 }
@@ -215,10 +215,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the ArticleComment does not exist or if the ArticleComment's related
-        /// Article does not exist. An instance of <see cref="ArticleCommentModel"/> otherwise
+        /// Article does not exist. An instance of <see cref="ArticleCommentDto"/> otherwise
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleCommentModel? GetArticleComment(int id)
+        public ArticleCommentDto? GetArticleComment(int id)
         {
             if (id <= 0)
             {
@@ -262,11 +262,11 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ArticleCommentModel articleComment =
-                _mapper.MergeInto<ArticleCommentModel>(
+            ArticleCommentDto articleComment =
+                _mapper.MergeInto<ArticleCommentDto>(
                     articleCommentFromRepo,
-                    _mapper.Map<ArticleModel>(articleEntity),
-                    _mapper.Map<ArticleModel>(userEntity));
+                    _mapper.Map<ArticleDto>(articleEntity),
+                    _mapper.Map<ArticleDto>(userEntity));
 
             return articleComment;
         }
@@ -275,14 +275,14 @@ namespace API.DepotEice.BLL.Services
         /// Update the ArticleComment in the database
         /// </summary>
         /// <param name="model">
-        /// The instance of <see cref="ArticleCommentModel"/> to update
+        /// The instance of <see cref="ArticleCommentDto"/> to update
         /// </param>
         /// <returns>
         /// <c>null</c> If the update failed or if the related Article is does not exist in the
-        /// database. An instance of <see cref="ArticleCommentModel"/> otherwise
+        /// database. An instance of <see cref="ArticleCommentDto"/> otherwise
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ArticleCommentModel? UpdateArticleComment(ArticleCommentModel model)
+        public ArticleCommentDto? UpdateArticleComment(ArticleCommentDto model)
         {
             if (model is null)
             {
@@ -336,11 +336,11 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ArticleCommentModel articleComment =
-                _mapper.MergeInto<ArticleCommentModel>(
+            ArticleCommentDto articleComment =
+                _mapper.MergeInto<ArticleCommentDto>(
                     articleCommentEntity,
-                    _mapper.Map<ArticleModel>(articleEntity),
-                    _mapper.Map<ArticleModel>(userEntity));
+                    _mapper.Map<ArticleDto>(articleEntity),
+                    _mapper.Map<ArticleDto>(userEntity));
 
             return articleComment;
         }

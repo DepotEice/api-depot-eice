@@ -1,5 +1,5 @@
 ﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -56,10 +56,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the message couldn't be created or if the sender User or the receiver 
-        /// User does not exist in the database. Otherwise an instance of <see cref="MessageModel"/>
+        /// User does not exist in the database. Otherwise an instance of <see cref="MessageDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public MessageModel? CreateMessage(MessageModel message)
+        public MessageDto? CreateMessage(MessageDto message)
         {
             if (message is null)
             {
@@ -115,7 +115,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            MessageModel messageModel = _mapper.Map<MessageModel>(createdMessage);
+            MessageDto messageModel = _mapper.Map<MessageDto>(createdMessage);
 
             messageModel.Sender = _mapper.Map<UserDto>(sender);
             messageModel.Receiver = _mapper.Map<UserDto>(receiver);
@@ -130,9 +130,9 @@ namespace API.DepotEice.BLL.Services
         /// The ID of the user
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="MessageModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="MessageDto"/>
         /// </returns>
-        public IEnumerable<MessageModel> GetUserMessages(string userId)
+        public IEnumerable<MessageDto> GetUserMessages(string userId)
         {
             IEnumerable<MessageEntity> messagesFromRepo = _messageRepository.GetUserMessages(userId);
 
@@ -158,7 +158,7 @@ namespace API.DepotEice.BLL.Services
                 }
                 else
                 {
-                    MessageModel messageModel = _mapper.Map<MessageModel>(messageFromRepo);
+                    MessageDto messageModel = _mapper.Map<MessageDto>(messageFromRepo);
 
                     messageModel.Sender = _mapper.Map<UserDto>(sender);
 

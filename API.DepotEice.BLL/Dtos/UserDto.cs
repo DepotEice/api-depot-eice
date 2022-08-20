@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
     public class UserDto
     {
@@ -23,11 +23,11 @@ namespace API.DepotEice.BLL.Models
         public DateTime? DeletedAt { get; set; }
 
         public IEnumerable<RoleDto>? Roles { get; set; }
-        public IEnumerable<ModuleData>? Modules { get; set; }
-        public IEnumerable<MessageModel>? Messages { get; set; }
-        public IEnumerable<AppointmentModel>? Appointments { get; set; }
+        public IEnumerable<ModuleDto>? Modules { get; set; }
+        public IEnumerable<MessageDto>? Messages { get; set; }
+        public IEnumerable<AppointmentDto>? Appointments { get; set; }
         public IEnumerable<UserTokenDto>? UserTokens { get; set; }
-        public IEnumerable<ArticleModel>? Articles { get; set; }
-        public IEnumerable<ArticleCommentModel>? ArticleComments { get; set; }
+        public IEnumerable<ArticleDto>? Articles { get; set; }
+        public IEnumerable<ArticleCommentDto>? ArticleComments { get; set; }
     }
 }

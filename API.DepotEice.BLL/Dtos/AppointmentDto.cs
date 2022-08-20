@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
-    public class AppointmentModel
+    public class AppointmentDto
     {
         public int Id { get; set; }
         public DateTime StartAt { get; set; }

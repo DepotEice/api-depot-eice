@@ -1,5 +1,5 @@
 ﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;

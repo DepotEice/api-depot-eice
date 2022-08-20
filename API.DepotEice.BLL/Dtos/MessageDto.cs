@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
-    public class MessageModel
+    public class MessageDto
     {
         public int Id { get; set; }
         public UserDto Sender { get; set; }
