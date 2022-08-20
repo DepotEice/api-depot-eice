@@ -1,14 +1,9 @@
-﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Dtos;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.IServices;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -111,6 +106,13 @@ namespace API.DepotEice.BLL.Services
             scheduleFileModel.Schedule = scheduleModel;
 
             return scheduleFileModel;
+        }
+
+        public ScheduleFileDto? CreateScheduleFile(int sId, ScheduleFileDto scheduleFileDto)
+        {
+            scheduleFileDto.Schedule.Id = sId;
+
+            return CreateScheduleFile(scheduleFileDto);
         }
 
         /// <summary>

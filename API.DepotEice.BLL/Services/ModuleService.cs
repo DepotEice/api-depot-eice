@@ -389,6 +389,7 @@ namespace API.DepotEice.BLL.Services
         public ModuleDto? Update(int key, ModuleDto data)
         {
             data.Id = key;
+
             var mappedItem = _mapper.Map<ModuleEntity>(data);
             bool success = _moduleRepository.Update(mappedItem);
             if (!success) return null;
@@ -401,6 +402,26 @@ namespace API.DepotEice.BLL.Services
             ModuleEntity? mappedItem = _mapper.Map<ModuleEntity>(item);
             bool result = _moduleRepository.Delete(mappedItem);
             return result;
+        }
+
+        public bool StudentApply(string sId, int mId)
+        {
+            return _moduleRepository.StuddentApply(sId, mId);
+        }
+
+        public bool StudentAcceptExempt(string sId, int mId, bool decision)
+        {
+            return _moduleRepository.StudentAcceptExempt(sId, mId, decision);
+        }
+
+        public bool DeleteStudentFromModule(string sId, int mId)
+        {
+            return _moduleRepository.DeleteStudentFromModule(sId, mId);
+        }
+
+        public IEnumerable<UserDto> GetModuleStudents(int mId)
+        {
+            return _moduleRepository.GetModuleStudents(mId).Select(x => _mapper.Map<UserDto>(x));
         }
     }
 }

@@ -12,5 +12,9 @@ namespace API.DepotEice.BLL.IServices
         IEnumerable<ModuleDto> GetModules();
         ModuleDto? GetModule(int id);
         IEnumerable<ModuleDto> GetUserModules(string userId);
+        bool StudentApply(string sId, int mId);
+        bool StudentAcceptExempt(string sId, int mId, bool decision);
+        bool DeleteStudentFromModule(string sId, int mId);
+        IEnumerable<UserDto> GetModuleStudents(int mId);
     }
 }
