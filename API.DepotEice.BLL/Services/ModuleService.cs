@@ -425,9 +425,9 @@ namespace API.DepotEice.BLL.Services
             return _moduleRepository.StudentAcceptExempt(userId, moduleId, decision);
         }
 
-        public IEnumerable<UserModel> GetModuleStudents(int moduleId)
+        public IEnumerable<UserDto> GetModuleStudents(int moduleId)
         {
-            IEnumerable<UserModel> students = _moduleRepository.GetModuleStudents(moduleId).Select(x => _mapper.Map<UserModel>(x));
+            IEnumerable<UserDto> students = _moduleRepository.GetModuleStudents(moduleId).Select(x => _mapper.Map<UserDto>(x));
             return students;
         }
     }
