@@ -20,5 +20,7 @@ namespace API.DepotEice.DAL.IRepositories
         /// A <see cref="IEnumerable{T}"/> of <see cref="UserTokenEntity"/>
         /// </returns>
         IEnumerable<UserTokenEntity> GetUserTokens(string userId);
+
+        bool ApproveToken(UserTokenEntity entity);
     }
 }

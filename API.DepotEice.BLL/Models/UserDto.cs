@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Models
 {
-    public class UserModel
+    public class UserDto
     {
         public string Id { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -14,7 +14,7 @@ namespace API.DepotEice.BLL.Models
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string ProfilePicture { get; set; } = string.Empty;
-        public DateOnly BirthDate { get; set; }
+        public DateTime BirthDate { get; set; }
         public string ConcurrencyStamp { get; set; } = string.Empty;
         public string SecurityStamp { get; set; } = string.Empty;
         public bool IsActive { get; set; }
@@ -22,11 +22,11 @@ namespace API.DepotEice.BLL.Models
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        public IEnumerable<RoleModel>? Roles { get; set; }
+        public IEnumerable<RoleDto>? Roles { get; set; }
         public IEnumerable<ModuleData>? Modules { get; set; }
         public IEnumerable<MessageModel>? Messages { get; set; }
         public IEnumerable<AppointmentModel>? Appointments { get; set; }
-        public IEnumerable<UserTokenModel>? UserTokens { get; set; }
+        public IEnumerable<UserTokenDto>? UserTokens { get; set; }
         public IEnumerable<ArticleModel>? Articles { get; set; }
         public IEnumerable<ArticleCommentModel>? ArticleComments { get; set; }
     }

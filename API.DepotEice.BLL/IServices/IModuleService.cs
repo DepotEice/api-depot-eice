@@ -5,7 +5,7 @@ namespace API.DepotEice.BLL.IServices
     public interface IModuleService : IServiceBase<int, ModuleData>
     {
         bool AddUser(int id, string userId, bool isAccepted);
-        IEnumerable<UserModel> GetModuleStudents(int moduleId);
+        IEnumerable<UserDto> GetModuleStudents(int moduleId);
         bool DeleteModule(int id);
         bool StudentApply(string userId, int moduleId);
         bool StudentAcceptExempt(string userId, int moduleId, bool decision);

@@ -12,6 +12,6 @@ namespace API.DepotEice.BLL.Models
         public string Name { get; set; }
         public string Description { get; set; }
         public IEnumerable<ScheduleData> Schedules { get; set; }
-        public IEnumerable<UserModel> Users { get; set; }
+        public IEnumerable<UserDto> Users { get; set; }
     }
 }

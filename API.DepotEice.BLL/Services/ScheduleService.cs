@@ -71,7 +71,14 @@ namespace API.DepotEice.BLL.Services
             }
 
             //ScheduleEntity scheduleToCreate = _mapper.Map<ScheduleEntity>(model);
-            ScheduleEntity scheduleToCreate = new ScheduleEntity(model.Title, model.Details, model.StartsAt, model.EndsAt, moduleId);
+            ScheduleEntity scheduleToCreate = new ScheduleEntity()
+            {
+                Title = model.Title,
+                Details = model.Details,
+                StartsAt = model.StartsAt,
+                EndsAt = model.EndsAt,
+                ModuleId = moduleId
+            };
 
             int newId = _scheduleRepository.Create(scheduleToCreate);
 

@@ -37,5 +37,17 @@ namespace API.DepotEice.DAL.IRepositories
         bool UpdatePassword(string id, string oldPassword, string newPassword, string salt);
 
         IEnumerable<UserEntity> GetModuleUsers(int id);
+
+        /// <summary>
+        /// Verify if the user email and password are correct
+        /// </summary>
+        /// <param name="entity">
+        /// The entity to verify. Throw a <see cref="ArgumentNullException"/> if it is <c>null</c>
+        /// </param>
+        /// <returns>
+        /// <c>null</c> If the login failed. Otherwise, an instance of <see cref="UserEntity"/>
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        UserEntity? LogIn(string email, string password);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.BLL.IServices;
 using API.DepotEice.BLL.Models;
+using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
@@ -47,9 +48,45 @@ namespace API.DepotEice.BLL.Services
             _userRepository = userRepository;
         }
 
-        public UserTokenModel? CreateUserToken(UserTokenModel model)
+        public UserTokenDto? CreateUserToken(UserTokenDto model)
         {
-            throw new NotImplementedException();
+            if (model is null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
+            UserTokenEntity tokenToCreate = _mapper.Map<UserTokenEntity>(model);
+
+            string createdTokenId = _userTokenRepository.Create(tokenToCreate);
+
+            UserTokenEntity? tokenFromRepo = _userTokenRepository.GetByKey(createdTokenId);
+
+            if (tokenFromRepo is null)
+            {
+                _logger.LogError(
+                    "{date} - Retrieving User Token with ID \"{id}\" returned null!",
+                    DateTime.Now, createdTokenId);
+
+                return null;
+            }
+
+            UserTokenDto createdToken = _mapper.Map<UserTokenDto>(tokenFromRepo);
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(tokenFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                _logger.LogError(
+                    "{date} - The retrieval of a User with ID \"{userId}\" related to the " +
+                    "newly created with ID \"{tokenId}\" returned a null!",
+                    DateTime.Now, tokenFromRepo.UserId, tokenFromRepo.Id);
+
+                return null;
+            }
+
+            createdToken.User = _mapper.Map<UserDto>(userFromRepo);
+
+            return createdToken;
         }
 
         public bool DeleteUserToken(string id)
@@ -57,14 +94,65 @@ namespace API.DepotEice.BLL.Services
             throw new NotImplementedException();
         }
 
-        public UserTokenModel? GetUserToken(string id)
+        public UserTokenDto? GetUserToken(string tokenType, string userId)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(tokenType))
+            {
+                throw new ArgumentNullException(nameof(tokenType));
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            UserTokenEntity? userTokenFromRepo = _userTokenRepository
+                .GetUserTokens(userId)
+                .Where(ut => ut.Type.Equals(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN))
+                .MaxBy(ut => ut.DeliveryDateTime);
+
+            if (userTokenFromRepo is null)
+            {
+                _logger.LogWarning(
+                    "{date} - There is no user token with type \"{tokenType}\"!",
+                    DateTime.Now, tokenType);
+
+                return null;
+            }
+
+            UserTokenDto userToken = _mapper.Map<UserTokenDto>(userTokenFromRepo);
+
+            return userToken;
         }
 
-        public IEnumerable<UserTokenModel> GetUserTokens(string id)
+        public IEnumerable<UserTokenDto> GetUserTokens(string id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            IEnumerable<UserTokenEntity> userTokensFromRepo =
+                _userTokenRepository.GetUserTokens(id);
+
+            foreach (UserTokenEntity userTokenFromRepo in userTokensFromRepo)
+            {
+                UserTokenDto userToken = _mapper.Map<UserTokenDto>(userTokenFromRepo);
+
+                yield return userToken;
+            }
+        }
+
+        public bool VerifyUserToken(UserTokenDto userToken)
+        {
+            if (userToken is null)
+            {
+                throw new ArgumentNullException(nameof(userToken));
+            }
+
+            UserTokenEntity userTokenEntity = _mapper.Map<UserTokenEntity>(userToken);
+
+            return _userTokenRepository.ApproveToken(userTokenEntity);
         }
     }
 }

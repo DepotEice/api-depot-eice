@@ -107,10 +107,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the creation failed or if the new Role retrieved from database is null.
-        /// Otherwise an instance of <see cref="RoleModel"/>
+        /// Otherwise an instance of <see cref="RoleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public RoleModel? CreateRole(RoleModel model)
+        public RoleDto? CreateRole(RoleDto model)
         {
             if (model is null)
             {
@@ -142,7 +142,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            RoleModel roleModel = _mapper.Map<RoleModel>(roleFromRepo);
+            RoleDto roleModel = _mapper.Map<RoleDto>(roleFromRepo);
 
             return roleModel;
         }
@@ -187,10 +187,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the Role does not exist. Otherwise, an instance of 
-        /// <see cref="RoleModel"/>
+        /// <see cref="RoleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public RoleModel? GetRole(string id)
+        public RoleDto? GetRole(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -208,24 +208,43 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            RoleModel roleModel = _mapper.Map<RoleModel>(roleFromRepo);
+            RoleDto roleModel = _mapper.Map<RoleDto>(roleFromRepo);
 
             return roleModel;
+        }
+
+        public RoleDto? GetRoleByName(string roleName)
+        {
+            if (string.IsNullOrEmpty(roleName))
+            {
+                throw new ArgumentNullException(nameof(roleName));
+            }
+
+            RoleEntity? RoleFromRepo = _roleRepository
+                .GetAll()
+                .SingleOrDefault(r => r.Name.Equals(roleName));
+
+            if (RoleFromRepo is null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<RoleDto>(RoleFromRepo);
         }
 
         /// <summary>
         /// Retrieve all Roles from the database
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="RoleModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="RoleDto"/>
         /// </returns>
-        public IEnumerable<RoleModel> GetRoles()
+        public IEnumerable<RoleDto> GetRoles()
         {
             IEnumerable<RoleEntity> rolesFromRepo = _roleRepository.GetAll();
 
             foreach (RoleEntity roleEntity in rolesFromRepo)
             {
-                RoleModel roleModel = _mapper.Map<RoleModel>(roleEntity);
+                RoleDto roleModel = _mapper.Map<RoleDto>(roleEntity);
 
                 yield return roleModel;
             }
@@ -238,10 +257,10 @@ namespace API.DepotEice.BLL.Services
         /// The ID of the User
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="RoleModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="RoleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public IEnumerable<RoleModel> GetUserRoles(string userId)
+        public IEnumerable<RoleDto> GetUserRoles(string userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -252,7 +271,7 @@ namespace API.DepotEice.BLL.Services
 
             foreach (RoleEntity roleEntity in rolesFromRepo)
             {
-                RoleModel roleModel = _mapper.Map<RoleModel>(roleEntity);
+                RoleDto roleModel = _mapper.Map<RoleDto>(roleEntity);
 
                 yield return roleModel;
             }
@@ -317,10 +336,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the update failed or if the retriaval of the updated Role is null.
-        /// Otherwise, an instance of <see cref="RoleModel"/>
+        /// Otherwise, an instance of <see cref="RoleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public RoleModel? UpdateRole(RoleModel model)
+        public RoleDto? UpdateRole(RoleDto model)
         {
             if (model is null)
             {
@@ -350,7 +369,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            RoleModel roleModel = _mapper.Map<RoleModel>(roleFromRepo);
+            RoleDto roleModel = _mapper.Map<RoleDto>(roleFromRepo);
 
             return roleModel;
         }

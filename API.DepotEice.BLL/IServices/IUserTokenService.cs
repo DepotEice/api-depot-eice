@@ -9,9 +9,10 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IUserTokenService
     {
-        UserTokenModel? CreateUserToken(UserTokenModel model);
+        UserTokenDto? CreateUserToken(UserTokenDto model);
         bool DeleteUserToken(string id);
-        UserTokenModel? GetUserToken(string id);
-        IEnumerable<UserTokenModel> GetUserTokens(string id);
+        UserTokenDto? GetUserToken(string tokenType, string userId);
+        IEnumerable<UserTokenDto> GetUserTokens(string id);
+        bool VerifyUserToken(UserTokenDto userToken);
     }
 }

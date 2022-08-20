@@ -48,6 +48,28 @@ namespace API.DepotEice.DAL.Repositories
             return _connection.ExecuteNonQuery(command) > 0;
         }
 
+        // TODO : Create sp in database project
+        public UserEntity? LogIn(string email, string password)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentNullException(nameof(email));
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentNullException(nameof(password));
+            }
+
+            Command command = new Command("spLogIn", true);
+
+            command.AddParameter("email", email);
+            command.AddParameter("password", password);
+
+            return _connection.ExecuteReader(command, u => u.DbToUser())
+                .SingleOrDefault();
+        }
+
         /// <inheritdoc/>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="DatabaseScalarNullException"></exception>

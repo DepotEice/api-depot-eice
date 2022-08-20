@@ -111,6 +111,23 @@ namespace API.DepotEice.DAL.Repositories
                 .ExecuteReader(command, userToken => Mapper.DbToUserToken(userToken));
         }
 
+        public bool ApproveToken(UserTokenEntity entity)
+        {
+            if (entity is null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            Command command = new Command("spApproveToken", true);
+
+            command.AddParameter("id", entity.Id);
+            command.AddParameter("type", entity.Type);
+            command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
+
+            // TODO : Check if the return function is correct
+            return (int)_connection.ExecuteScalar(command) > 0;
+        }
+
         /// <summary>
         /// Not implemented
         /// </summary>
