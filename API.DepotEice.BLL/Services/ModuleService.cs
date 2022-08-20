@@ -402,5 +402,33 @@ namespace API.DepotEice.BLL.Services
             bool result = _moduleRepository.Delete(mappedItem);
             return result;
         }
+
+        public bool StudentApply(string userId, int moduleId)
+        {
+            bool output = false;
+            ModuleData? module = GetByKey(moduleId);
+
+            if (module == null) return output;
+
+            bool result = _moduleRepository.StuddentApply(userId, moduleId);
+
+            return result;
+        }
+
+        public bool DeleteStudentFromModule(string userId, int moduleId)
+        {
+            return _moduleRepository.DeleteStudentFromModule(userId, moduleId); ;
+        }
+
+        public bool StudentAcceptExempt(string userId, int moduleId, bool decision)
+        {
+            return _moduleRepository.StudentAcceptExempt(userId, moduleId, decision);
+        }
+
+        public IEnumerable<UserModel> GetModuleStudents(int moduleId)
+        {
+            IEnumerable<UserModel> students = _moduleRepository.GetModuleStudents(moduleId).Select(x => _mapper.Map<UserModel>(x));
+            return students;
+        }
     }
 }

@@ -4,11 +4,6 @@ using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -58,7 +53,7 @@ namespace API.DepotEice.BLL.Services
         /// null. Otherwise, an instance of <see cref="ScheduleFileData"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ScheduleFileData? CreateScheduleFile(ScheduleFileData model)
+        public ScheduleFileData? CreateScheduleFile(int scheduleId, ScheduleFileData model)
         {
             if (model is null)
             {
@@ -66,6 +61,7 @@ namespace API.DepotEice.BLL.Services
             }
 
             ScheduleFileEntity scheduleFileToCreate = _mapper.Map<ScheduleFileEntity>(model);
+            scheduleFileToCreate.ScheduleId = scheduleId;
 
             int newId = _scheduleFileRepository.Create(scheduleFileToCreate);
 

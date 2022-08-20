@@ -1,9 +1,4 @@
 ﻿using API.DepotEice.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.DAL.IRepositories
 {
@@ -11,6 +6,10 @@ namespace API.DepotEice.DAL.IRepositories
     {
         bool AddUser(int id, string userId, bool isAccepted);
         bool RemoveUser(int id, string userId);
+        IEnumerable<UserEntity> GetModuleStudents(int moduleId);
+        bool StuddentApply(string studentId, int moduleId);
+        bool StudentAcceptExempt(string userId, int moduleId, bool decision);
+        bool DeleteStudentFromModule(string userId, int moduleId);
         IEnumerable<ModuleEntity> GetUserModules(string userId);
     }
 }

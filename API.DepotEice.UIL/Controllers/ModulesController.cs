@@ -178,10 +178,10 @@ namespace API.DepotEice.UIL.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+             
             try
             {
-                var response = _scheduleService.CreateSchedule(mId, _mapper.Map<BLL.Models.ScheduleData>(form));
+                ScheduleModel? response = _scheduleService.CreateSchedule(mId, form.ToBll())?.ToUil();
 
                 return Ok(response);
             }
@@ -231,8 +231,8 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
-                IEnumerable<BLL.Models.ScheduleFileData>? items = _scheduleFileService.GetScheduleFiles(sId);
-                return Ok();
+                IEnumerable<ScheduleFileModel>? items = _scheduleFileService.GetScheduleFiles(sId).Select(x => x.ToUil());
+                return Ok(items);
             }
             catch (Exception e)
             {
@@ -248,29 +248,19 @@ namespace API.DepotEice.UIL.Controllers
 
             try
             {
-                string fileName = file.File.FileName;
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+                var module = _moduleService.GetByKey(mId)?.ToUil();
+                if (module == null)
+                    return NotFound("Le module n'existe pas !");
 
-                var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", fileName);
-                file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
+                if (schedule == null)
+                    return NotFound("Le schedule n'existe pas !");
 
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+                string imagePath = SaveImageAndGetPath(file);
 
-        [HttpPut("{mId}/Schedules/{sId}/Files/{fId}")]
-        public IActionResult PutScheduleFiles(int mId, int sId, int fId)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                ScheduleFileModel? resposne = _scheduleFileService.CreateScheduleFile(sId, new ScheduleFileModel() { FilePath = imagePath }.ToBll())?.ToUil();
 
-            try
-            {
-                return Ok();
+                return Ok(resposne);
             }
             catch (Exception e)
             {
@@ -283,7 +273,37 @@ namespace API.DepotEice.UIL.Controllers
         {
             try
             {
-                return Ok();
+                var module = _moduleService.GetByKey(mId)?.ToUil();
+                if (module == null)
+                    return NotFound("Le module n'existe pas !");
+
+                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
+                if (schedule == null)
+                    return NotFound("Le schedule n'existe pas !");
+
+                var item = _scheduleFileService.GetScheduleFile(fId)?.ToUil();
+                if (item == null)
+                    return NotFound("Aucune fichier existant !");
+
+                string filePath = item.FilePath;
+
+                FileInfo fileInfo = new FileInfo(filePath);
+
+                try
+                {
+                    var result = _scheduleFileService.DeleteScheduleFile(fId);
+
+                    if (!result)
+                        return BadRequest("Something went wrong ...");
+
+                    fileInfo.Delete();
+                }
+                catch (Exception e)
+                {
+                    return BadRequest(e.Message);
+                }
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -330,12 +350,31 @@ namespace API.DepotEice.UIL.Controllers
             }
         }
 
+        [HttpGet("{mId}/Students")]
+        public IActionResult ModuleStudents(int mId)
+        {
+            try
+            {
+                IEnumerable<UserModel> students = _moduleService.GetModuleStudents(mId).Select(x => _mapper.Map<UserModel>(x));
+                return Ok(students);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         [HttpPost("{mId}/Students/{sId}")]
         public IActionResult StudentApply(int mId, string sId)
         {
             try
             {
-                return Ok();
+                bool result = _moduleService.StudentApply(sId, mId);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -344,11 +383,18 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpPut("{mId}/Students/{sId}")]
-        public IActionResult StudentAccept(int mId, string sId)
+        public IActionResult StudentAcceptExempt(int mId, string sId, bool decision)
         {
             try
             {
-                return Ok();
+                // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
+                // cannot be accessible by guests or students. Only by Teacher or Higher
+                bool result = _moduleService.StudentAcceptExempt(sId, mId, decision);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
@@ -357,16 +403,31 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpDelete("{mId}/Students/{sId}")]
-        public IActionResult StudentExempt(int mId, string sId)
+        public IActionResult StudentDelete(int mId, string sId)
         {
             try
             {
-                return Ok();
+                bool result = _moduleService.DeleteStudentFromModule(sId, mId);
+
+                if (!result)
+                    return BadRequest("Something went wrong ...");
+
+                return NoContent();
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
+        }
+
+        private static string SaveImageAndGetPath(ScheduleFileForm file)
+        {
+            string fileName = file.File.FileName;
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+
+            var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
+            file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+            return imagePath;
         }
     }
 }

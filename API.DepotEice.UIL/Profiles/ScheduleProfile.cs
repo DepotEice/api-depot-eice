@@ -1,4 +1,5 @@
-﻿using API.DepotEice.UIL.Models;
+﻿using API.DepotEice.BLL.Models;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 
@@ -8,9 +9,9 @@ namespace API.DepotEice.UIL.Profiles
     {
         public ScheduleProfile()
         {
-            CreateMap<ScheduleModel, BLL.Models.ScheduleData>();
-            CreateMap<BLL.Models.ScheduleData, ScheduleModel>();
-            CreateMap<ScheduleForm, BLL.Models.ScheduleData>();
+            CreateMap<ScheduleModel, ScheduleData>();
+            CreateMap<ScheduleData, ScheduleModel>();
+            CreateMap<ScheduleForm, ScheduleData>();
         }
     }
 }

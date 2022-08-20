@@ -2,6 +2,7 @@
 {
     public class ScheduleFileModel
     {
+        public int Id { get; set; }
         public string FilePath { get; set; }
     }
 }
