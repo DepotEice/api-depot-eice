@@ -18,6 +18,7 @@ namespace API.DepotEice.UIL.Mapper
         // Schedule Files
         internal static ScheduleFileModel ToUil(this ScheduleFileData data) => data.Map<ScheduleFileModel>();
         internal static ScheduleFileData ToBll(this ScheduleFileData data) => data.Map<ScheduleFileData>();
+        internal static ScheduleFileData ToBll(this ScheduleFileModel model) => model.Map<ScheduleFileData>();
 
     }
 }
