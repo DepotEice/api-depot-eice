@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +9,9 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IOpeningHoursService
     {
-        OpeningHoursModel? CreateOpeningHours(OpeningHoursModel model);
-        OpeningHoursModel? UpdateOpeningHours(OpeningHoursModel model);
-        IEnumerable<OpeningHoursModel> GetOpeningHours();
+        OpeningHoursDto? CreateOpeningHours(OpeningHoursDto model);
+        OpeningHoursDto? UpdateOpeningHours(OpeningHoursDto model);
+        IEnumerable<OpeningHoursDto> GetOpeningHours();
         bool DeleteOpeningHours(int id);
     }
 }

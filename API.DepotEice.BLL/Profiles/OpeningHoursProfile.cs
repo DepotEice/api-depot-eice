@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using AutoMapper;
 using System;
@@ -15,11 +15,11 @@ namespace API.DepotEice.BLL.Profiles
         {
             // OpeningHoursModel --> OpeningHoursEntity
 
-            CreateMap<OpeningHoursModel, OpeningHoursEntity>();
+            CreateMap<OpeningHoursDto, OpeningHoursEntity>();
 
             // OpeningHoursEntity --> OpeningHoursModel
 
-            CreateMap<OpeningHoursEntity, OpeningHoursModel>();
+            CreateMap<OpeningHoursEntity, OpeningHoursDto>();
         }
     }
 }

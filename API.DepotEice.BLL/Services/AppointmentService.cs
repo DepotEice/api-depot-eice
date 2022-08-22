@@ -1,6 +1,6 @@
 ﻿using API.DepotEice.BLL.Extensions;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.Helpers.Exceptions;
@@ -54,7 +54,7 @@ namespace API.DepotEice.BLL.Services
         /// Accepte an appointment
         /// </summary>
         /// <param name="id">
-        /// <see cref="AppointmentModel"/> ID
+        /// <see cref="AppointmentDto"/> ID
         /// </param>
         /// <returns>
         /// <c>true</c> If it was succesfully modified. <c>false</c> Otherwise
@@ -75,14 +75,14 @@ namespace API.DepotEice.BLL.Services
         /// Create an appointment
         /// </summary>
         /// <param name="model">
-        /// Instance of <see cref="AppointmentModel"/>
+        /// Instance of <see cref="AppointmentDto"/>
         /// </param>
         /// <returns>
-        /// The newly created <see cref="AppointmentModel"/>
+        /// The newly created <see cref="AppointmentDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="MappedNullValueException"></exception>
-        public AppointmentModel? CreateAppointment(AppointmentModel model)
+        public AppointmentDto? CreateAppointment(AppointmentDto model)
         {
             if (model is null)
             {
@@ -119,7 +119,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
+            AppointmentDto appointment = _mapper.MergeInto<AppointmentDto>(
                 appointmentFromRepo, _mapper.Map<UserDto>(appointmentUser));
 
             return appointment;
@@ -165,10 +165,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If no appointment with the <paramref name="id"/> exist. An Instance of
-        /// <see cref="AppointmentModel"/> otherwise.
+        /// <see cref="AppointmentDto"/> otherwise.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public AppointmentModel? GetAppointment(int id)
+        public AppointmentDto? GetAppointment(int id)
         {
             if (id <= 0)
             {
@@ -197,7 +197,7 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
+            AppointmentDto appointment = _mapper.MergeInto<AppointmentDto>(
                  appointmentFromRepo, _mapper.Map<UserDto>(appointmentUser));
 
             return appointment;
@@ -207,9 +207,9 @@ namespace API.DepotEice.BLL.Services
         /// Retrieve a list of appointments from the repository
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="AppointmentModel"/>.
+        /// An <see cref="IEnumerable{T}"/> of <see cref="AppointmentDto"/>.
         /// </returns>
-        public IEnumerable<AppointmentModel> GetAppointments()
+        public IEnumerable<AppointmentDto> GetAppointments()
         {
             IEnumerable<AppointmentEntity> appointmentEntities = _appointmentRepository.GetAll();
 
@@ -225,7 +225,7 @@ namespace API.DepotEice.BLL.Services
                 }
                 else
                 {
-                    AppointmentModel appointment = _mapper.MergeInto<AppointmentModel>(
+                    AppointmentDto appointment = _mapper.MergeInto<AppointmentDto>(
                         appointmentEntity, _mapper.Map<UserDto>(appointmentUser));
 
                     yield return appointment;

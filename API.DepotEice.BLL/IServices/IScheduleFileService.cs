@@ -1,17 +1,13 @@
-﻿using API.DepotEice.BLL.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using API.DepotEice.BLL.Dtos;
 
 namespace API.DepotEice.BLL.IServices
 {
     public interface IScheduleFileService
     {
-        ScheduleFileData? CreateScheduleFile(int scheduleId, ScheduleFileData model);
+        ScheduleFileDto? CreateScheduleFile(ScheduleFileDto model);
+        ScheduleFileDto? CreateScheduleFile(int sId, ScheduleFileDto scheduleFileDto);
         bool DeleteScheduleFile(int id);
-        ScheduleFileData? GetScheduleFile(int id);
-        IEnumerable<ScheduleFileData> GetScheduleFiles(int scheduleId);
+        ScheduleFileDto? GetScheduleFile(int id);
+        IEnumerable<ScheduleFileDto> GetScheduleFiles(int scheduleId);
     }
 }

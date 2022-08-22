@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +9,10 @@ namespace API.DepotEice.BLL.IServices
 {
     public interface IArticleService
     {
-        ArticleModel? CreateArticle(ArticleModel article);
+        ArticleDto? CreateArticle(ArticleDto article);
         bool DeleteArticle(int id);
-        IEnumerable<ArticleModel> GetArticles();
-        ArticleModel? GetArticle(int id);
+        IEnumerable<ArticleDto> GetArticles();
+        ArticleDto? GetArticle(int id);
         bool PinArticle(int id, bool isPinned);
     }
 }

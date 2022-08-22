@@ -1,4 +1,5 @@
-﻿using API.DepotEice.BLL.IServices;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.IServices;
 using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +23,7 @@ namespace API.DepotEice.UIL.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            IEnumerable<BLL.Models.UserDto>? users = _userService.GetUsers();
+            IEnumerable<UserDto>? users = _userService.GetUsers();
             foreach (var item in users)
             {
                 item.BirthDate.ToString();

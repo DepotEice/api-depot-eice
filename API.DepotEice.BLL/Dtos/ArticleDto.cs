@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace API.DepotEice.BLL.Models
+namespace API.DepotEice.BLL.Dtos
 {
-    public class ArticleModel
+    public class ArticleDto
     {
         public int Id { get; set; }
         public string Title { get; set; }
@@ -16,6 +16,6 @@ namespace API.DepotEice.BLL.Models
         public bool IsPinned { get; set; }
         public UserDto User { get; set; }
 
-        public IEnumerable<ArticleCommentModel> ArticleComments { get; set; }
+        public IEnumerable<ArticleCommentDto> ArticleComments { get; set; }
     }
 }

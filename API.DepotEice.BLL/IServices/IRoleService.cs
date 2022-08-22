@@ -1,9 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using API.DepotEice.BLL.Dtos;
 
 namespace API.DepotEice.BLL.IServices
 {

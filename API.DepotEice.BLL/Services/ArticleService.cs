@@ -1,6 +1,6 @@
 ﻿using API.DepotEice.BLL.Extensions;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -21,9 +21,8 @@ namespace API.DepotEice.BLL.Services
         private readonly IUserRepository _userRepository;
         private readonly IArticleCommentRepository _articleCommentRepository;
 
-        public ArticleService(ILogger<ArticleService> logger, IMapper mapper,
-            IArticleRepository articleRepository, IUserRepository userRepository,
-            IArticleCommentRepository articleCommentRepository)
+        public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
+            IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
         {
             if (logger is null)
             {
@@ -61,16 +60,16 @@ namespace API.DepotEice.BLL.Services
         /// Create a new article in the database
         /// </summary>
         /// <param name="article">
-        /// An instance of <see cref="ArticleModel"/>. The property <see cref="ArticleModel.User"/>
-        /// must be instanciated otherwise mapping from <see cref="ArticleModel"/> to 
+        /// An instance of <see cref="ArticleDto"/>. The property <see cref="ArticleDto.User"/>
+        /// must be instanciated otherwise mapping from <see cref="ArticleDto"/> to 
         /// <see cref="ArticleEntity"/> won't work
         /// </param>
         /// <returns>
         /// <c>null</c> If the creation failed or if the related User does not exist. Otherwise An 
-        /// instance of <see cref="ArticleModel"/> 
+        /// instance of <see cref="ArticleDto"/> 
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ArticleModel? CreateArticle(ArticleModel article)
+        public ArticleDto? CreateArticle(ArticleDto article)
         {
             if (article is null)
             {
@@ -116,10 +115,10 @@ namespace API.DepotEice.BLL.Services
             IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
                _articleCommentRepository.GetArticleComments(createdArticle.Id);
 
-            ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
+            ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
                 createdArticle,
                 _mapper.Map<UserDto>(userFromRepo),
-                _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
+                _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
 
             return articleModel;
         }
@@ -153,10 +152,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the Article does not exist in the database or if the related User does
-        /// not exist either. Otherwise return an instance of <see cref="ArticleModel"/>
+        /// not exist either. Otherwise return an instance of <see cref="ArticleDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleModel? GetArticle(int id)
+        public ArticleDto? GetArticle(int id)
         {
             if (id <= 0)
             {
@@ -189,10 +188,10 @@ namespace API.DepotEice.BLL.Services
             IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
                 _articleCommentRepository.GetArticleComments(articleFromRepo.Id);
 
-            ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
+            ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
                 articleFromRepo,
                 _mapper.Map<UserDto>(userFromRepo),
-                _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
+                _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
 
             return articleModel;
         }
@@ -201,9 +200,9 @@ namespace API.DepotEice.BLL.Services
         /// Retrieve all Articles from the database
         /// </summary>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleModel"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleDto"/>
         /// </returns>
-        public IEnumerable<ArticleModel> GetArticles()
+        public IEnumerable<ArticleDto> GetArticles()
         {
             IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
 
@@ -223,10 +222,10 @@ namespace API.DepotEice.BLL.Services
                     IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
                         _articleCommentRepository.GetArticleComments(article.Id);
 
-                    ArticleModel articleModel = _mapper.MergeInto<ArticleModel>(
+                    ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
                         article,
                         _mapper.Map<UserDto>(userFromRepo),
-                        _mapper.Map<IEnumerable<ArticleCommentModel>>(articleCommentsFromRepo));
+                        _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
 
                     yield return articleModel;
                 }

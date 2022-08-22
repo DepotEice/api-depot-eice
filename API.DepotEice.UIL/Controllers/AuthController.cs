@@ -1,6 +1,6 @@
 ﻿using API.DepotEice.BLL;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Managers;
 using API.DepotEice.UIL.Models;

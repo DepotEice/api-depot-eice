@@ -1,5 +1,5 @@
-﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.IServices;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -50,10 +50,10 @@ namespace API.DepotEice.BLL.Services
         /// <returns>
         /// <c>null</c> If the ScheduleFile could not be created or if the ScheduleFile retrieved 
         /// from the database with the newly created ID is null or if the associated Schedule is 
-        /// null. Otherwise, an instance of <see cref="ScheduleFileData"/>
+        /// null. Otherwise, an instance of <see cref="ScheduleFileDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ScheduleFileData? CreateScheduleFile(int scheduleId, ScheduleFileData model)
+        public ScheduleFileDto? CreateScheduleFile(ScheduleFileDto model)
         {
             if (model is null)
             {
@@ -61,7 +61,6 @@ namespace API.DepotEice.BLL.Services
             }
 
             ScheduleFileEntity scheduleFileToCreate = _mapper.Map<ScheduleFileEntity>(model);
-            scheduleFileToCreate.ScheduleId = scheduleId;
 
             int newId = _scheduleFileRepository.Create(scheduleFileToCreate);
 
@@ -99,14 +98,21 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ScheduleFileData scheduleFileModel =
-                _mapper.Map<ScheduleFileData>(scheduleFileFromRepo);
+            ScheduleFileDto scheduleFileModel =
+                _mapper.Map<ScheduleFileDto>(scheduleFileFromRepo);
 
-            ScheduleData scheduleModel = _mapper.Map<ScheduleData>(scheduleFromRepo);
+            ScheduleDto scheduleModel = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
             scheduleFileModel.Schedule = scheduleModel;
 
             return scheduleFileModel;
+        }
+
+        public ScheduleFileDto? CreateScheduleFile(int sId, ScheduleFileDto scheduleFileDto)
+        {
+            scheduleFileDto.Schedule.Id = sId;
+
+            return CreateScheduleFile(scheduleFileDto);
         }
 
         /// <summary>
@@ -149,10 +155,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the ScheduleFile does not exist in the database or if the associated 
-        /// Schedule does not exist. Otherwise, an instance of <see cref="ScheduleFileData"/>
+        /// Schedule does not exist. Otherwise, an instance of <see cref="ScheduleFileDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ScheduleFileData? GetScheduleFile(int id)
+        public ScheduleFileDto? GetScheduleFile(int id)
         {
             if (id <= 0)
             {
@@ -183,10 +189,10 @@ namespace API.DepotEice.BLL.Services
                 return null;
             }
 
-            ScheduleFileData scheduleFileModel =
-                _mapper.Map<ScheduleFileData>(scheduleFileFromRepo);
+            ScheduleFileDto scheduleFileModel =
+                _mapper.Map<ScheduleFileDto>(scheduleFileFromRepo);
 
-            ScheduleData scheduleModel = _mapper.Map<ScheduleData>(scheduleFromRepo);
+            ScheduleDto scheduleModel = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
             scheduleFileModel.Schedule = scheduleModel;
 
@@ -200,10 +206,10 @@ namespace API.DepotEice.BLL.Services
         /// The ID of the Schedule
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ScheduleData"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ScheduleDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public IEnumerable<ScheduleFileData> GetScheduleFiles(int scheduleId)
+        public IEnumerable<ScheduleFileDto> GetScheduleFiles(int scheduleId)
         {
             if (scheduleId <= 0)
             {
@@ -227,10 +233,10 @@ namespace API.DepotEice.BLL.Services
                 }
                 else
                 {
-                    ScheduleFileData scheduleFileModel =
-                        _mapper.Map<ScheduleFileData>(scheduleFileFromRepo);
+                    ScheduleFileDto scheduleFileModel =
+                        _mapper.Map<ScheduleFileDto>(scheduleFileFromRepo);
 
-                    scheduleFileModel.Schedule = _mapper.Map<ScheduleData>(scheduleFromRepo);
+                    scheduleFileModel.Schedule = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
                     yield return scheduleFileModel;
                 }

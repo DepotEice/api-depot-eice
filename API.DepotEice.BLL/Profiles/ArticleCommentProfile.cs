@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using AutoMapper;
 using System;
@@ -15,7 +15,7 @@ namespace API.DepotEice.BLL.Profiles
         {
             // ArticleCommentModel -> ArticleCommentEntity
 
-            CreateMap<ArticleCommentModel, ArticleCommentEntity>()
+            CreateMap<ArticleCommentDto, ArticleCommentEntity>()
                 .ForMember(
                     dest => dest.ArticleId,
                     opt => opt.MapFrom(src => src.Article.Id))
@@ -25,11 +25,11 @@ namespace API.DepotEice.BLL.Profiles
 
             // ArticleCommentEntity -> ArticleCommentModel
 
-            CreateMap<ArticleCommentEntity, ArticleCommentModel>();
+            CreateMap<ArticleCommentEntity, ArticleCommentDto>();
 
             // IEnumerable<ArticleCommentModel> --> ArticleModel
 
-            CreateMap<IEnumerable<ArticleCommentModel>, ArticleModel>()
+            CreateMap<IEnumerable<ArticleCommentDto>, ArticleDto>()
                 .ForMember(
                     dest => dest.ArticleComments,
                     opt => opt.MapFrom(src => src));

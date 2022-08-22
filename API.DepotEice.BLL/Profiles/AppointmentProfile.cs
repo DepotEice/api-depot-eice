@@ -1,4 +1,4 @@
-﻿using API.DepotEice.BLL.Models;
+﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using AutoMapper;
 using System;
@@ -15,14 +15,14 @@ namespace API.DepotEice.BLL.Profiles
         {
             // AppointmentModel -> AppointmentEntity
 
-            CreateMap<AppointmentModel, AppointmentEntity>()
+            CreateMap<AppointmentDto, AppointmentEntity>()
                 .ForMember(
                     dest => dest.UserId,
                     opt => opt.MapFrom(src => src.User.Id));
 
             // AppointmentEntity -> AppointmentModel
 
-            CreateMap<AppointmentEntity, AppointmentModel>();
+            CreateMap<AppointmentEntity, AppointmentDto>();
         }
     }
 }

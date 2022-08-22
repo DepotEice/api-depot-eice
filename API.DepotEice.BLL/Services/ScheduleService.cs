@@ -1,5 +1,5 @@
 ﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Models;
+using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
@@ -60,10 +60,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the creation failed or if the related Module does not exist. Otherwise,
-        /// an instance of <see cref="ScheduleData"/>
+        /// an instance of <see cref="ScheduleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ScheduleData? CreateSchedule(int moduleId, ScheduleData model)
+        public ScheduleDto? CreateSchedule(int moduleId, ScheduleDto model)
         {
             if (model is null)
             {
@@ -71,13 +71,14 @@ namespace API.DepotEice.BLL.Services
             }
 
             //ScheduleEntity scheduleToCreate = _mapper.Map<ScheduleEntity>(model);
-            ScheduleEntity scheduleToCreate = new ScheduleEntity()
-            {
-                Title = model.Title,
-                Details = model.Details,
-                StartsAt = model.StartsAt,
-                EndsAt = model.EndsAt,
-                ModuleId = moduleId
+
+            //ScheduleEntity scheduleToCreate = new ScheduleEntity(model.Title, model.Details, model.StartsAt, model.EndsAt, moduleId);
+            ScheduleEntity scheduleToCreate = new ScheduleEntity {
+                Title = model.Title, 
+                Details = model.Details, 
+                StartsAt = model.StartsAt, 
+                EndsAt = model.EndsAt, 
+                ModuleId = moduleId 
             };
 
             int newId = _scheduleRepository.Create(scheduleToCreate);
@@ -119,12 +120,12 @@ namespace API.DepotEice.BLL.Services
             IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo =
                 _scheduleFileRepository.GetScheduleFiles(newId);
 
-            ScheduleData scheduleModel = _mapper.Map<ScheduleData>(scheduleFromRepo);
+            ScheduleDto scheduleModel = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleDto>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
-                _mapper.Map<IEnumerable<ScheduleFileData>>(scheduleFilesFromRepo);
+                _mapper.Map<IEnumerable<ScheduleFileDto>>(scheduleFilesFromRepo);
 
             return scheduleModel;
         }
@@ -163,10 +164,10 @@ namespace API.DepotEice.BLL.Services
         /// The ID of the module
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ScheduleData"/>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ScheduleDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public IEnumerable<ScheduleData> GetModuleSchedules(int moduleId)
+        public IEnumerable<ScheduleDto> GetModuleSchedules(int moduleId)
         {
             if (moduleId < 0)
             {
@@ -189,15 +190,15 @@ namespace API.DepotEice.BLL.Services
 
             foreach (ScheduleEntity scheduleFromRepo in schedulesFromRepo)
             {
-                ScheduleData schedule = _mapper.Map<ScheduleData>(scheduleFromRepo);
+                ScheduleDto schedule = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
                 IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo =
                     _scheduleFileRepository.GetScheduleFiles(scheduleFromRepo.Id);
 
                 schedule.ScheduleFiles =
-                    _mapper.Map<IEnumerable<ScheduleFileData>>(scheduleFilesFromRepo);
+                    _mapper.Map<IEnumerable<ScheduleFileDto>>(scheduleFilesFromRepo);
 
-                schedule.Module = _mapper.Map<ModuleData>(moduleFromRepo);
+                schedule.Module = _mapper.Map<ModuleDto>(moduleFromRepo);
 
                 yield return schedule;
             }
@@ -211,10 +212,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the Schedule does not exist or if the related Module does not exist.
-        /// Otherwise, an instance of <see cref="ScheduleData"/>
+        /// Otherwise, an instance of <see cref="ScheduleDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ScheduleData? GetSchedule(int id)
+        public ScheduleDto? GetSchedule(int id)
         {
             if (id <= 0)
             {
@@ -247,12 +248,12 @@ namespace API.DepotEice.BLL.Services
             IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo =
                 _scheduleFileRepository.GetScheduleFiles(scheduleFromRepo.Id);
 
-            ScheduleData scheduleModel = _mapper.Map<ScheduleData>(scheduleFromRepo);
+            ScheduleDto scheduleModel = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleDto>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
-                _mapper.Map<IEnumerable<ScheduleFileData>>(scheduleFilesFromRepo);
+                _mapper.Map<IEnumerable<ScheduleFileDto>>(scheduleFilesFromRepo);
 
             return scheduleModel;
         }
@@ -265,10 +266,10 @@ namespace API.DepotEice.BLL.Services
         /// </param>
         /// <returns>
         /// <c>null</c> If the Schedule does not exist or if the related module does not exist.
-        /// Otherwise, an instance of updated <see cref="ScheduleData"/>
+        /// Otherwise, an instance of updated <see cref="ScheduleDto"/>
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ScheduleData? UpdateSchedule(ScheduleData model)
+        public ScheduleDto? UpdateSchedule(ScheduleDto model)
         {
             if (model is null)
             {
@@ -312,23 +313,23 @@ namespace API.DepotEice.BLL.Services
             IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo =
                 _scheduleFileRepository.GetScheduleFiles(scheduleFromRepo.Id);
 
-            ScheduleData scheduleModel = _mapper.Map<ScheduleData>(scheduleFromRepo);
+            ScheduleDto scheduleModel = _mapper.Map<ScheduleDto>(scheduleFromRepo);
 
-            scheduleModel.Module = _mapper.Map<ModuleData>(moduleFromRepo);
+            scheduleModel.Module = _mapper.Map<ModuleDto>(moduleFromRepo);
 
             scheduleModel.ScheduleFiles =
-                _mapper.Map<IEnumerable<ScheduleFileData>>(scheduleFilesFromRepo);
+                _mapper.Map<IEnumerable<ScheduleFileDto>>(scheduleFilesFromRepo);
 
             return scheduleModel;
         }
 
-        public IEnumerable<ScheduleData> GetAll()
+        public IEnumerable<ScheduleDto> GetAll()
         {
-            IEnumerable<ScheduleData>? items = _scheduleRepository.GetAll().Select(x => _mapper.Map<ScheduleData>(x));
+            IEnumerable<ScheduleDto>? items = _scheduleRepository.GetAll().Select(x => _mapper.Map<ScheduleDto>(x));
             return items;
         }
 
-        public ScheduleData? Create(ScheduleData data)
+        public ScheduleDto? Create(ScheduleDto data)
         {
             ScheduleEntity? mappedItem = _mapper.Map<ScheduleEntity>(data);
             int itemId = _scheduleRepository.Create(mappedItem);
@@ -339,17 +340,17 @@ namespace API.DepotEice.BLL.Services
             return GetByKey(itemId);
         }
 
-        public ScheduleData? GetByKey(int key)
+        public ScheduleDto? GetByKey(int key)
         {
             ScheduleEntity? item = _scheduleRepository.GetByKey(key);
 
             if (item is null)
                 return null;
 
-            return _mapper.Map<ScheduleData>(item);
+            return _mapper.Map<ScheduleDto>(item);
         }
 
-        public ScheduleData? Update(int key, ScheduleData data)
+        public ScheduleDto? Update(int key, ScheduleDto data)
         {
             ScheduleEntity? item = _mapper.Map<ScheduleEntity>(data);
             item.Id = key;
@@ -359,7 +360,7 @@ namespace API.DepotEice.BLL.Services
             if (!result)
                 return null;
 
-            ScheduleData? response = GetByKey(key);
+            ScheduleDto? response = GetByKey(key);
 
             return response;
         }
