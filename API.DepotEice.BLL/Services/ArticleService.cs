@@ -1,15 +1,11 @@
-﻿using API.DepotEice.BLL.Extensions;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.Extensions;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.Mappers;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -21,8 +17,12 @@ namespace API.DepotEice.BLL.Services
         private readonly IUserRepository _userRepository;
         private readonly IArticleCommentRepository _articleCommentRepository;
 
-        public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
-            IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
+        public ArticleService(
+            ILogger<ArticleService> logger,
+            IMapper mapper,
+            IArticleRepository articleRepository,
+            IUserRepository userRepository,
+            IArticleCommentRepository articleCommentRepository)
         {
             if (logger is null)
             {
@@ -57,6 +57,50 @@ namespace API.DepotEice.BLL.Services
         }
 
         /// <summary>
+        /// Retrieve all Articles from the database
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleDto"/>
+        /// </returns>
+        public IEnumerable<ArticleDto> GetAll()
+        {
+            List<ArticleDto> articles = _articleRepository.GetAll().Select(x => x.ToBll()).ToList();
+
+            if (articles.Count > 0)
+            {
+                foreach (var article in articles)
+                {
+                    article.User = _userRepository.GetByKey(article.UserId).ToBll();
+                }
+            }
+
+            return articles.AsEnumerable();
+
+            //foreach (ArticleEntity article in articles)
+            //{
+            //    UserEntity? userFromRepo = _userRepository.GetByKey(article.UserId);
+
+            //    if (userFromRepo is null)
+            //    {
+            //        _logger.LogError(
+            //            "{date} - The user with ID \"{userId}\" related to the article with ID " +
+            //            "\"{articleId}\" does not exist in the database!",
+            //            DateTime.Now, article.UserId, article.Id);
+            //    }
+            //    else
+            //    {
+            //        IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
+            //            _articleCommentRepository.GetArticleComments(article.Id);
+
+            //        ArticleDto dto = article.ToBll();
+            //        dto.User = _userRepository.GetByKey(article.UserId)?.ToBll();
+
+            //        yield return dto;
+            //    }
+            //}
+        }
+
+        /// <summary>
         /// Create a new article in the database
         /// </summary>
         /// <param name="article">
@@ -69,16 +113,15 @@ namespace API.DepotEice.BLL.Services
         /// instance of <see cref="ArticleDto"/> 
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ArticleDto? CreateArticle(ArticleDto article)
+        public ArticleDto? Create(string userId, ArticleDto data)
         {
-            if (article is null)
-            {
-                throw new ArgumentNullException(nameof(article));
-            }
+            if (data is null)
+                throw new ArgumentNullException(nameof(data));
 
-            ArticleEntity articleEntity = _mapper.Map<ArticleEntity>(article);
+            ArticleEntity article = data.ToDal();
+            article.UserId = userId;
 
-            int newId = _articleRepository.Create(articleEntity);
+            int newId = _articleRepository.Create(article);
 
             if (newId <= 0)
             {
@@ -117,31 +160,9 @@ namespace API.DepotEice.BLL.Services
 
             ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
                 createdArticle,
-                _mapper.Map<UserDto>(userFromRepo),
-                _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
+                _mapper.Map<UserDto>(userFromRepo));
 
             return articleModel;
-        }
-
-        public bool DeleteArticle(int id)
-        {
-            if (id <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
-
-            ArticleEntity? articleEntity = _articleRepository.GetByKey(id);
-
-            if (articleEntity is null)
-            {
-                _logger.LogWarning(
-                    "{date} - There is no Article with ID \"{id}\"!",
-                    DateTime.Now, id);
-
-                return false;
-            }
-
-            return _articleRepository.Delete(articleEntity);
         }
 
         /// <summary>
@@ -155,20 +176,20 @@ namespace API.DepotEice.BLL.Services
         /// not exist either. Otherwise return an instance of <see cref="ArticleDto"/>
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleDto? GetArticle(int id)
+        public ArticleDto? GetByKey(int key)
         {
-            if (id <= 0)
+            if (key <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(id));
+                throw new ArgumentOutOfRangeException(nameof(key));
             }
 
-            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(key);
 
             if (articleFromRepo is null)
             {
                 _logger.LogWarning(
                     "{date} - There is no article in the database with ID \"{id}\"",
-                    DateTime.Now, id);
+                    DateTime.Now, key);
 
                 return null;
             }
@@ -196,40 +217,81 @@ namespace API.DepotEice.BLL.Services
             return articleModel;
         }
 
-        /// <summary>
-        /// Retrieve all Articles from the database
-        /// </summary>
-        /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleDto"/>
-        /// </returns>
-        public IEnumerable<ArticleDto> GetArticles()
+        public ArticleDto? Update(int key, string userId, ArticleDto data)
         {
-            IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
-
-            foreach (ArticleEntity article in articlesFromRepo)
+            if (data is null)
             {
-                UserEntity? userFromRepo = _userRepository.GetByKey(article.UserId);
-
-                if (userFromRepo is null)
-                {
-                    _logger.LogError(
-                        "{date} - The user with ID \"{userId}\" related to the article with ID " +
-                        "\"{articleId}\" does not exist in the database!",
-                        DateTime.Now, article.UserId, article.Id);
-                }
-                else
-                {
-                    IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
-                        _articleCommentRepository.GetArticleComments(article.Id);
-
-                    ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
-                        article,
-                        _mapper.Map<UserDto>(userFromRepo),
-                        _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
-
-                    yield return articleModel;
-                }
+                throw new ArgumentNullException(nameof(data));
             }
+
+            ArticleEntity articleEntity = _mapper.Map<ArticleEntity>(data);
+            articleEntity.Id = key;
+            articleEntity.UserId = userId;
+
+            var newId = _articleRepository.Update(articleEntity);
+
+            if (!newId)
+            {
+                _logger.LogError(
+                    "{date} - The update returned false",
+                    DateTime.Now);
+
+                return null;
+            }
+
+            ArticleEntity? updatedArticle = _articleRepository.GetByKey(key);
+
+            if (updatedArticle is null)
+            {
+                _logger.LogWarning(
+                    "{date} - The retrieved ArticleEntity with ID \"{id}\" is null",
+                    DateTime.Now, newId);
+
+                return null;
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(updatedArticle.UserId);
+
+            if (userFromRepo is null)
+            {
+                _logger.LogWarning(
+                    "{date} - The User with ID \"{userID}\" related to the Article with ID " +
+                    "\"{articleId}\" is null!",
+                    DateTime.Now, updatedArticle.UserId, updatedArticle.Id);
+
+                return null;
+            }
+
+            IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
+               _articleCommentRepository.GetArticleComments(updatedArticle.Id);
+
+            ArticleDto articleDto = _mapper.MergeInto<ArticleDto>(
+                updatedArticle,
+                _mapper.Map<UserDto>(userFromRepo),
+                _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
+
+            return articleDto;
+        }
+
+        public bool Delete(int key)
+        {
+            if (key <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(key));
+            }
+
+            ArticleEntity? articleEntity = _articleRepository.GetByKey(key);
+
+            if (articleEntity is null)
+            {
+                _logger.LogWarning(
+                    "{date} - There is no Article with ID \"{id}\"!",
+                    DateTime.Now, key);
+
+                return false;
+            }
+
+            return _articleRepository.Delete(articleEntity);
         }
 
         /// <summary>

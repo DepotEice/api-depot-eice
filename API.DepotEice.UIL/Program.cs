@@ -114,7 +114,8 @@ namespace API.DepotEice.UIL
             /****************/
 
 #if DEBUG
-            string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
+            //string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
+            string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
 #else
             string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 #endif
