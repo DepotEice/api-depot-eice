@@ -149,8 +149,9 @@ namespace API.DepotEice.BLL.Services
 
             if (articleEntity is null)
             {
-                _logger.LogError("{date} - The linked Article with ID \"{articleId}\" does " +
-                    "not exist in the database", DateTime.Now, articleCommentFromRepo.ArticleId);
+                _logger.LogError("{date} - The linked Article with ID \"{articleId}\" does not exist in the database", 
+                    DateTime.Now, 
+                    articleCommentFromRepo.ArticleId);
 
                 return null;
             }
@@ -160,9 +161,10 @@ namespace API.DepotEice.BLL.Services
             if (userEntity is null)
             {
                 _logger.LogWarning(
-                    "{date} - The User with ID \"{userId}\" linked to the ArticleComment with ID " +
-                    "\"{articleCommentId}\" does not exist in the database!",
-                    DateTime.Now, articleCommentFromRepo.UserId, articleCommentFromRepo.Id);
+                    "{date} - The User with ID \"{userId}\" linked to the ArticleComment with ID \"{articleCommentId}\" does not exist in the database!",
+                    DateTime.Now, 
+                    articleCommentFromRepo.UserId, 
+                    articleCommentFromRepo.Id);
 
                 return null;
             }

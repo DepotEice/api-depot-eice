@@ -2,12 +2,15 @@
 using API.DepotEice.UIL.Mapper;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize("IsConnected")]
     public class ArticlesController : ControllerBase
     {
         private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
@@ -23,6 +26,7 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Get()
         {
             try
@@ -37,6 +41,7 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public IActionResult Get(int id)
         {
             try
@@ -103,13 +108,13 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         [HttpGet("{id}/Comments")]
+        [AllowAnonymous]
         public IActionResult GetComments(int id)
         {
             try
             {
                 IEnumerable<CommentModel> comments = _articleCommentService.GetAll(id).Select(x => x.ToUil());
                 return Ok(comments);
-
             }
             catch (Exception e)
             {
@@ -192,11 +197,7 @@ namespace API.DepotEice.UIL.Controllers
 
         private string GetUserId()
         {
-            string userId = string.Empty;
-
-            // TODO - Get UserId in Article Controller !
-
-            return userId;
+            return User.FindFirst(ClaimTypes.Sid).Value;
         }
     }
 }
