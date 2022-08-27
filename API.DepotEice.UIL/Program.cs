@@ -114,7 +114,8 @@ public class Program
         /****************/
 
 #if DEBUG
-        string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
+        // string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
+        string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
 #else
         string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 #endif
@@ -138,6 +139,7 @@ public class Program
         builder.Services.AddScoped<IScheduleFileRepository, ScheduleFileRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+        builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
         /**************/
         /*  Services  */
@@ -154,6 +156,7 @@ public class Program
         builder.Services.AddScoped<IScheduleFileService, ScheduleFileService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IUserTokenService, UserTokenService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 

@@ -4,10 +4,13 @@ using API.DepotEice.BLL.IServices;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.IManagers;
 using API.DepotEice.UIL.Managers;
+using API.DepotEice.UIL.Mapper;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -17,7 +20,9 @@ public class AuthController : ControllerBase
 {
     private readonly ILogger _logger;
     private readonly IMapper _mapper;
+    private readonly IConfiguration _configuration;
     private readonly ITokenManager _tokenManager;
+    private readonly IAuthService _authService;
     private readonly IUserService _userService;
     private readonly IRoleService _roleService;
     private readonly IUserTokenService _userTokenService;
@@ -25,17 +30,82 @@ public class AuthController : ControllerBase
     public AuthController(
         ILogger<AuthController> logger,
         IMapper mapper,
+        IConfiguration configuration,
         ITokenManager tokenManager,
+        IAuthService authService,
         IUserService userService,
         IRoleService roleService,
         IUserTokenService userTokenService)
     {
         _logger = logger;
         _mapper = mapper;
+        _configuration = configuration;
         _tokenManager = tokenManager;
+        _authService = authService;
         _userService = userService;
         _roleService = roleService;
         _userTokenService = userTokenService;
+    }
+
+    [HttpPost(nameof(Login))]
+    public IActionResult Login([FromBody] LoginForm form)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        try
+        {
+            //LoggedInUserModel? user = _authService.SignIn(form.Email, form.Password)?.ToUil();
+            if (!_userService.EmailExist(form.Email))
+                return NotFound("No account found with this email");
+
+            LoggedInUserModel? user2 = _authService.SignIn(form.Email, form.Password, _configuration.GetValue<string>("AppSettings:Secret"))?.ToUil();
+
+            // - récuperer l'utilisateur de la base de données,
+            LoggedInUserModel? user = new()
+            {
+                Id = Guid.NewGuid().ToString(),
+                Email = "test@gmail.com",
+                ProfilePicture = null,
+                FirstName = "John",
+                LastName = "Price",
+                BirthDate = DateTime.Now,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                DeletedAt = null,
+            };
+
+            if (user == null)
+                return BadRequest("The email or password is wrong ! Please try again.");
+
+            TokenModel token = new() { Token = _tokenManager.GenerateJWT(user) };
+
+            return Ok(token);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost(nameof(Register))]
+    public IActionResult Register([FromBody] RegisterForm form)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        if (_userService.EmailExist(form.Email))
+            return BadRequest("There is already an account with this email!");
+
+        try
+        {
+            bool response = _authService.SingUp(form.ToBll());
+            if (!response)
+                return BadRequest("Please try with another mail or contact the administration");
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     /// <summary>
@@ -78,21 +148,6 @@ public class AuthController : ControllerBase
             DateTime.Now, token);
 
         return Ok(token);
-    }
-
-    [HttpPost(nameof(Login))]
-    public IActionResult Login([FromBody] LoginForm form)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        try
-        {
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
     }
 
     /// <summary>
