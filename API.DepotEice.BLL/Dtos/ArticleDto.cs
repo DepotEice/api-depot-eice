@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace API.DepotEice.BLL.Dtos
+﻿namespace API.DepotEice.BLL.Dtos
 {
     public class ArticleDto
     {
@@ -15,7 +9,8 @@ namespace API.DepotEice.BLL.Dtos
         public DateTime UpdatedAt { get; set; }
         public bool IsPinned { get; set; }
         public UserDto User { get; set; }
+        public string UserId { get; set; }
 
-        public IEnumerable<ArticleCommentDto> ArticleComments { get; set; }
+        // public IEnumerable<ArticleCommentDto> ArticleComments { get; set; }
     }
 }

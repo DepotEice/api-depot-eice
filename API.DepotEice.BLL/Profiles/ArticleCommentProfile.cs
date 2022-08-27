@@ -29,10 +29,10 @@ namespace API.DepotEice.BLL.Profiles
 
             // IEnumerable<ArticleCommentModel> --> ArticleModel
 
-            CreateMap<IEnumerable<ArticleCommentDto>, ArticleDto>()
-                .ForMember(
-                    dest => dest.ArticleComments,
-                    opt => opt.MapFrom(src => src));
+            //CreateMap<IEnumerable<ArticleCommentDto>, ArticleDto>()
+            //    .ForMember(
+            //        dest => dest.ArticleComments,
+            //        opt => opt.MapFrom(src => src));
         }
     }
 }

@@ -1,15 +1,10 @@
-﻿using API.DepotEice.BLL.Extensions;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.Extensions;
 using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -21,8 +16,11 @@ namespace API.DepotEice.BLL.Services
         private readonly IArticleCommentRepository _articleCommentRepository;
         private readonly IUserRepository _userRepository;
 
-        public ArticleCommentService(ILogger<ArticleCommentService> logger, IMapper mapper,
-            IArticleRepository articleRepository, IArticleCommentRepository articleCommentRepository,
+        public ArticleCommentService(
+            ILogger<ArticleCommentService> logger,
+            IMapper mapper,
+            IArticleRepository articleRepository,
+            IArticleCommentRepository articleCommentRepository,
             IUserRepository userRepository)
         {
             if (logger is null)
@@ -58,100 +56,6 @@ namespace API.DepotEice.BLL.Services
         }
 
         /// <summary>
-        /// Create a new ArticleComment in the database
-        /// </summary>
-        /// <param name="model">
-        /// An instance of <see cref="ArticleCommentDto"/>
-        /// </param>
-        /// <returns>
-        /// <c>null</c> If the article comment couldn't be created or if the linked Article does not
-        /// exist in the database. An instance of <see cref="ArticleCommentDto"/> otherwise.
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public ArticleCommentDto? CreateArticleComment(ArticleCommentDto model)
-        {
-            if (model is null)
-            {
-                throw new ArgumentNullException(nameof(model));
-            }
-
-            ArticleCommentEntity articleCommentEntity = _mapper.Map<ArticleCommentEntity>(model);
-
-            int newId = _articleCommentRepository.Create(articleCommentEntity);
-
-            ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(newId);
-
-            if (articleCommentFromRepo is null)
-            {
-                _logger.LogError("{date} - The model couldn't be created. Returned ID is 0",
-                    DateTime.Now);
-
-                return null;
-            }
-
-            ArticleEntity? articleEntity = _articleRepository.GetByKey(articleCommentEntity.ArticleId);
-
-            if (articleEntity is null)
-            {
-                _logger.LogError("{date} - The linked Article with ID \"{articleId}\" does " +
-                    "not exist in the database", DateTime.Now, articleCommentFromRepo.ArticleId);
-
-                return null;
-            }
-
-            UserEntity? userEntity = _userRepository.GetByKey(articleCommentFromRepo.UserId);
-
-            if (userEntity is null)
-            {
-                _logger.LogWarning(
-                    "{date} - The User with ID \"{userId}\" linked to the ArticleComment with ID " +
-                    "\"{articleCommentId}\" does not exist in the database!",
-                    DateTime.Now, articleCommentFromRepo.UserId, articleCommentFromRepo.Id);
-
-                return null;
-            }
-
-            ArticleCommentDto articleComment =
-                _mapper.MergeInto<ArticleCommentDto>(
-                    articleCommentFromRepo,
-                    _mapper.Map<ArticleDto>(articleEntity),
-                    _mapper.Map<ArticleDto>(userEntity));
-
-            return articleComment;
-        }
-
-        /// <summary>
-        /// Delete an ArticleComment from the database
-        /// </summary>
-        /// <param name="id">
-        /// The ArticleComment's ID
-        /// </param>
-        /// <returns>
-        /// <c>true</c> If it was succesfully deleted. <c>false</c> If the linked Article does not
-        /// exist or if the removal failed
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public bool DeleteArticleComment(int id)
-        {
-            if (id <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
-
-            ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(id);
-
-            if (articleCommentFromRepo is null)
-            {
-                _logger.LogError("{date} - There is no article comment in the database " +
-                    "with ID \"{id}\"", DateTime.Now, id);
-
-                return false;
-            }
-
-            return _articleCommentRepository.Delete(articleCommentFromRepo);
-        }
-
-        /// <summary>
         /// Retrieve all ArticleComments related to an Article defined the
         /// <paramref name="articleId"/> parameter
         /// </summary>
@@ -163,7 +67,7 @@ namespace API.DepotEice.BLL.Services
         /// ArticleComment's related Article does not exist in the database, the element is skipped
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public IEnumerable<ArticleCommentDto> GetAllArticleComments(int articleId)
+        public IEnumerable<ArticleCommentDto> GetAll(int articleId)
         {
             if (articleId <= 0)
             {
@@ -208,6 +112,73 @@ namespace API.DepotEice.BLL.Services
         }
 
         /// <summary>
+        /// Create a new ArticleComment in the database
+        /// </summary>
+        /// <param name="model">
+        /// An instance of <see cref="ArticleCommentDto"/>
+        /// </param>
+        /// <returns>
+        /// <c>null</c> If the article comment couldn't be created or if the linked Article does not
+        /// exist in the database. An instance of <see cref="ArticleCommentDto"/> otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public ArticleCommentDto? Create(int articleId, string userId, ArticleCommentDto data)
+        {
+            if (data is null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            ArticleCommentEntity comment = _mapper.Map<ArticleCommentEntity>(data);
+            comment.ArticleId = articleId;
+            comment.UserId = userId;
+
+            int newId = _articleCommentRepository.Create(comment);
+
+            ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(newId);
+
+            if (articleCommentFromRepo is null)
+            {
+                _logger.LogError("{date} - The model couldn't be created. Returned ID is 0",
+                    DateTime.Now);
+
+                return null;
+            }
+
+            ArticleEntity? articleEntity = _articleRepository.GetByKey(comment.ArticleId);
+
+            if (articleEntity is null)
+            {
+                _logger.LogError("{date} - The linked Article with ID \"{articleId}\" does not exist in the database", 
+                    DateTime.Now, 
+                    articleCommentFromRepo.ArticleId);
+
+                return null;
+            }
+
+            UserEntity? userEntity = _userRepository.GetByKey(articleCommentFromRepo.UserId);
+
+            if (userEntity is null)
+            {
+                _logger.LogWarning(
+                    "{date} - The User with ID \"{userId}\" linked to the ArticleComment with ID \"{articleCommentId}\" does not exist in the database!",
+                    DateTime.Now, 
+                    articleCommentFromRepo.UserId, 
+                    articleCommentFromRepo.Id);
+
+                return null;
+            }
+
+            ArticleCommentDto articleComment =
+                _mapper.MergeInto<ArticleCommentDto>(
+                    articleCommentFromRepo,
+                    _mapper.Map<ArticleDto>(articleEntity),
+                    _mapper.Map<ArticleDto>(userEntity));
+
+            return articleComment;
+        }
+
+        /// <summary>
         /// Retrieve an ArticleComment from the database
         /// </summary>
         /// <param name="id">
@@ -218,7 +189,7 @@ namespace API.DepotEice.BLL.Services
         /// Article does not exist. An instance of <see cref="ArticleCommentDto"/> otherwise
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleCommentDto? GetArticleComment(int id)
+        public ArticleCommentDto? GetById(int id)
         {
             if (id <= 0)
             {
@@ -282,67 +253,101 @@ namespace API.DepotEice.BLL.Services
         /// database. An instance of <see cref="ArticleCommentDto"/> otherwise
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ArticleCommentDto? UpdateArticleComment(ArticleCommentDto model)
+        public ArticleCommentDto? Update(int articleId, string userId, ArticleCommentDto data)
         {
-            if (model is null)
+            if (data is null)
             {
-                throw new ArgumentNullException(nameof(model));
+                throw new ArgumentNullException(nameof(data));
             }
 
-            if (!_articleCommentRepository.Update(_mapper.Map<ArticleCommentEntity>(model)))
+            data.Article.Id = articleId;
+            data.User.Id = userId;
+
+            bool result = !_articleCommentRepository.Update(_mapper.Map<ArticleCommentEntity>(data));
+
+            if (!result)
             {
                 _logger.LogWarning(
                     "{date} - Could not update the ArticleComment with ID \"{id}\"",
-                    DateTime.Now, model.Id);
+                    DateTime.Now, data.Id);
 
                 return null;
             }
 
-            ArticleCommentEntity? articleCommentEntity =
-                _articleCommentRepository.GetByKey(model.Id);
+            ArticleCommentEntity? comment = _articleCommentRepository.GetByKey(data.Id);
 
-            if (articleCommentEntity is null)
+            if (comment is null)
             {
                 _logger.LogError(
                     "{date} - The updated and retrieved ArticleComment with ID \"{id}\" " +
-                    "is null",
-                    DateTime.Now, model.Id);
+                "is null",
+                    DateTime.Now, data.Id);
 
                 return null;
             }
 
-            ArticleEntity? articleEntity =
-                _articleRepository.GetByKey(articleCommentEntity.ArticleId);
+            ArticleEntity? article = _articleRepository.GetByKey(comment.ArticleId);
 
-            if (articleEntity is null)
+            if (article is null)
             {
                 _logger.LogWarning(
                     "{date} - The Article with ID \"{articleId}\" related to the " +
                     "ArticleComment with ID \"{articleCommentId}\" does not exist in the database",
-                    DateTime.Now, articleCommentEntity.ArticleId, articleCommentEntity.Id);
+                    DateTime.Now, comment.ArticleId, comment.Id);
 
                 return null;
             }
 
-            UserEntity? userEntity = _userRepository.GetByKey(articleCommentEntity.UserId);
+            UserEntity? userEntity = _userRepository.GetByKey(comment.UserId);
 
             if (userEntity is null)
             {
                 _logger.LogWarning(
                     "{date} - The User with ID \"{userId}\" linked to the ArticleComment with ID " +
                     "\"{articleCommentId}\" does not exist in the database!",
-                    DateTime.Now, articleCommentEntity.UserId, articleCommentEntity.Id);
+                    DateTime.Now, comment.UserId, comment.Id);
 
                 return null;
             }
 
             ArticleCommentDto articleComment =
                 _mapper.MergeInto<ArticleCommentDto>(
-                    articleCommentEntity,
-                    _mapper.Map<ArticleDto>(articleEntity),
+                    comment,
+                    _mapper.Map<ArticleDto>(article),
                     _mapper.Map<ArticleDto>(userEntity));
 
             return articleComment;
+        }
+
+        /// <summary>
+        /// Delete an ArticleComment from the database
+        /// </summary>
+        /// <param name="id">
+        /// The ArticleComment's ID
+        /// </param>
+        /// <returns>
+        /// <c>true</c> If it was succesfully deleted. <c>false</c> If the linked Article does not
+        /// exist or if the removal failed
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public bool Delete(int id)
+        {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(id);
+
+            if (articleCommentFromRepo is null)
+            {
+                _logger.LogError("{date} - There is no article comment in the database " +
+                    "with ID \"{id}\"", DateTime.Now, id);
+
+                return false;
+            }
+
+            return _articleCommentRepository.Delete(articleCommentFromRepo);
         }
     }
 }
