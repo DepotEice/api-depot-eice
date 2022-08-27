@@ -1,7 +1,7 @@
 ﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
-using DevHopTools.Extensions;
+using DevHopTools.Mappers;
 
 namespace API.DepotEice.UIL.Mapper
 {

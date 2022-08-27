@@ -1,17 +1,13 @@
-﻿using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Dtos;
+﻿using API.DepotEice.BLL.Dtos;
+using API.DepotEice.BLL.IServices;
 using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace API.DepotEice.BLL.Services
 {
@@ -23,8 +19,11 @@ namespace API.DepotEice.BLL.Services
         private readonly IRoleRepository _roleRepository;
         private readonly IUserTokenRepository _userTokenRepository;
 
-        public UserService(ILogger<UserService> logger, IMapper mapper,
-            IUserRepository userRepository, IRoleRepository roleRepository,
+        public UserService(
+            ILogger<UserService> logger,
+            IMapper mapper,
+            IUserRepository userRepository,
+            IRoleRepository roleRepository,
             IUserTokenRepository userTokenRepository)
         {
             if (logger is null)
@@ -62,9 +61,7 @@ namespace API.DepotEice.BLL.Services
         public bool ActivateUser(string id, bool isActive)
         {
             if (string.IsNullOrEmpty(id))
-            {
                 throw new ArgumentNullException(nameof(id));
-            }
 
             UserEntity? userFromRepo = _userRepository.GetByKey(id);
 
@@ -83,9 +80,7 @@ namespace API.DepotEice.BLL.Services
         public UserDto? CreateUser(UserDto user)
         {
             if (user is null)
-            {
                 throw new ArgumentNullException(nameof(user));
-            }
 
             UserEntity userToCreate = _mapper.Map<UserEntity>(user);
 

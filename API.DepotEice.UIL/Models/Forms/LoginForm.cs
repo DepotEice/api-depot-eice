@@ -1,8 +1,13 @@
-﻿namespace API.DepotEice.UIL.Models.Forms
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace API.DepotEice.UIL.Models.Forms;
+
+public class LoginForm
 {
-    public class LoginForm
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
-    }
+    [Required(AllowEmptyStrings = false)]
+    [EmailAddress]
+    public string Email { get; set; }
+
+    [Required(AllowEmptyStrings = false)]
+    public string Password { get; set; }
 }
