@@ -42,7 +42,7 @@ namespace API.DepotEice.DAL.Mappers
                 CreatedAt = (DateTime)record["CreatedAt"],
                 UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
                 Pinned = (bool)record["Pinned"],
-                UserId = (string)record["UserId"]
+                UserId = record["UserId"].ToString()
             };
         }
 

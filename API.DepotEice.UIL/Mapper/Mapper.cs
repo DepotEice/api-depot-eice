@@ -40,4 +40,5 @@ internal static class Mapper
     internal static ScheduleFileDto ToBll(this ScheduleFileDto data) => data.Map<ScheduleFileDto>();
     internal static ScheduleFileDto ToBll(this ScheduleFileModel model) => model.Map<ScheduleFileDto>();
 
+    }
 }
