@@ -116,6 +116,7 @@ public class Program
 #if DEBUG
         // string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
         string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
+
 #else
         string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 #endif

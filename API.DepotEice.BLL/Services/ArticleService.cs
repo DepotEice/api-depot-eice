@@ -16,13 +16,13 @@ public class ArticleService : IArticleService
     private readonly IUserRepository _userRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
-        public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
-            IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
+    public ArticleService(ILogger<ArticleService> logger, IMapper mapper, IArticleRepository articleRepository,
+        IUserRepository userRepository, IArticleCommentRepository articleCommentRepository)
+    {
+        if (logger is null)
         {
-            if (logger is null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
+            throw new ArgumentNullException(nameof(logger));
+        }
 
         if (mapper is null)
         {
@@ -51,29 +51,29 @@ public class ArticleService : IArticleService
         _articleCommentRepository = articleCommentRepository;
     }
 
-        /// <summary>
-        /// Create a new article in the database
-        /// </summary>
-        /// <param name="article">
-        /// An instance of <see cref="ArticleDto"/>. The property <see cref="ArticleDto.User"/>
-        /// must be instanciated otherwise mapping from <see cref="ArticleDto"/> to 
-        /// <see cref="ArticleEntity"/> won't work
-        /// </param>
-        /// <returns>
-        /// <c>null</c> If the creation failed or if the related User does not exist. Otherwise An 
-        /// instance of <see cref="ArticleDto"/> 
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public ArticleDto? CreateArticle(ArticleDto article)
+    /// <summary>
+    /// Create a new article in the database
+    /// </summary>
+    /// <param name="article">
+    /// An instance of <see cref="ArticleDto"/>. The property <see cref="ArticleDto.User"/>
+    /// must be instanciated otherwise mapping from <see cref="ArticleDto"/> to 
+    /// <see cref="ArticleEntity"/> won't work
+    /// </param>
+    /// <returns>
+    /// <c>null</c> If the creation failed or if the related User does not exist. Otherwise An 
+    /// instance of <see cref="ArticleDto"/> 
+    /// </returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public ArticleDto? CreateArticle(ArticleDto article)
+    {
+        if (article is null)
         {
-            if (article is null)
-            {
-                throw new ArgumentNullException(nameof(article));
-            }
+            throw new ArgumentNullException(nameof(article));
+        }
 
-            ArticleEntity articleEntity = _mapper.Map<ArticleEntity>(article);
+        ArticleEntity articleEntity = _mapper.Map<ArticleEntity>(article);
 
-            int newId = _articleRepository.Create(articleEntity);
+        int newId = _articleRepository.Create(articleEntity);
 
         if (newId <= 0)
         {
@@ -110,60 +110,60 @@ public class ArticleService : IArticleService
         IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
            _articleCommentRepository.GetArticleComments(createdArticle.Id);
 
-            ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
-                createdArticle,
-                _mapper.Map<UserDto>(userFromRepo),
-                _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
+        ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
+            createdArticle,
+            _mapper.Map<UserDto>(userFromRepo),
+            _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
 
         return articleModel;
     }
 
-        public bool DeleteArticle(int id)
+    public bool DeleteArticle(int id)
+    {
+        if (id <= 0)
         {
-            if (id <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
-
-            ArticleEntity? articleEntity = _articleRepository.GetByKey(id);
-
-            if (articleEntity is null)
-            {
-                _logger.LogWarning(
-                    "{date} - There is no Article with ID \"{id}\"!",
-                    DateTime.Now, id);
-
-                return false;
-            }
-
-            return _articleRepository.Delete(articleEntity);
+            throw new ArgumentOutOfRangeException(nameof(id));
         }
 
-        /// <summary>
-        /// Retrieve an Article from the database
-        /// </summary>
-        /// <param name="id">
-        /// The id of the Article
-        /// </param>
-        /// <returns>
-        /// <c>null</c> If the Article does not exist in the database or if the related User does
-        /// not exist either. Otherwise return an instance of <see cref="ArticleDto"/>
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleDto? GetArticle(int id)
+        ArticleEntity? articleEntity = _articleRepository.GetByKey(id);
+
+        if (articleEntity is null)
         {
-            if (id <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
+            _logger.LogWarning(
+                "{date} - There is no Article with ID \"{id}\"!",
+                DateTime.Now, id);
 
-            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+            return false;
+        }
 
-            if (articleFromRepo is null)
-            {
-                _logger.LogWarning(
-                    "{date} - There is no article in the database with ID \"{id}\"",
-                    DateTime.Now, id);
+        return _articleRepository.Delete(articleEntity);
+    }
+
+    /// <summary>
+    /// Retrieve an Article from the database
+    /// </summary>
+    /// <param name="id">
+    /// The id of the Article
+    /// </param>
+    /// <returns>
+    /// <c>null</c> If the Article does not exist in the database or if the related User does
+    /// not exist either. Otherwise return an instance of <see cref="ArticleDto"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public ArticleDto? GetArticle(int id)
+    {
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(id));
+        }
+
+        ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+        if (articleFromRepo is null)
+        {
+            _logger.LogWarning(
+                "{date} - There is no article in the database with ID \"{id}\"",
+                DateTime.Now, id);
 
             return null;
         }
@@ -191,41 +191,41 @@ public class ArticleService : IArticleService
         return articleModel;
     }
 
-        /// <summary>
-        /// Retrieve all Articles from the database
-        /// </summary>
-        /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleDto"/>
-        /// </returns>
-        public IEnumerable<ArticleDto> GetArticles()
+    /// <summary>
+    /// Retrieve all Articles from the database
+    /// </summary>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleDto"/>
+    /// </returns>
+    public IEnumerable<ArticleDto> GetArticles()
+    {
+        IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
+
+        foreach (ArticleEntity article in articlesFromRepo)
         {
-            IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
+            UserEntity? userFromRepo = _userRepository.GetByKey(article.UserId);
 
-            foreach (ArticleEntity article in articlesFromRepo)
+            if (userFromRepo is null)
             {
-                UserEntity? userFromRepo = _userRepository.GetByKey(article.UserId);
+                _logger.LogError(
+                    "{date} - The user with ID \"{userId}\" related to the article with ID " +
+                    "\"{articleId}\" does not exist in the database!",
+                    DateTime.Now, article.UserId, article.Id);
+            }
+            else
+            {
+                IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
+                    _articleCommentRepository.GetArticleComments(article.Id);
 
-                if (userFromRepo is null)
-                {
-                    _logger.LogError(
-                        "{date} - The user with ID \"{userId}\" related to the article with ID " +
-                        "\"{articleId}\" does not exist in the database!",
-                        DateTime.Now, article.UserId, article.Id);
-                }
-                else
-                {
-                    IEnumerable<ArticleCommentEntity> articleCommentsFromRepo =
-                        _articleCommentRepository.GetArticleComments(article.Id);
+                ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
+                    article,
+                    _mapper.Map<UserDto>(userFromRepo),
+                    _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
 
-                    ArticleDto articleModel = _mapper.MergeInto<ArticleDto>(
-                        article,
-                        _mapper.Map<UserDto>(userFromRepo),
-                        _mapper.Map<IEnumerable<ArticleCommentDto>>(articleCommentsFromRepo));
-
-                    yield return articleModel;
-                }
+                yield return articleModel;
             }
         }
+    }
 
     /// <summary>
     /// Change the Article's pinned status
