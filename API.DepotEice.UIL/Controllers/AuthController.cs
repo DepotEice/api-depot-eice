@@ -1,14 +1,12 @@
-﻿using API.DepotEice.BLL;
-using API.DepotEice.BLL.Dtos;
-using API.DepotEice.BLL.IServices;
+﻿using API.DepotEice.DAL.Entities;
+using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.Helpers.Tools;
 using API.DepotEice.UIL.Data;
-using API.DepotEice.UIL.IManagers;
+using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
-using API.DepotEice.UIL.Mapper;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
-using AutoMapper;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
@@ -19,93 +17,26 @@ namespace API.DepotEice.UIL.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ILogger _logger;
-    private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly ITokenManager _tokenManager;
-    private readonly IAuthService _authService;
-    private readonly IUserService _userService;
-    private readonly IRoleService _roleService;
-    private readonly IUserTokenService _userTokenService;
+    private readonly IUserRepository _userRepository;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IUserTokenRepository _userTokenRepository;
 
     public AuthController(
         ILogger<AuthController> logger,
-        IMapper mapper,
         IConfiguration configuration,
         ITokenManager tokenManager,
-        IAuthService authService,
-        IUserService userService,
-        IRoleService roleService,
-        IUserTokenService userTokenService)
+        IUserRepository userRepository,
+        IRoleRepository roleRepository,
+        IUserTokenRepository userTokenRepository)
     {
         _logger = logger;
-        _mapper = mapper;
         _configuration = configuration;
         _tokenManager = tokenManager;
-        _authService = authService;
-        _userService = userService;
-        _roleService = roleService;
-        _userTokenService = userTokenService;
-    }
-
-    [HttpPost(nameof(Login))]
-    public IActionResult Login([FromBody] LoginForm form)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        try
-        {
-            //LoggedInUserModel? user = _authService.SignIn(form.Email, form.Password)?.ToUil();
-            if (!_userService.EmailExist(form.Email))
-                return NotFound("No account found with this email");
-
-            LoggedInUserModel? user2 = _authService.SignIn(form.Email, form.Password, _configuration.GetValue<string>("AppSettings:Secret"))?.ToUil();
-
-            // - récuperer l'utilisateur de la base de données,
-            LoggedInUserModel? user = new()
-            {
-                Id = Guid.NewGuid().ToString(),
-                Email = "test@gmail.com",
-                ProfilePicture = null,
-                FirstName = "John",
-                LastName = "Price",
-                BirthDate = DateTime.Now,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = null,
-                DeletedAt = null,
-            };
-
-            if (user == null)
-                return BadRequest("The email or password is wrong ! Please try again.");
-
-            TokenModel token = new() { Token = _tokenManager.GenerateJWT(user) };
-
-            return Ok(token);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
-    }
-
-    [HttpPost(nameof(Register))]
-    public IActionResult Register([FromBody] RegisterForm form)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        if (_userService.EmailExist(form.Email))
-            return BadRequest("There is already an account with this email!");
-
-        try
-        {
-            bool response = _authService.SingUp(form.ToBll());
-            if (!response)
-                return BadRequest("Please try with another mail or contact the administration");
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        _userRepository = userRepository;
+        _roleRepository = roleRepository;
+        _userTokenRepository = userTokenRepository;
     }
 
     /// <summary>
@@ -123,31 +54,27 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult SignIn([FromBody] LoginForm form)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState.ValidationState);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-#if DEBUG
-        JwtTokenDto jwtToken = new("issuer", "audience", "secret", 1);
-#else
-        JwtTokenDto jwtToken = new JwtTokenDto();
-#endif
-
-        string token = _userService.LogIn(form.Email, form.Password, jwtToken);
-
-        if (string.IsNullOrEmpty(token))
+        try
         {
-            _logger.LogWarning(
-                "{date} - The generated token is an empty string!",
-                DateTime.Now);
+            var entity = _userRepository.LogIn(form.Email, GenerateHash(form.Password));
 
-            return BadRequest();
+            if (entity == null)
+                return BadRequest("Email or Password are incorrect ! Please try again or contact the administration");
+
+            // - récuperer l'utilisateur de la base de données,
+            LoggedInUserModel? user = entity.Map<LoggedInUserModel>();
+            user.Roles = _roleRepository.GetUserRoles(user.Id).Select(x => x.Map<RoleModel>());
+
+            TokenModel token = new() { Token = _tokenManager.GenerateJWT(user) };
+
+            return Ok(token);
         }
-
-        _logger.LogInformation(
-            "{date} - The JWT Token has been successfully generated : \"{token}\"!",
-            DateTime.Now, token);
-
-        return Ok(token);
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     /// <summary>
@@ -171,106 +98,115 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult SignUp([FromBody] RegisterForm form)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState.ValidationState);
-
-        if (_userService.EmailExist(form.Email))
-            return BadRequest("There is already an account with this email!");
-
-        UserDto? createdUser = _userService.CreateUser(_mapper.Map<UserDto>(form));
-
-        if (createdUser is null)
-            return BadRequest("User creation failed");
-
-        RoleDto? guestRole = _roleService.GetRoleByName(RolesData.GUEST_ROLE);
-
-        if (guestRole is null)
-        {
-            guestRole = _roleService.CreateRole(new RoleDto()
-            {
-                Name = RolesData.GUEST_ROLE
-            });
-
-            if (guestRole is null)
-                return NoContent();
-        }
-
-        if (!_roleService.AddUser(guestRole.Id, createdUser.Id))
-        {
-            // TODO : Return an error message with explanation of what happened
-            return NoContent();
-        }
-
-        UserTokenDto? userTokenDto = _userTokenService.GetUserToken
-            (
-                UserTokenTypes.EMAIL_CONFIRMATION_TOKEN,
-                createdUser.Id
-            );
-
-        if (userTokenDto is null)
-        {
-            _logger.LogError(
-                "{date} - Could not retrieve user token email!",
-                DateTime.Now);
-
-            return NoContent();
-        }
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
-            if (!MailManager.SendActivationEmail(createdUser.Id, userTokenDto.Value, createdUser.Email))
+            UserEntity? entity = _userRepository.GetUserByEmail(form.Email);
+
+            if (entity != null)
+                return BadRequest("There is already an account with this email! Please try with another mail or contact the administration.");
+
+            entity = form.Map<UserEntity>();
+            entity.PasswordHash = GenerateHash(form.Password);
+
+            string userId = _userRepository.Create(entity);
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+                return BadRequest(nameof(userId));
+
+            RoleModel guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
+            if (guestRole == null)
+                return BadRequest(nameof(guestRole));
+
+            bool result = _roleRepository.AddUser(guestRole.Id, userId);
+            if (!result)
+                return BadRequest(nameof(result));
+
+            entity = _userRepository.GetByKey(userId);
+
+            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
             {
-                _logger.LogWarning($"{DateTime.Now} - Sending the activation email " +
-                    $"to user with ID \"{createdUser.Id}\" failed!");
+                Type = UserTokenData.EMAIL_CONFIRMATION_TOKEN,
+                ExpirationDateTime = DateTime.Now.AddDays(2),
+                UserId = userId,
+                UserSecurityStamp = entity.SecurityStamp
+            });
+
+            UserTokenEntity token = _userTokenRepository.GetByKey(createdUserTokenID);
+
+            if (createdUserTokenID != null)
+            {
+                try
+                {
+                    if (!MailManager.SendActivationEmail(userId, token.Value, entity.NormalizedEmail))
+                    {
+                        _logger.LogWarning($"{DateTime.Now} - Sending the activation email to user with ID \"{userId}\" failed!");
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(
+                        "{0} An exception was thrown when trying to send the action email for user with ID \"{1}\" with token value {2} at address {3}. Exception message : {4}",
+                        DateTime.Now,
+                        userId,
+                        token.Value,
+                        entity.NormalizedEmail,
+                        e.Message);
+                }
             }
+
+            return NoContent();
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to send " +
-                $"the action email for user with ID \"{createdUser.Id}\" with token value " +
-                $"\"{userTokenDto.Value}\" at address \"{createdUser.Email}\". " +
-                $"Exception message : \"{e.Message}\"");
+            return BadRequest(e.Message);
         }
-
-        UserModel user = _mapper.Map<UserModel>(createdUser);
-
-        return Ok(user);
     }
 
     [HttpPost(nameof(Activate))]
     public IActionResult Activate(string id, string token)
     {
-        if (string.IsNullOrEmpty(id))
+        try
         {
-            return BadRequest(id);
-        }
+            if (string.IsNullOrEmpty(id) || string.IsNullOrWhiteSpace(id))
+                return BadRequest(nameof(id));
 
-        if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) || string.IsNullOrWhiteSpace(token))
+                return BadRequest(nameof(token));
+
+            UserModel? user = _userRepository.GetByKey(id).Map<UserModel>();
+
+            if (user == null)
+                return NotFound("the user does not exist");
+
+            // TODO - Erreure de récupération token
+            UserTokenModel userToken = _userTokenRepository.GetByKey(token).Map<UserTokenModel>();
+
+            //UserTokenDto? userToken = _userTokenService.GetUserToken(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN, id);
+
+            if (userToken is null)
+                return NotFound(token);
+
+            userToken.User = user;
+
+            if (!_userTokenRepository.VerifyUserToken(userToken.Map<UserTokenEntity>()))
+                return BadRequest("This token has already been used");
+
+            return Ok("User have been activated with success");
+        }
+        catch (Exception e)
         {
-            return BadRequest(token);
+            return BadRequest(e.Message);
         }
+    }
 
-        UserDto? user = _userService.GetUser(id);
+    private string GetSalt()
+    {
+        return _configuration.GetValue<string>("AppSettings:Secret");
+    }
 
-        if (user is null)
-        {
-            return NotFound(id);
-        }
-
-        UserTokenDto? userToken = _userTokenService.GetUserToken(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN, id);
-
-        if (userToken is null)
-        {
-            return NotFound(token);
-        }
-
-        userToken.User = user;
-
-        if (!_userTokenService.VerifyUserToken(userToken))
-        {
-            return BadRequest("This token has already been used");
-        }
-
-        return Ok();
+    private string GenerateHash(string password)
+    {
+        return password.GenerateHMACSHA512(Encoding.UTF8.GetBytes(GetSalt()));
     }
 }

@@ -2,7 +2,7 @@
 
 namespace API.DepotEice.DAL.IRepositories;
 
-public interface IAppointmentRepository : IRepositoryBase<AppointmentEntity, int>
+public interface IAppointmentRepository : IRepositoryBase<int, AppointmentEntity>
 {
-    bool AcceptAppointment(int appointmentId);
+    bool AppointmentDecision(int appointmentId, bool isAccepted = true);
 }

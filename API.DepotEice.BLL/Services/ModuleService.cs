@@ -406,7 +406,7 @@ namespace API.DepotEice.BLL.Services
 
         public bool StudentApply(string sId, int mId)
         {
-            return _moduleRepository.StuddentApply(sId, mId);
+            return _moduleRepository.StudentApply(sId, mId);
         }
 
         public bool StudentAcceptExempt(string sId, int mId, bool decision)

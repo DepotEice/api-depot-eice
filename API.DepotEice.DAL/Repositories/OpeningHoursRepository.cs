@@ -10,18 +10,19 @@ namespace API.DepotEice.DAL.Repositories;
 /// <summary>
 /// Repository for <see cref="OpeningHoursEntity"/>
 /// </summary>
-public class OpeningHoursRepository : IOpeningHoursRepository
+public class OpeningHoursRepository : RepositoryBase, IOpeningHoursRepository
 {
-    private readonly IDevHopConnection _connection;
+    public OpeningHoursRepository(IDevHopConnection connection) : base(connection) { }
 
-    public OpeningHoursRepository(IDevHopConnection connection)
+    /// <inheritdoc/>
+    public IEnumerable<OpeningHoursEntity> GetAll()
     {
-        if (connection is null)
-        {
-            throw new ArgumentNullException(nameof(connection));
-        }
+        string query = "SELECT * FROM [dbo].[OpeningHours]";
 
-        _connection = connection;
+        Command command = new Command(query);
+
+        return _connection
+            .ExecuteReader(command, openingHours => Mapper.DbToOpeningHours(openingHours));
     }
 
     /// <inheritdoc/>
@@ -50,56 +51,55 @@ public class OpeningHoursRepository : IOpeningHoursRepository
     }
 
     /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
-    public bool Delete(OpeningHoursEntity entity)
+    public OpeningHoursEntity GetByKey(int key)
     {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "SELECT * FROM [dbo].[OpeningHours] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection
+            .ExecuteReader(command, record => record.DbToOpeningHours())
+            .SingleOrDefault();
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool Update(int key, OpeningHoursEntity entity)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
         if (entity is null)
-        {
             throw new ArgumentNullException(nameof(entity));
-        }
 
-        Command command = new Command("spDeleteOpeningHours", true);
+        string query = "UPDATE [dbo].[OpeningHours] SET [OpenAt] = @openAt, [CloseAt] = @closeAt WHERE [Id] = @id";
 
-        command.AddParameter("id", entity.Id);
+        Command command = new Command(query);
+
+        command.AddParameter("id", key);
+        command.AddParameter("openAt", entity.OpenAt);
+        command.AddParameter("closeAt", entity.CloseAt);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
-    public IEnumerable<OpeningHoursEntity> GetAll()
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool Delete(int key)
     {
-        string query = "SELECT * FROM [dbo].[OpeningHours]";
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "DELETE FROM [dbo].[OpeningHours] WHERE [Id] = @id";
 
         Command command = new Command(query);
 
-        return _connection
-            .ExecuteReader(command, openingHours => Mapper.DbToOpeningHours(openingHours));
-    }
-
-    /// <summary>
-    /// Not implemented
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public OpeningHoursEntity? GetByKey(int key)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
-    public bool Update(OpeningHoursEntity entity)
-    {
-        if (entity is null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
-
-        Command command = new Command("spUpdateOpeningHours", true);
-
-        command.AddParameter("id", entity.Id);
-        command.AddParameter("openAt", entity.OpenAt);
-        command.AddParameter("closeAt", entity.CloseAt);
+        command.AddParameter("id", key);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }

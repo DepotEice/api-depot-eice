@@ -7,91 +7,9 @@ using DevHopTools.DataAccess.Interfaces;
 
 namespace API.DepotEice.DAL.Repositories;
 
-public class ScheduleRepository : IScheduleRepository
+public class ScheduleRepository : RepositoryBase, IScheduleRepository
 {
-    private readonly IDevHopConnection _connection;
-
-    public ScheduleRepository(IDevHopConnection connection)
-    {
-        if (connection is null)
-        {
-            throw new ArgumentNullException(nameof(connection));
-        }
-
-        _connection = connection;
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="DatabaseScalarNullException"></exception>
-    public int Create(ScheduleEntity entity)
-    {
-        if (entity is null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
-
-        Command command = new Command("spCreateSchedule", true);
-
-        command.AddParameter("title", entity.Title);
-        command.AddParameter("details", entity.Details);
-        command.AddParameter("startsAt", entity.StartsAt);
-        command.AddParameter("endsAt", entity.EndsAt);
-        command.AddParameter("moduleId", entity.ModuleId);
-
-        string? scalarResult = _connection.ExecuteScalar(command).ToString();
-
-        if (string.IsNullOrEmpty(scalarResult))
-        {
-            throw new DatabaseScalarNullException(nameof(scalarResult));
-        }
-
-        return int.Parse(scalarResult);
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
-    public bool Delete(ScheduleEntity entity)
-    {
-        if (entity is null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
-
-        Command command = new Command("spDeleteSchedule", true);
-
-        command.AddParameter("id", entity.Id);
-
-        return _connection.ExecuteNonQuery(command) > 0;
-    }
-
-    /// <summary>
-    /// Not implemented
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public IEnumerable<ScheduleEntity> GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public ScheduleEntity? GetByKey(int key)
-    {
-        if (key <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(key));
-        }
-
-        Command command = new Command("spGetSchedule", true);
-
-        command.AddParameter("id", key);
-
-        return _connection
-            .ExecuteReader(command, schedule => Mapper.DbToSchedule(schedule))
-            .SingleOrDefault();
-    }
+    public ScheduleRepository(IDevHopConnection connection) : base(connection) { }
 
     /// <summary>
     /// Retrieve every <see cref="ScheduleEntity"/> records from the database linked to a
@@ -107,34 +25,104 @@ public class ScheduleRepository : IScheduleRepository
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public IEnumerable<ScheduleEntity> GetModuleSchedules(int moduleId)
     {
-        if (moduleId < 0)
-        {
+        if (moduleId <= 0)
             throw new ArgumentOutOfRangeException(nameof(moduleId));
-        }
 
-        Command command = new Command("spGetModuleSchedules", true);
+        string query = "SELECT * FROM [dbo].[Schedules] WHERE [ModuleId] = @moduleId";
 
+        Command command = new Command(query);
         command.AddParameter("moduleId", moduleId);
 
         return _connection
-            .ExecuteReader(command, schedule => Mapper.DbToSchedule(schedule));
+            .ExecuteReader(command, schedule => schedule.DbToSchedule());
+    }
+
+    #region Basic CRUD
+
+    /// <inheritdoc/>
+    /// <exception cref="NotImplementedException"></exception>
+    public IEnumerable<ScheduleEntity> GetAll()
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool Update(ScheduleEntity entity)
+    /// <exception cref="DatabaseScalarNullException"></exception>
+    public int Create(ScheduleEntity entity)
     {
         if (entity is null)
-        {
             throw new ArgumentNullException(nameof(entity));
-        }
 
-        Command command = new Command("spUpdateSchedule", true);
-
-        command.AddParameter("id", entity.Id);
+        Command command = new Command("spSchedules_Create", true);
         command.AddParameter("title", entity.Title);
         command.AddParameter("details", entity.Details);
+        command.AddParameter("startsAt", entity.StartsAt);
+        command.AddParameter("endsAt", entity.EndsAt);
+        command.AddParameter("moduleId", entity.ModuleId);
+
+        string scalarResult = _connection.ExecuteScalar(command).ToString();
+
+        if (string.IsNullOrEmpty(scalarResult))
+            throw new DatabaseScalarNullException(nameof(scalarResult));
+
+        return int.Parse(scalarResult);
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public ScheduleEntity GetByKey(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "SELECT * FROM [dbo].[Schedules] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection
+            .ExecuteReader(command, schedule => schedule.DbToSchedule())
+            .SingleOrDefault();
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool Update(int key, ScheduleEntity entity)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
+
+        string query = "UPDATE [dbo].[Schedules] SET [Title] = @title, [Details] = @details, [StartsAt] = @startsAt, [EndsAt] = @endsAt WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+        command.AddParameter("title", entity.Title);
+        command.AddParameter("details", entity.Details);
+        command.AddParameter("startsAt", entity.StartsAt);
+        command.AddParameter("endsAt", entity.EndsAt);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool Delete(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "DELETE FROM [dbo].[Schedules] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    #endregion
 }

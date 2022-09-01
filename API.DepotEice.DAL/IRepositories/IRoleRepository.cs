@@ -1,11 +1,11 @@
 ﻿using API.DepotEice.DAL.Entities;
 
-namespace API.DepotEice.DAL.IRepositories
+namespace API.DepotEice.DAL.IRepositories;
+
+public interface IRoleRepository : IRepositoryBase<string, RoleEntity>
 {
-    public interface IRoleRepository : IRepositoryBase<RoleEntity, string>
-    {
-        bool AddUser(string id, string userId);
-        bool RemoveUser(string id, string userId);
-        IEnumerable<RoleEntity> GetUserRoles(string userId);
-    }
+    IEnumerable<RoleEntity> GetUserRoles(string userId);
+    bool AddUser(string roleId, string userId);
+    bool RemoveUser(string roleId, string userId);
+    RoleEntity GetByName(string name);
 }

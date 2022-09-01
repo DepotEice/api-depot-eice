@@ -1,9 +1,7 @@
-using API.DepotEice.BLL.IServices;
-using API.DepotEice.BLL.Services;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Repositories;
 using API.DepotEice.UIL.Hubs;
-using API.DepotEice.UIL.IManagers;
+using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
 using DevHopTools.DataAccess.Connections;
 using DevHopTools.DataAccess.Interfaces;
@@ -101,7 +99,7 @@ public class Program
         /*  AutoMapper  */
         /****************/
 
-        builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+        // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         /*************/
         /*  Logging  */
@@ -140,26 +138,6 @@ public class Program
         builder.Services.AddScoped<IScheduleFileRepository, ScheduleFileRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
-        builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-
-        /**************/
-        /*  Services  */
-        /**************/
-
-        builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-        builder.Services.AddScoped<IArticleCommentService, ArticleCommentService>();
-        builder.Services.AddScoped<IArticleService, ArticleService>();
-        builder.Services.AddScoped<IMessageService, MessageService>();
-        builder.Services.AddScoped<IModuleService, ModuleService>();
-        builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
-        builder.Services.AddScoped<IRoleService, RoleService>();
-        builder.Services.AddScoped<IScheduleService, ScheduleService>();
-        builder.Services.AddScoped<IScheduleFileService, ScheduleFileService>();
-        builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<IUserTokenService, UserTokenService>();
-        builder.Services.AddScoped<IAuthService, AuthService>();
-
-
 
         var app = builder.Build();
 

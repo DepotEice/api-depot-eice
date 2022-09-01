@@ -10,84 +10,9 @@ namespace API.DepotEice.DAL.Repositories;
 /// <summary>
 /// Repository for <see cref="MessageEntity"/>
 /// </summary>
-public class MessageRepository : IMessageRepository
+public class MessageRepository : RepositoryBase, IMessageRepository
 {
-    private readonly IDevHopConnection _connection;
-
-    public MessageRepository(IDevHopConnection connection)
-    {
-        if (connection is null)
-        {
-            throw new ArgumentNullException(nameof(connection));
-        }
-
-        _connection = connection;
-    }
-
-    /// <inheritdoc />
-    /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="DatabaseScalarNullException"></exception>
-    public int Create(MessageEntity entity)
-    {
-        if (entity is null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
-
-        Command command = new Command("spCreateMessage", true);
-
-        command.AddParameter("body", entity.Content);
-        command.AddParameter("userFromId", entity.SenderId);
-        command.AddParameter("userToId", entity.ReceiverId);
-
-        string? scalarResult = _connection.ExecuteScalar(command).ToString();
-
-        if (string.IsNullOrEmpty(scalarResult))
-        {
-            throw new DatabaseScalarNullException(nameof(scalarResult));
-        }
-
-        return int.Parse(scalarResult);
-    }
-
-    /// <summary>
-    /// Not implemented
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public bool Delete(MessageEntity entity)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <summary>
-    /// Not implemented
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public IEnumerable<MessageEntity> GetAll()
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public MessageEntity? GetByKey(int key)
-    {
-        if (key <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(key));
-        }
-
-        Command command = new Command("spGetMessage", true);
-
-        command.AddParameter("id", key);
-
-        return _connection
-            .ExecuteReader(command, message => Mapper.DbToMessage(message))
-            .SingleOrDefault();
-    }
+    public MessageRepository(IDevHopConnection connection) : base(connection) { }
 
     /// <summary>
     /// Retrieve user's messages sent and received
@@ -102,25 +27,76 @@ public class MessageRepository : IMessageRepository
     public IEnumerable<MessageEntity> GetUserMessages(string userId)
     {
         if (string.IsNullOrEmpty(userId))
-        {
             throw new ArgumentNullException(nameof(userId));
-        }
 
-        Command command = new Command("spGetUserMessages", true);
+        string query = "SELECT * FROM [Messages] WHERE ([ReceiverId] = @userId) OR ([SenderId] = @userId)";
+
+        Command command = new Command(query);
 
         command.AddParameter("userId", userId);
 
-        return _connection
-            .ExecuteReader(command, message => Mapper.DbToMessage(message));
+        return _connection.ExecuteReader(command, message => message.DbToMessage());
     }
 
-    /// <summary>
-    /// Not implemented
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     /// <exception cref="NotImplementedException"></exception>
-    public bool Update(MessageEntity entity)
+    public IEnumerable<MessageEntity> GetAll()
+    {
+        throw new NotImplementedException();
+    }
+
+
+    /// <inheritdoc />
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="DatabaseScalarNullException"></exception>
+    public int Create(MessageEntity entity)
+    {
+        if (entity is null)
+        {
+            throw new ArgumentNullException(nameof(entity));
+        }
+
+        Command command = new Command("spCreateMessage", true);
+
+        command.AddParameter("content", entity.Content);
+        command.AddParameter("senderId", entity.SenderId);
+        command.AddParameter("receiverId", entity.ReceiverId);
+
+        string scalarResult = _connection.ExecuteScalar(command).ToString();
+
+        if (string.IsNullOrEmpty(scalarResult))
+            throw new DatabaseScalarNullException(nameof(scalarResult));
+
+        return int.Parse(scalarResult);
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public MessageEntity GetByKey(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "SELECT * FROM [dbo].[Messages] WHERE [Messages].[Id] = Id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection
+            .ExecuteReader(command, message => message.DbToMessage())
+            .SingleOrDefault();
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="NotImplementedException"></exception>
+    public bool Update(int key, MessageEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc />
+    /// <exception cref="NotImplementedException"></exception>
+    public bool Delete(int key)
     {
         throw new NotImplementedException();
     }

@@ -31,16 +31,6 @@ public class UserEntity
     public string PasswordHash { get; set; } = string.Empty;
 
     /// <summary>
-    /// Represent <c>Users</c> table's <c>PasswordHash</c> column
-    /// </summary>
-    public string Password { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Represent <c>Users</c> table's <c>Salt</c> column
-    /// </summary>
-    public string Salt { get; set; } = string.Empty;
-
-    /// <summary>
     /// Represent <c>Users</c> table's <c>FirstName</c> column
     /// </summary>
     public string FirstName { get; set; } = string.Empty;
@@ -58,7 +48,7 @@ public class UserEntity
     /// <summary>
     /// Represent <c>Users</c> table's <c>BirthDate</c> column
     /// </summary>
-    public DateTime BirthDate { get; set; }
+    public DateTime? BirthDate { get; set; }
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>ConcurrencyStamp</c> column
