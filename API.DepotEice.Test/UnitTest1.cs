@@ -1,12 +1,7 @@
-using API.DepotEice.DAL.Entities;
-using API.DepotEice.DAL.Repositories;
-using DevHopTools.Connection;
-using Moq;
+namespace API.DepotEice.Test;
 
-namespace API.DepotEice.Test
+public class Tests
 {
-    public class Tests
-    {
     //    private int _num1 = 1;
     //    private int _num2 = 2;
 
@@ -51,5 +46,4 @@ namespace API.DepotEice.Test
 
     //        // Assert
     //    }
-    }
 }

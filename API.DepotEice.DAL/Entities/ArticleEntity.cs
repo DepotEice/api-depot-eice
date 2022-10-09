@@ -39,7 +39,7 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// Specify if <see cref="ArticleEntity"/> is pinned
         /// </summary>
-        public bool Pinned { get; set; }
+        public bool IsPinned { get; set; }
 
         /// <summary>
         /// <see cref="UserEntity"/>'s ID

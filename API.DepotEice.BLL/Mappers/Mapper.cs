@@ -1,6 +1,6 @@
 ﻿using API.DepotEice.BLL.Dtos;
 using API.DepotEice.DAL.Entities;
-using DevHopTools.Extensions;
+using DevHopTools.Mappers;
 
 namespace API.DepotEice.BLL.Mappers;
 

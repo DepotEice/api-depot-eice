@@ -1,157 +1,152 @@
 ﻿using API.DepotEice.DAL.Entities;
 using System.Data;
-using System.Text;
 
-namespace API.DepotEice.DAL.Mappers
+namespace API.DepotEice.DAL.Mappers;
+
+internal static class Mapper
 {
-    static class Mapper
+    public static AppointmentEntity DbToAppointmentEntity(this IDataRecord record)
     {
-        public static AppointmentEntity DbToAppointmentEntity(this IDataRecord record)
+        return new AppointmentEntity()
         {
-            return new AppointmentEntity()
-            {
-                Id = (int)record["Id"],
-                StartAt = (DateTime)record["StartAt"],
-                EndAt = (DateTime)record["EndAt"],
-                Accepted = (bool)record["Accepted"],
-                UserId = (string)record["UserId"]
-            };
-        }
+            Id = (int)record["Id"],
+            StartAt = (DateTime)record["StartAt"],
+            EndAt = (DateTime)record["EndAt"],
+            IsAccepted = (bool)record["IsAccepted"],
+            UserId = (string)record["UserId"]
+        };
+    }
 
-        public static ArticleCommentEntity DbToArticleComment(this IDataRecord record)
+    public static ArticleCommentEntity DbToArticleComment(this IDataRecord record)
+    {
+        return new ArticleCommentEntity()
         {
-            return new ArticleCommentEntity()
-            {
-                Id = (int)record["Id"],
-                Note = (int)record["Note"],
-                Review = (string)record["Review"],
-                CreatedAt = (DateTime)record["CreatedAt"],
-                UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
-                ArticleId = (int)record["ArticleId"],
-                UserId = (string)record["UserId"]
-            };
-        }
+            Id = (int)record["Id"],
+            Note = (int)record["Note"],
+            Review = (string)record["Review"],
+            UserId = (string)record["UserId"],
+            ArticleId = (int)record["ArticleId"],
+            CreatedAt = (DateTime)record["CreatedAt"],
+            UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
+            DeletedAt = (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"]
+        };
+    }
 
-        public static ArticleEntity DbToArticle(this IDataRecord record)
+    public static ArticleEntity DbToArticle(this IDataRecord record)
+    {
+        return new ArticleEntity()
         {
-            return new ArticleEntity()
-            {
-                Id = (int)record["Id"],
-                Title = (string)record["Title"],
-                Body = (string)record["Body"],
-                CreatedAt = (DateTime)record["CreatedAt"],
-                UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
-                Pinned = (bool)record["Pinned"],
-                UserId = record["UserId"].ToString()
-            };
-        }
+            Id = (int)record["Id"],
+            Title = (string)record["Title"],
+            Body = (string)record["Body"],
+            CreatedAt = (DateTime)record["CreatedAt"],
+            UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
+            IsPinned = (bool)record["IsPinned"],
+            UserId = record["UserId"].ToString()
+        };
+    }
 
-        public static MessageEntity DbToMessage(this IDataRecord record)
+    public static MessageEntity DbToMessage(this IDataRecord record)
+    {
+        return new MessageEntity()
         {
-            return new MessageEntity()
-            {
-                Id = (int)record["Id"],
-                Content = (string)record["Content"],
-                SenderId = (string)record["SenderId"],
-                ReceiverId = (string)record["ReceiverId"]
-            };
-        }
+            Id = (int)record["Id"],
+            Content = (string)record["Content"],
+            SenderId = (string)record["SenderId"],
+            ReceiverId = (string)record["ReceiverId"]
+        };
+    }
 
-        public static ModuleEntity DbToModule(this IDataRecord record)
+    public static ModuleEntity DbToModule(this IDataRecord record)
+    {
+        return new ModuleEntity()
         {
-            return new ModuleEntity()
-            {
-                Id = (int)record["Id"],
-                Name = (string)record["Name"],
-                Description = (string)record["Description"]
-            };
-        }
+            Id = (int)record["Id"],
+            Name = (string)record["Name"],
+            Description = (string)record["Description"]
+        };
+    }
 
-        public static OpeningHoursEntity DbToOpeningHours(this IDataRecord record)
+    public static OpeningHoursEntity DbToOpeningHours(this IDataRecord record)
+    {
+        return new OpeningHoursEntity()
         {
-            return new OpeningHoursEntity()
-            {
-                Id = (int)record["Id"],
-                OpenAt = (DateTime)record["OpenAt"],
-                CloseAt = (DateTime)record["CloseAt"]
-            };
-        }
+            Id = (int)record["Id"],
+            OpenAt = (DateTime)record["OpenAt"],
+            CloseAt = (DateTime)record["CloseAt"]
+        };
+    }
 
-        public static RoleEntity DbToRole(this IDataRecord record)
+    public static RoleEntity DbToRole(this IDataRecord record)
+    {
+        return new RoleEntity()
         {
-            return new RoleEntity()
-            {
-                Id = record["Id"].ToString() ??
-                    throw new NullReferenceException("Record key Id return null!"),
+            Id = record["Id"].ToString() ??
+                throw new NullReferenceException("Record key Id return null!"),
 
-                Name = (string)record["Name"]
-            };
-        }
+            Name = (string)record["Name"]
+        };
+    }
 
-        public static ScheduleFileEntity DbToScheduleFile(this IDataRecord record)
+    public static ScheduleFileEntity DbToScheduleFile(this IDataRecord record)
+    {
+        return new ScheduleFileEntity()
         {
-            return new ScheduleFileEntity()
-            {
-                Id = (int)record["Id"],
-                FilePath = (string)record["FilePath"],
-                ScheduleId = (int)record["ScheduleId"]
-            };
-        }
+            Id = (int)record["Id"],
+            FilePath = (string)record["FilePath"],
+            ScheduleId = (int)record["ScheduleId"]
+        };
+    }
 
-        public static ScheduleEntity DbToSchedule(this IDataRecord record)
+    public static ScheduleEntity DbToSchedule(this IDataRecord record)
+    {
+        return new ScheduleEntity()
         {
-            return new ScheduleEntity()
-            {
-                Id = (int)record["Id"],
-                Title = (record["Title"] is DBNull) ? null : (string)record["Title"],
-                Details = (record["Details"] is DBNull) ? null : (string)record["Details"],
-                StartsAt = (DateTime)record["StartsAt"],
-                EndsAt = (DateTime)record["EndsAt"],
-                ModuleId = (int)record["ModuleId"]
-            };
-        }
+            Id = (int)record["Id"],
+            Title = (record["Title"] is DBNull) ? null : (string)record["Title"],
+            Details = (record["Details"] is DBNull) ? null : (string)record["Details"],
+            StartsAt = (DateTime)record["StartsAt"],
+            EndsAt = (DateTime)record["EndsAt"],
+            ModuleId = (int)record["ModuleId"]
+        };
+    }
 
-        public static UserEntity DbToUser(this IDataRecord record)
+    public static UserEntity DbToUser(this IDataRecord record)
+    {
+        return new UserEntity()
         {
-            return new UserEntity()
-            {
-                Id = record["Id"].ToString() ??
-                    throw new NullReferenceException("Record key ID is null!"),
+            Id = record["Id"].ToString(),
+            Email = record["Email"] is DBNull ? null : (string)record["Email"],
+            NormalizedEmail = (record["NormalizedEmail"] is DBNull) ? null : (string)record["NormalizedEmail"],
+            EmailConfirmed = (bool)record["EmailConfirmed"],
+            PasswordHash = record["PasswordHash"] is DBNull ? null : (string)record["PasswordHash"],
+            FirstName = record["FirstName"] is DBNull ? null : (string)record["FirstName"],
+            LastName = record["LastName"] is DBNull ? null : (string)record["LastName"],
+            ProfilePicture = record["ProfilePicture"] is DBNull ? null : (string)record["ProfilePicture"],
+            BirthDate = record["BirthDate"] is DBNull ? null : (DateTime)record["BirthDate"],
+            ConcurrencyStamp = record["ConcurrencyStamp"] is DBNull ? null : record["ConcurrencyStamp"].ToString(),
+            SecurityStamp = record["SecurityStamp"] is DBNull ? null : record["SecurityStamp"].ToString(),
+            IsActive = (bool)record["IsActive"],
+            CreatedAt = (DateTime)record["CreatedAt"],
+            UpdatedAt = record["UpdatedAt"] is DBNull ? null : (DateTime)record["UpdatedAt"],
+            DeletedAt = record["DeletedAt"] is DBNull ? null : (DateTime)record["DeletedAt"]
+        };
+    }
 
-                Email = (string)record["Email"],
-                NormalizedEmail = (string)record["NormalizedEmail"],
-                FirstName = (string)record["FirstName"],
-                LastName = (string)record["LastName"],
-                ProfilePicture = (string)record["ProfilePicture"],
-                BirthDate = (DateTime)record["BirthDate"],
-                ConcurrencyStamp = record["ConcurrencyStamp"].ToString() ??
-                    throw new NullReferenceException("Record key ConcurrencyStamp is null!"),
-
-                SecurityStamp = record["SecurityStamp"].ToString() ??
-                    throw new NullReferenceException("record key SecurityStamp is null!"),
-
-                IsActive = (bool)record["IsActive"],
-                CreatedAt = (DateTime)record["CreatedAt"],
-                UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
-                DeletedAt = (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"]
-            };
-        }
-
-        public static UserTokenEntity DbToUserToken(this IDataRecord record)
+    public static UserTokenEntity DbToUserToken(this IDataRecord record)
+    {
+        return new UserTokenEntity()
         {
-            return new UserTokenEntity()
-            {
-                Id = record["Id"].ToString() ??
-                    throw new NullReferenceException("Record key Id return null!"),
+            Id = record["Id"].ToString() ??
+                throw new NullReferenceException("Record key Id return null!"),
 
-                Type = (string)record["Type"],
-                Value = (string)record["Value"],
-                DeliveryDateTime = (DateTime)record["DeliveryDate"],
-                ExpirationDateTime = (DateTime)record["ExpirationDate"],
-                UserId = record["UserId"].ToString() ??
-                    throw new NullReferenceException("Record key UserId returned null!")
-            };
+            Type = (string)record["Type"],
+            Value = (string)record["Value"],
+            DeliveryDateTime = (DateTime)record["DeliveryDate"],
+            ExpirationDateTime = (DateTime)record["ExpirationDate"],
+            UserId = record["UserId"].ToString() ??
+                throw new NullReferenceException("Record key UserId returned null!")
+        };
 
-        }
     }
 }

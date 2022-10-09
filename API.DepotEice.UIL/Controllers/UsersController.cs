@@ -1,71 +1,73 @@
-﻿using API.DepotEice.BLL.Dtos;
-using API.DepotEice.BLL.IServices;
+﻿using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.DepotEice.UIL.Controllers
+namespace API.DepotEice.UIL.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class UsersController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UsersController : ControllerBase
+    private readonly IUserRepository _userRepository;
+    private readonly IUserTokenRepository _userTokenRepository;
+    private readonly IRoleRepository _roleRepository;
+
+    public UsersController(
+        IUserRepository userRepository,
+        IUserTokenRepository userTokenRepository,
+        IRoleRepository roleRepository)
     {
-        private readonly IUserService _userService;
-        private readonly IUserTokenService _userTokenService;
-        private readonly IRoleService _roleService;
+        _userRepository = userRepository;
+        _userTokenRepository = userTokenRepository;
+        _roleRepository = roleRepository;
+    }
 
-        public UsersController(IUserService userService, IUserTokenService userTokenService, IRoleService roleService)
-        {
-            _userService = userService;
-            _userTokenService = userTokenService;
-            _roleService = roleService;
-        }
-
-        [HttpGet]
-        public IActionResult Get()
-        {
-            IEnumerable<UserDto>? users = _userService.GetUsers();
-            foreach (var item in users)
-            {
-                item.BirthDate.ToString();
-            }
-            
-            return Ok(users);
-        }
-
-        [HttpGet("{id}")]
-        public IActionResult Get(string id)
+    [HttpGet]
+    public IActionResult Get()
+    {
+        try
         {
             return Ok();
         }
-
-        [HttpPost]
-        public IActionResult Post([FromBody] UserForm form)
+        catch (Exception e)
         {
-            return Ok();
+            return BadRequest(e.Message);
         }
+    }
 
-        [HttpPut("{id}")]
-        public IActionResult Put(string id, [FromBody] UserForm form)
-        {
-            return Ok();
-        }
+    [HttpGet("{id}")]
+    public IActionResult Get(string id)
+    {
+        return Ok();
+    }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(string id)
-        {
-            return Ok();
-        }
+    [HttpPost]
+    public IActionResult Post([FromBody] UserForm form)
+    {
+        return Ok();
+    }
 
-        [HttpGet("{uId}/Appointments")]
-        public IActionResult GetAppointments(string uId)
-        {
-            return Ok();
-        }
+    [HttpPut("{id}")]
+    public IActionResult Put(string id, [FromBody] UserForm form)
+    {
+        return Ok();
+    }
 
-        [HttpPost("{uId}/Appointments")]
-        public IActionResult PostAppointment(string uId, [FromBody] AppointmentForm form)
-        {
-            return Ok();
-        }
+    [HttpDelete("{id}")]
+    public IActionResult Delete(string id)
+    {
+        return Ok();
+    }
+
+    [HttpGet("{uId}/Appointments")]
+    public IActionResult GetAppointments(string uId)
+    {
+        return Ok();
+    }
+
+    [HttpPost("{uId}/Appointments")]
+    public IActionResult PostAppointment(string uId, [FromBody] AppointmentForm form)
+    {
+        return Ok();
     }
 }

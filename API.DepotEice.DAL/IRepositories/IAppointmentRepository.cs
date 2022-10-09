@@ -1,14 +1,8 @@
 ﻿using API.DepotEice.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace API.DepotEice.DAL.IRepositories
+namespace API.DepotEice.DAL.IRepositories;
+
+public interface IAppointmentRepository : IRepositoryBase<int, AppointmentEntity>
 {
-    public interface IAppointmentRepository : IRepositoryBase<AppointmentEntity, int>
-    {
-        bool AcceptAppointment(int appointmentId);
-    }
+    bool AppointmentDecision(int appointmentId, bool isAccepted = true);
 }

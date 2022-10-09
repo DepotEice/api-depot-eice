@@ -1,433 +1,449 @@
-﻿using API.DepotEice.BLL.IServices;
+﻿using API.DepotEice.DAL.Entities;
+using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Mapper;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.DepotEice.UIL.Controllers
+namespace API.DepotEice.UIL.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ModulesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ModulesController : ControllerBase
+    private readonly IMapper _mapper;
+    private readonly IModuleRepository _moduleRepository;
+    private readonly IScheduleRepository _scheduleRepository;
+    private readonly IScheduleFileRepository _scheduleFileRepository;
+
+    public ModulesController(
+        IMapper mapper,
+        IModuleRepository moduleRepository,
+        IScheduleRepository scheduleRepository,
+        IScheduleFileRepository scheduleFileRepository)
     {
-        private readonly IModuleService _moduleService;
-        private readonly IScheduleService _scheduleService;
-        private readonly IScheduleFileService _scheduleFileService;
-        private readonly IMapper _mapper;
+        _mapper = mapper;
+        _moduleRepository = moduleRepository;
+        _scheduleRepository = scheduleRepository;
+        _scheduleFileRepository = scheduleFileRepository;
+    }
 
-        private List<ModuleModel> FakeData { get; set; } = new List<ModuleModel>()
+    [HttpGet]
+    public IActionResult Get()
+    {
+        try
         {
-            new ModuleModel()
-            {
-                Id = 1,
-                Name = "Module 1",
-                Description = "Description of module 1"
-            },
-            new ModuleModel()
-            {
-                Id = 2,
-                Name = "Module 2",
-                Description = "Description of module 2"
-            },
-        };
+            IEnumerable<ModuleModel> modules = _moduleRepository.GetAll().Select(x => x.Map<ModuleModel>());
 
-        public ModulesController(IModuleService moduleService, IScheduleService scheduleService, IScheduleFileService scheduleFileService, IMapper mapper)
-        {
-            _moduleService = moduleService;
-            _scheduleService = scheduleService;
-            _scheduleFileService = scheduleFileService;
-            _mapper = mapper;
+            return Ok(modules);
         }
-
-        /// <summary>
-        /// Retrieves the list of modules.
-        /// </summary>
-        /// <returns>Returns a list of modules.</returns>
-        [HttpGet]
-        public IActionResult Get()
+        catch (Exception e)
         {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult Get(int id)
+    {
+        try
+        {
+            ModuleModel module = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(id));
+
+            if (module == null)
+                return NotFound();
+
+            return Ok(module);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost]
+    public IActionResult Post([FromBody] ModuleForm form)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            int moduleId = _moduleRepository.Create(form.Map<ModuleEntity>());
+
+            if (moduleId <= 0)
+                return BadRequest("The creation failed");
+
+            ModuleModel? result = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(moduleId));
+
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult Put(int id, [FromBody] ModuleForm form)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            ModuleEntity entity = form.Map<ModuleEntity>();
+            entity.Id = id;
+
+            bool result = _moduleRepository.Update(id, entity);
+
+            if (!result)
+                return BadRequest();
+
+            ModuleModel? module = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(id));
+
+            return Ok(module);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult Delete(int id)
+    {
+        try
+        {
+            var result = _moduleRepository.Delete(id);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/Schedules")]
+    public IActionResult GetSchedules(int mId)
+    {
+        try
+        {
+            IEnumerable<ScheduleModel> schedules = _scheduleFileRepository.GetAll().Select(x => _mapper.Map<ScheduleModel>(x));
+
+            return Ok(schedules);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/Schedules/{sId}")]
+    public IActionResult GetSchedule(int mId, int sId)
+    {
+        try
+        {
+            var entity = _scheduleRepository.GetByKey(sId);
+            ScheduleModel schedule = _mapper.Map<ScheduleModel>(entity);
+
+            return Ok(schedule);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost("{mId}/Schedules/")]
+    public IActionResult PostSchedule(int mId, [FromBody] ScheduleForm form)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            int scheduleId = _scheduleRepository.Create(_mapper.Map<ScheduleEntity>(form));
+            var entity = _scheduleRepository.GetByKey(scheduleId);
+            ScheduleModel schedule = entity.Map<ScheduleModel>();
+
+            return Ok(schedule);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPut("{mId}/Schedules/{sId}")]
+    public IActionResult PutSchedule(int mId, int sId, [FromBody] ScheduleForm form)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var entity = form.Map<ScheduleEntity>();
+            bool result = _scheduleRepository.Update(sId, entity);
+
+            if (!result)
+                return BadRequest(nameof(result));
+
+            entity = _scheduleRepository.GetByKey(sId);
+            ScheduleModel? schedule = entity.Map<ScheduleModel>();
+
+            return Ok(schedule);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete("{mId}/Schedules/{sId}")]
+    public IActionResult DeleteSchedule(int mId, int sId)
+    {
+        try
+        {
+            bool result = _scheduleRepository.Delete(sId);
+
+            if (!result)
+                return BadRequest();
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/Schedules/{sId}/Files")]
+    public IActionResult GetScheduleFiles(int mId, int sId)
+    {
+        try
+        {
+            IEnumerable<ScheduleFileModel> scheduleFiles = _scheduleFileRepository
+                .GetScheduleFiles(sId)
+                .Select(x => x.Map<ScheduleFileModel>());
+
+            return Ok(scheduleFiles);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost("{mId}/Schedules/{sId}/Files")]
+    public IActionResult PostScheduleFiles(int mId, int sId, [FromForm] ScheduleFileForm file)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            ModuleModel? module = _moduleRepository.GetByKey(mId)?.Map<ModuleModel>();
+            if (module == null)
+                return NotFound("Le module n'existe pas !");
+
+            ScheduleModel? schedule = _scheduleRepository.GetByKey(sId)?.Map<ScheduleModel>();
+            if (schedule == null)
+                return NotFound("Le schedule n'existe pas !");
+
+            string imagePath = SaveImageAndGetPath(file);
+
+            ScheduleFileEntity entity = new ScheduleFileEntity()
+            {
+                FilePath = imagePath,
+                ScheduleId = sId
+            };
+
+            int scheduleFileId = _scheduleFileRepository.Create(entity);
+
+            if (scheduleFileId <= 0)
+                return BadRequest(nameof(scheduleFileId));
+
+            ScheduleFileModel? scheduleFile = _scheduleFileRepository.GetByKey(scheduleFileId)?.Map<ScheduleFileModel>();
+
+            return Ok(scheduleFile);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete("{mId}/Schedules/{sId}/Files/{fId}")]
+    public IActionResult DeleteScheduleFiles(int mId, int sId, int fId)
+    {
+        try
+        {
+            ModuleModel? module = _moduleRepository.GetByKey(mId)?.Map<ModuleModel>();
+            if (module == null)
+                return NotFound("Le module n'existe pas !");
+
+            ScheduleModel? schedule = _scheduleRepository.GetByKey(sId)?.Map<ScheduleModel>();
+            if (schedule == null)
+                return NotFound("Le schedule n'existe pas !");
+
+            ScheduleFileModel? scheduleFile = _scheduleFileRepository.GetByKey(fId)?.Map<ScheduleFileModel>();
+            if (scheduleFile == null)
+                return NotFound("Aucune fichier existant !");
+
+            string filePath = scheduleFile.FilePath;
+
+            FileInfo fileInfo = new FileInfo(filePath);
+
             try
             {
-                IEnumerable<ModuleModel> modules = _moduleService.GetAll().Select(x => x.ToUil());
-
-                return Ok(modules);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Retrieves one item of module by it's id.
-        /// </summary>
-        /// <param name="id">The ID of the module.</param>
-        /// <returns>returns the selected </returns>
-        /// <response code="200">Returns selected item.</response>
-        /// <response code="400">If the item is null.</response>
-        [HttpGet("{id}")]
-        public IActionResult Get(int id)
-        {
-            try
-            {
-                var item = _moduleService.GetByKey(id)?.ToUil();
-
-                if (item == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(item);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPost]
-        public IActionResult Post([FromBody] ModuleForm form)
-        {
-            if (!ModelState.IsValid) 
-                return BadRequest(ModelState);
-
-            try
-            {
-                ModuleModel? result = _moduleService.Create(form.ToBll())?.ToUil();
-
-                return Ok(result);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] ModuleForm form)
-        {
-            if (!ModelState.IsValid) 
-                return BadRequest(ModelState);
-
-            try
-            {
-
-                ModuleModel? module = _moduleService.Update(id, form.ToBll())?.ToUil();
-
-                return Ok(module);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            try
-            {
-                var result = _moduleService.Delete(id);
-
-                if (!result)
-                {
-                    return BadRequest();
-                }
-
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("{mId}/Schedules")]
-        public IActionResult GetSchedules(int mId)
-        {
-            try
-            {
-                var schedules = _scheduleService.GetModuleSchedules(mId).Select(x => _mapper.Map<ScheduleModel>(x));
-
-                return !schedules.Any() ? NoContent() : Ok(schedules);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("{mId}/Schedules/{sId}")]
-        public IActionResult GetSchedule(int mId, int sId)
-        {
-            try
-            {
-                ScheduleModel? item = _mapper.Map<ScheduleModel>(_scheduleService.GetSchedule(sId));
-
-                return Ok(item);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPost("{mId}/Schedules/")]
-        public IActionResult PostSchedule(int mId, [FromBody] ScheduleForm form)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-             
-            try
-            {
-                ScheduleModel? response = _scheduleService.CreateSchedule(mId, form.ToBll())?.ToUil();
-
-                return Ok(response);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPut("{mId}/Schedules/{sId}")]
-        public IActionResult PutSchedule(int mId, int sId, [FromBody] ScheduleForm form)
-        {
-            if (!ModelState.IsValid) 
-                return BadRequest(ModelState);
-
-            try
-            {
-                ScheduleModel? item = _scheduleService.Update(sId, form.ToBll())?.ToUil();
-                return Ok(item);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpDelete("{mId}/Schedules/{sId}")]
-        public IActionResult DeleteSchedule(int mId, int sId)
-        {
-            try
-            {
-                var result = _scheduleService.Delete(sId);
-
-                if (!result)
-                    return BadRequest();
-
-                return NoContent();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("{mId}/Schedules/{sId}/Files")]
-        public IActionResult GetScheduleFiles(int mId, int sId)
-        {
-            try
-            {
-                IEnumerable<ScheduleFileModel>? items = _scheduleFileService.GetScheduleFiles(sId).Select(x => x.ToUil());
-                return Ok(items);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPost("{mId}/Schedules/{sId}/Files")]
-        public IActionResult PostScheduleFiles(int mId, int sId, [FromForm]ScheduleFileForm file)
-        {
-            if (!ModelState.IsValid) 
-                return BadRequest(ModelState);
-
-            try
-            {
-                var module = _moduleService.GetByKey(mId)?.ToUil();
-                if (module == null)
-                    return NotFound("Le module n'existe pas !");
-
-                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
-                if (schedule == null)
-                    return NotFound("Le schedule n'existe pas !");
-
-                string imagePath = SaveImageAndGetPath(file);
-
-                ScheduleFileModel? resposne = _scheduleFileService.CreateScheduleFile(sId, new ScheduleFileModel() { FilePath = imagePath }.ToBll())?.ToUil();
-
-                return Ok(resposne);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpDelete("{mId}/Schedules/{sId}/Files/{fId}")]
-        public IActionResult DeleteScheduleFiles(int mId, int sId, int fId)
-        {
-            try
-            {
-                var module = _moduleService.GetByKey(mId)?.ToUil();
-                if (module == null)
-                    return NotFound("Le module n'existe pas !");
-
-                var schedule = _scheduleService.GetByKey(sId)?.ToUil();
-                if (schedule == null)
-                    return NotFound("Le schedule n'existe pas !");
-
-                var item = _scheduleFileService.GetScheduleFile(fId)?.ToUil();
-                if (item == null)
-                    return NotFound("Aucune fichier existant !");
-
-                string filePath = item.FilePath;
-
-                FileInfo fileInfo = new FileInfo(filePath);
-
-                try
-                {
-                    var result = _scheduleFileService.DeleteScheduleFile(fId);
-
-                    if (!result)
-                        return BadRequest("Something went wrong ...");
-
-                    fileInfo.Delete();
-                }
-                catch (Exception e)
-                {
-                    return BadRequest(e.Message);
-                }
-
-                return NoContent();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("{mId}/Teachers/")]
-        public IActionResult GetTeachers(int mId)
-        {
-            try
-            {
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPost("{mId}/Teachers/{tId}")]
-        public IActionResult AssignTeacher(int mId, string tId)
-        {
-            try
-            {
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpDelete("{mId}/Teachers/{tId}")]
-        public IActionResult DischargeTeacher(int mId, string tId)
-        {
-            try
-            {
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("{mId}/Students")]
-        public IActionResult ModuleStudents(int mId)
-        {
-            try
-            {
-                IEnumerable<UserModel> students = _moduleService.GetModuleStudents(mId).Select(x => _mapper.Map<UserModel>(x));
-                return Ok(students);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPost("{mId}/Students/{sId}")]
-        public IActionResult StudentApply(int mId, string sId)
-        {
-            try
-            {
-                bool result = _moduleService.StudentApply(sId, mId);
+                bool result = _scheduleFileRepository.Delete(fId);
 
                 if (!result)
                     return BadRequest("Something went wrong ...");
 
-                return NoContent();
+                fileInfo.Delete();
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
-        }
 
-        [HttpPut("{mId}/Students/{sId}")]
-        public IActionResult StudentAcceptExempt(int mId, string sId, bool decision)
+            return NoContent();
+        }
+        catch (Exception e)
         {
-            try
-            {
-                // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
-                // cannot be accessible by guests or students. Only by Teacher or Higher
-                bool result = _moduleService.StudentAcceptExempt(sId, mId, decision);
-
-                if (!result)
-                    return BadRequest("Something went wrong ...");
-
-                return NoContent();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            return BadRequest(e.Message);
         }
+    }
 
-        [HttpDelete("{mId}/Students/{sId}")]
-        public IActionResult StudentDelete(int mId, string sId)
+    [HttpGet("{mId}/Teachers/")]
+    public IActionResult GetTeachers(int mId)
+    {
+        try
         {
-            try
-            {
-                bool result = _moduleService.DeleteStudentFromModule(sId, mId);
-
-                if (!result)
-                    return BadRequest("Something went wrong ...");
-
-                return NoContent();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            return Ok();
         }
-
-        private static string SaveImageAndGetPath(ScheduleFileForm file)
+        catch (Exception e)
         {
-            string fileName = file.File.FileName;
-            string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
-
-            var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
-            file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
-            return imagePath;
+            return BadRequest(e.Message);
         }
+    }
+
+    [HttpPost("{mId}/Teachers/{tId}")]
+    public IActionResult AssignTeacher(int mId, string tId)
+    {
+        try
+        {
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete("{mId}/Teachers/{tId}")]
+    public IActionResult DischargeTeacher(int mId, string tId)
+    {
+        try
+        {
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/Students")]
+    public IActionResult ModuleStudents(int mId)
+    {
+        try
+        {
+            IEnumerable<UserModel> students = _moduleRepository.GetModuleStudents(mId).Select(x => x.Map<UserModel>());
+            return Ok(students);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost("{mId}/Students/{sId}")]
+    public IActionResult StudentApply(int mId, string sId)
+    {
+        try
+        {
+            bool result = _moduleRepository.StudentApply(sId, mId);
+
+            if (!result)
+                return BadRequest("Something went wrong ...");
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPut("{mId}/Students/{sId}")]
+    public IActionResult StudentAcceptExempt(int mId, string sId, bool decision)
+    {
+        try
+        {
+            // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
+            // cannot be accessible by guests or students. Only by Teacher or Higher
+            bool result = _moduleRepository.StudentAcceptExempt(sId, mId, decision);
+
+            if (!result)
+                return BadRequest("Something went wrong ...");
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete("{mId}/Students/{sId}")]
+    public IActionResult StudentDelete(int mId, string sId)
+    {
+        try
+        {
+            bool result = _moduleRepository.DeleteUserFromModule(sId, mId);
+
+            if (!result)
+                return BadRequest("Something went wrong ...");
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    private static string SaveImageAndGetPath(ScheduleFileForm file)
+    {
+        string fileName = file.File.FileName;
+        string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
+
+        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
+        file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
+        return imagePath;
     }
 }

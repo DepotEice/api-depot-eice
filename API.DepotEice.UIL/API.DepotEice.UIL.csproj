@@ -14,7 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\API.DepotEice.BLL\API.DepotEice.BLL.csproj" />
+    <ProjectReference Include="..\API.DepotEice.DAL\API.DepotEice.DAL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Profiles\" />
   </ItemGroup>
 
 </Project>

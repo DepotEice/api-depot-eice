@@ -2,176 +2,121 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Mappers;
 using API.DepotEice.Helpers.Exceptions;
-using DevHopTools.Connection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DevHopTools.DataAccess;
+using DevHopTools.DataAccess.Interfaces;
 
-namespace API.DepotEice.DAL.Repositories
+namespace API.DepotEice.DAL.Repositories;
+
+public class ArticleCommentRepository : RepositoryBase, IArticleCommentRepository
 {
-    public class ArticleCommentRepository : IArticleCommentRepository
+    public ArticleCommentRepository(IDevHopConnection connection) : base(connection) { }
+
+    /// <summary>
+    /// Retrieve all <c>ArticleComment</c> records <paramref name="articleId"/> from the 
+    /// database 
+    /// </summary>
+    /// <param name="articleId">
+    /// The ID of <see cref="ArticleEntity"/> to retrieve
+    /// </param>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleCommentEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IEnumerable<ArticleCommentEntity> GetArticleComments(int articleId)
     {
-        private readonly Connection _connection;
+        if (articleId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(articleId));
 
-        public ArticleCommentRepository(Connection connection)
-        {
-            if (connection is null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
+        string query = "SELECT * FROM [dbo].[ArticleComments] WHERE [ArticleId] = @articleId";
 
-            _connection = connection;
-        }
+        Command command = new Command(query);
 
-        /// <summary>
-        /// Create a new <c>ArticleComment</c> record in the database. If the scalar result is 
-        /// <c>null</c>, an exception <see cref="DatabaseScalarNullException"/> is thrown
-        /// </summary>
-        /// <param name="entity">
-        /// The new record to create. Throws an <see cref="ArgumentNullException"/> if it is null
-        /// </param>
-        /// <returns>
-        /// The ID of the newly created record. If the creation failed, return <c>0</c>
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="DatabaseScalarNullException"></exception>
-        public int Create(ArticleCommentEntity entity)
-        {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+        command.AddParameter("articleId", articleId);
 
-            Command command = new Command("spCreateArticleComment", true);
+        return _connection.ExecuteReader(command,
+            articleComment => Mapper.DbToArticleComment(articleComment));
+    }
 
-            command.AddParameter("note", entity.Note);
-            command.AddParameter("review", entity.Review);
-            command.AddParameter("articleId", entity.ArticleId);
-            command.AddParameter("userId", entity.UserId);
+    /// <inheritdoc/>
+    /// <exception cref="NotImplementedException"></exception>
+    public IEnumerable<ArticleCommentEntity> GetAll()
+    {
+        throw new NotImplementedException();
+    }
 
-            string? scalarResult = _connection.ExecuteScalar(command).ToString();
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="DatabaseScalarNullException"></exception>
+    public int Create(ArticleCommentEntity entity)
+    {
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
 
-            if (string.IsNullOrEmpty(scalarResult))
-            {
-                throw new DatabaseScalarNullException(nameof(scalarResult));
-            }
+        Command command = new Command("spCreateArticleComment", true);
 
-            return int.Parse(scalarResult);
-        }
+        command.AddParameter("note", entity.Note);
+        command.AddParameter("review", entity.Review);
+        command.AddParameter("articleId", entity.ArticleId);
+        command.AddParameter("userId", entity.UserId);
 
-        /// <summary>
-        /// Delete <paramref name="entity"/> from the database
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <returns>
-        /// <c>true</c> If one or more row has been affected by the query. <c>false</c> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool Delete(ArticleCommentEntity entity)
-        {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
-            Command command = new Command("spDeleteArticleComment", true);
+        if (string.IsNullOrEmpty(scalarResult))
+            throw new DatabaseScalarNullException(nameof(scalarResult));
 
-            command.AddParameter("id", entity.Id);
+        return int.Parse(scalarResult);
+    }
 
-            return _connection.ExecuteNonQuery(command) > 0;
-        }
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public ArticleCommentEntity GetByKey(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
 
-        /// <summary>
-        /// Not implemented
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public IEnumerable<ArticleCommentEntity> GetAll()
-        {
-            throw new NotImplementedException();
-        }
+        string query = "SELECT * FROM [Appointments] WHERE [Appointments].[Id] = @id";
 
-        /// <summary>
-        /// Retrieve all <c>ArticleComment</c> records <paramref name="articleId"/> from the 
-        /// database 
-        /// </summary>
-        /// <param name="articleId">
-        /// The ID of <see cref="ArticleEntity"/> to retrieve
-        /// </param>
-        /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleCommentEntity"/>
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public IEnumerable<ArticleCommentEntity> GetArticleComments(int articleId)
-        {
-            if (articleId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(articleId));
-            }
+        Command command = new Command(query);
 
-            Command command = new Command("spGetArticleComments", true);
+        command.AddParameter("id", key);
 
-            command.AddParameter("articleId", articleId);
+        return _connection
+            .ExecuteReader(command,
+                articleComment => Mapper.DbToArticleComment(articleComment))
+            .SingleOrDefault();
+    }
 
-            return _connection.ExecuteReader(command,
-                articleComment => Mapper.DbToArticleComment(articleComment));
-        }
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool Update(int key, ArticleCommentEntity entity)
+    {
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
 
-        /// <summary>
-        /// Retrieve a record <c>ArticleComment</c> with the given ID <paramref name="key"/> from
-        /// the database
-        /// </summary>
-        /// <param name="key">
-        /// The ID of the researched record
-        /// </param>
-        /// <returns>
-        /// <c>null</c> If there is no return value or if the returned value is not unique. 
-        /// <see cref="ArticleCommentEntity"/> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleCommentEntity? GetByKey(int key)
-        {
-            if (key <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(key));
-            }
+        string query = "UPDATE [dbo].[ArticleComments] SET [Note] = @note, [Review] = @review WHERE [Id] = @id";
 
-            Command command = new Command("spGetArticleComment", true);
+        Command command = new Command(query);
 
-            command.AddParameter("id", key);
+        command.AddParameter("id", key);
+        command.AddParameter("note", entity.Note);
+        command.AddParameter("review", entity.Review);
 
-            return _connection
-                .ExecuteReader(command,
-                    articleComment => Mapper.DbToArticleComment(articleComment))
-                .SingleOrDefault();
-        }
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
 
-        /// <summary>
-        /// Update the given <paramref name="entity"/> in the database
-        /// </summary>
-        /// <param name="entity">
-        /// The entity to update
-        /// </param>
-        /// <returns>
-        /// <c>true</c> If one or more record were modified. <c>false</c> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool Update(ArticleCommentEntity entity)
-        {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool Delete(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
 
-            Command command = new Command("spUpdateArticleComment", true);
+        string query = "DELETE FROM [dbo].[ArticleComments] WHERE [Id] = @id";
 
-            command.AddParameter("id", entity.Id);
-            command.AddParameter("note", entity.Note);
-            command.AddParameter("review", entity.Review);
+        Command command = new Command(query);
 
-            return _connection.ExecuteNonQuery(command) > 0;
-        }
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
     }
 }

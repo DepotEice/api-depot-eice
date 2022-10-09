@@ -3,11 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DevHopTools" Version="1.2.1" />
+    <PackageReference Include="DevHopTools" Version="1.2.2" />
   </ItemGroup>
 
   <ItemGroup>
