@@ -108,9 +108,9 @@ public class AuthController : ControllerBase
                 return BadRequest("There is already an account with this email! Please try with another mail or contact the administration.");
 
             entity = form.Map<UserEntity>();
-            entity.PasswordHash = GenerateHash(form.Password);
 
-            string userId = _userRepository.Create(entity);
+            // TODO : Remove the hardcoded hash
+            string userId = _userRepository.Create(entity, form.Password, "salt");
             if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
                 return BadRequest(nameof(userId));
 

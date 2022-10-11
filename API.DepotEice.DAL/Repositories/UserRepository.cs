@@ -139,9 +139,6 @@ public class UserRepository : RepositoryBase, IUserRepository
             .SingleOrDefault();
     }
 
-    #region Basic CRUD
-
-    /// <inheritdoc/>
     public IEnumerable<UserEntity> GetAll()
     {
         string query = "SELECT * FROM [dbo].[Users]";
@@ -151,17 +148,25 @@ public class UserRepository : RepositoryBase, IUserRepository
         return _connection.ExecuteReader(command, user => user.DbToUser());
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Creates a user in the database. The password hashing happens in the database with the help
+    /// of the salt
+    /// </summary>
+    /// <param name="entity">The <see cref="UserEntity"/> to create</param>
+    /// <param name="password">User's password that is going to be hashed</param>
+    /// <param name="salt">The application salt used to hash the password</param>
+    /// <returns>The newly created ID of the user if it went well</returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="DatabaseScalarNullException"></exception>
-    public string Create(UserEntity entity)
+    public string Create(UserEntity entity, string password, string salt)
     {
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
 
         Command command = new Command("spUsers_Create", true);
         command.AddParameter("email", entity.Email);
-        command.AddParameter("passwordHash", entity.PasswordHash);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
         command.AddParameter("firstname", entity.FirstName);
         command.AddParameter("lastname", entity.LastName);
         command.AddParameter("profilePicture", entity.ProfilePicture);
@@ -175,8 +180,17 @@ public class UserRepository : RepositoryBase, IUserRepository
         return scalarResult;
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
+    /// <summary>
+    /// Not implemented
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public string Create(UserEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+
     public UserEntity GetByKey(string key)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -192,8 +206,6 @@ public class UserRepository : RepositoryBase, IUserRepository
             .SingleOrDefault();
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
     public bool Update(string key, UserEntity entity)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -213,8 +225,6 @@ public class UserRepository : RepositoryBase, IUserRepository
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
     public bool Delete(string key)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -227,6 +237,4 @@ public class UserRepository : RepositoryBase, IUserRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }
