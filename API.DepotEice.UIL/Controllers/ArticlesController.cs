@@ -10,6 +10,9 @@ using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Controllers;
 
+/// <summary>
+/// 
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 [Authorize("IsConnected")]
@@ -21,14 +24,39 @@ public class ArticlesController : ControllerBase
     private readonly IArticleRepository _articleRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="articleRepository"></param>
+    /// <param name="articleCommentRepository"></param>
     public ArticlesController(IArticleRepository articleRepository, IArticleCommentRepository articleCommentRepository)
     {
+        if (articleRepository is null)
+        {
+            throw new ArgumentNullException(nameof(articleRepository));
+        }
+
+        if (articleCommentRepository is null)
+        {
+            throw new ArgumentNullException(nameof(articleCommentRepository));
+        }
+
+
         _articleRepository = articleRepository;
         _articleCommentRepository = articleCommentRepository;
     }
 
+    /// <summary>
+    /// Get all articles
+    /// </summary>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with a list of articles if the operation succeeded without any errors.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
+    /// </returns>
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Get()
     {
         try
@@ -42,6 +70,15 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get an Article based on its id
+    /// </summary>
+    /// <param name="id">ID of the article to retrieve</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with the article object if the article is correctly retrieved.
+    /// <see cref="StatusCodes.Status404NotFound"/> If the article does not exist.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
+    /// </returns>
     [HttpGet("{id}")]
     [AllowAnonymous]
     public IActionResult Get(int id)
@@ -60,6 +97,14 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Create a new article
+    /// </summary>
+    /// <param name="form">The Article to create</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> and the object article if the creation went well
+    /// <see cref="StatusCodes.Status400BadRequest"/> if an error occurred during the process
+    /// </returns>
     [HttpPost]
     public IActionResult Post([FromBody] ArticleForm form)
     {
@@ -85,7 +130,13 @@ public class ArticlesController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="form"></param>
+    /// <returns></returns>
     [HttpPut("{id}")]
     public IActionResult Put(int id, [FromBody] ArticleForm form)
     {
@@ -111,6 +162,11 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
@@ -129,6 +185,11 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}/Comments")]
     [AllowAnonymous]
     public IActionResult GetComments(int id)
@@ -147,6 +208,12 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="form"></param>
+    /// <returns></returns>
     [HttpPost("{id}/Comments")]
     public IActionResult PostComment(int id, [FromBody] CommentForm form)
     {
@@ -179,6 +246,13 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="cId"></param>
+    /// <param name="form"></param>
+    /// <returns></returns>
     [HttpPut("{id}/Comments/{cId}")]
     public IActionResult PutComment(int id, int cId, [FromBody] CommentForm form)
     {
@@ -192,7 +266,7 @@ public class ArticlesController : ControllerBase
 
             var entity = form.Map<ArticleCommentEntity>();
             entity.ArticleId = id;
-            entity.UserId= GetUserId();
+            entity.UserId = GetUserId();
 
             bool result = _articleCommentRepository.Update(cId, entity);
             if (!result)
@@ -211,6 +285,12 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="cId"></param>
+    /// <returns></returns>
     [HttpDelete("{id}/Comments/{cId}")]
     public IActionResult DeleteComment(int id, int cId)
     {
@@ -242,5 +322,5 @@ public class ArticlesController : ControllerBase
             return true;
     }
 
-    private string GetUserId() => User.FindFirst(ClaimTypes.Sid).Value;
+    private string? GetUserId() => User.FindFirst(ClaimTypes.Sid)?.Value;
 }
