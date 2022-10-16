@@ -44,11 +44,10 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         command.AddParameter("type", entity.Type);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
+        var v = _connection.ExecuteScalar(command);
         // TODO : Check if the return function is correct
-        return (int)_connection.ExecuteScalar(command) > 0;
+        return false;
     }
-
-    #region Basic CRUD
 
     /// <inheritdoc/>
     /// <exception cref="NotImplementedException"></exception>
@@ -67,14 +66,16 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
 
         Command command = new Command("spUserTokens_Create", true);
         command.AddParameter("type", entity.Type);
-        command.AddParameter("expirationDate", entity.ExpirationDateTime);
+        command.AddParameter("expirationDate", entity.ExpirationDate);
         command.AddParameter("userId", entity.UserId);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
         string scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
+        }
 
         return scalarResult;
     }
@@ -117,6 +118,4 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }

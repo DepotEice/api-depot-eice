@@ -99,7 +99,7 @@ public class Program
         /*  AutoMapper  */
         /****************/
 
-        // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+        builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         /*************/
         /*  Logging  */

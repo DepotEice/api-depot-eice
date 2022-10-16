@@ -36,11 +36,6 @@ public class UserEntity
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Represent <c>Users</c> table's <c>ProfilePicture</c> column
-    /// </summary>
-    public string ProfilePicture { get; set; } = string.Empty;
-
-    /// <summary>
     /// Represent <c>Users</c> table's <c>BirthDate</c> column
     /// </summary>
     public DateTime? BirthDate { get; set; }

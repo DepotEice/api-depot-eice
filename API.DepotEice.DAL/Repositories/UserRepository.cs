@@ -160,16 +160,17 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <exception cref="DatabaseScalarNullException"></exception>
     public string Create(UserEntity entity, string password, string salt)
     {
-        if (entity == null)
+        if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
-
+        }
+            
         Command command = new Command("spUsers_Create", true);
         command.AddParameter("email", entity.Email);
         command.AddParameter("password", password);
         command.AddParameter("salt", salt);
         command.AddParameter("firstname", entity.FirstName);
         command.AddParameter("lastname", entity.LastName);
-        command.AddParameter("profilePicture", entity.ProfilePicture);
         command.AddParameter("birthdate", entity.BirthDate);
 
         string scalarResult = _connection.ExecuteScalar(command).ToString();
@@ -219,7 +220,6 @@ public class UserRepository : RepositoryBase, IUserRepository
         command.AddParameter("id", entity.Id);
         command.AddParameter("firstName", entity.FirstName);
         command.AddParameter("lastName", entity.LastName);
-        command.AddParameter("profilePicture", entity.ProfilePicture);
         command.AddParameter("birthDate", entity.BirthDate);
 
         return _connection.ExecuteNonQuery(command) > 0;

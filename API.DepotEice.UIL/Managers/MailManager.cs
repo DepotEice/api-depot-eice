@@ -30,8 +30,8 @@ namespace API.DepotEice.UIL.Managers
                 body.Append("<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p>");
 
 #if DEBUG
-                //body.Append($"<a href=\"https://localhost:44332/api/auth/activation?id={userId}&token={token}\">Cliquez-ici</a>");
-                body.Append($"<a href=\"https://localhost:44332/account/activation?id={userId}&token={userToken}\">Cliquez-ici</a>");
+                //body.Append($"<a href=\"https://localhost:7205/api/auth/activation?id={userId}&token={token}\">Cliquez-ici</a>");
+                body.Append($"<a href=\"https://localhost:7205/account/activation?id={userId}&token={userToken}\">Cliquez-ici</a>");
 #else
                 body.Append($"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
 #endif

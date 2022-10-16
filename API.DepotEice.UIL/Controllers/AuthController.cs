@@ -8,6 +8,7 @@ using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace API.DepotEice.UIL.Controllers;
@@ -102,56 +103,82 @@ public class AuthController : ControllerBase
 
         try
         {
-            UserEntity? entity = _userRepository.GetUserByEmail(form.Email);
+            UserEntity? userEntity = _userRepository.GetUserByEmail(form.Email);
 
-            if (entity != null)
+            if (userEntity is not null)
                 return BadRequest("There is already an account with this email! Please try with another mail or contact the administration.");
 
-            entity = form.Map<UserEntity>();
+            userEntity = form.Map<UserEntity>();
 
             // TODO : Remove the hardcoded hash
-            string userId = _userRepository.Create(entity, form.Password, "salt");
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
-                return BadRequest(nameof(userId));
+            string userId = _userRepository.Create(userEntity, form.Password, "salt");
 
-            RoleModel guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
-            if (guestRole == null)
-                return BadRequest(nameof(guestRole));
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+            {
+                return BadRequest(nameof(userId));
+            }
+
+            RoleModel? guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
+
+            if (guestRole is null)
+            {
+                string roleId = _roleRepository.Create(new RoleEntity()
+                {
+                    Name = RolesData.GUEST_ROLE
+                });
+
+                if (string.IsNullOrEmpty(roleId))
+                {
+                    return BadRequest();
+                }
+
+                guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
+
+                if (guestRole is null)
+                {
+                    return BadRequest(guestRole);
+                }
+            }
 
             bool result = _roleRepository.AddUser(guestRole.Id, userId);
-            if (!result)
-                return BadRequest(nameof(result));
 
-            entity = _userRepository.GetByKey(userId);
+            if (!result)
+            {
+                return BadRequest(nameof(result));
+            }
+
+            userEntity = _userRepository.GetByKey(userId);
 
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
             {
                 Type = UserTokenData.EMAIL_CONFIRMATION_TOKEN,
-                ExpirationDateTime = DateTime.Now.AddDays(2),
+                ExpirationDate = DateTime.Now.AddDays(2),
                 UserId = userId,
-                UserSecurityStamp = entity.SecurityStamp
+                UserSecurityStamp = userEntity.SecurityStamp
             });
 
-            UserTokenEntity token = _userTokenRepository.GetByKey(createdUserTokenID);
+            UserTokenEntity? token = _userTokenRepository.GetByKey(createdUserTokenID);
 
-            if (createdUserTokenID != null)
+            if (createdUserTokenID is not null)
             {
                 try
                 {
-                    if (!MailManager.SendActivationEmail(userId, token.Value, entity.NormalizedEmail))
+                    if (!MailManager.SendActivationEmail(userId, token.Value, userEntity.NormalizedEmail))
                     {
-                        _logger.LogWarning($"{DateTime.Now} - Sending the activation email to user with ID \"{userId}\" failed!");
+                        _logger.LogWarning("{date} - Sending the activation email to user with ID \"{userId}\" " +
+                            "failed!", DateTime.Now, userId);
                     }
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(
-                        "{0} An exception was thrown when trying to send the action email for user with ID \"{1}\" with token value {2} at address {3}. Exception message : {4}",
-                        DateTime.Now,
-                        userId,
-                        token.Value,
-                        entity.NormalizedEmail,
-                        e.Message);
+                    _logger.LogError("{date} An exception was thrown when trying to send the action email for user " +
+                        "with ID \"{userId}\" with token value {tokenValue} at address {normalizedEmail}. Exception " +
+                        "message : {message}",
+                                     DateTime.Now,
+                                     userId,
+                                     token.Value,
+                                     userEntity.NormalizedEmail,
+                                     e.Message);
                 }
             }
 
@@ -163,36 +190,57 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
     [HttpPost(nameof(Activate))]
     public IActionResult Activate(string id, string token)
     {
         try
         {
             if (string.IsNullOrEmpty(id) || string.IsNullOrWhiteSpace(id))
+            {
                 return BadRequest(nameof(id));
+            }
 
             if (string.IsNullOrEmpty(token) || string.IsNullOrWhiteSpace(token))
+            {
                 return BadRequest(nameof(token));
+            }
 
-            UserModel? user = _userRepository.GetByKey(id).Map<UserModel>();
-
-            if (user == null)
-                return NotFound("the user does not exist");
-
-            // TODO - Erreure de récupération token
-            UserTokenModel userToken = _userTokenRepository.GetByKey(token).Map<UserTokenModel>();
-
-            //UserTokenDto? userToken = _userTokenService.GetUserToken(UserTokenTypes.EMAIL_CONFIRMATION_TOKEN, id);
+            UserTokenEntity? userToken = _userTokenRepository.GetByKey(id);
 
             if (userToken is null)
-                return NotFound(token);
+            {
+                return NotFound("The token does not exist!");
+            }
 
-            userToken.User = user;
+            UserEntity? user = _userRepository.GetByKey(userToken.UserId);
 
-            if (!_userTokenRepository.VerifyUserToken(userToken.Map<UserTokenEntity>()))
+            if (user is null)
+            {
+                return NotFound("the user does not exist");
+            }
+
+            userToken.UserId = user.Id;
+            userToken.UserSecurityStamp = user.SecurityStamp;
+
+            if (!_userTokenRepository.VerifyUserToken(userToken))
+            {
                 return BadRequest("This token has already been used");
+            }
 
-            return Ok("User have been activated with success");
+            //user.SecurityStamp = Guid.NewGuid().ToString();
+
+            //if (!_userRepository.Update(user.Id, user))
+            //{
+            //    _logger.LogError("{date} - Updating User's Security Stamp failed.", DateTime.Now);
+            //}
+
+            return Ok("User has been successfully activated");
         }
         catch (Exception e)
         {
