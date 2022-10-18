@@ -96,6 +96,7 @@ public class ArticlesController : ControllerBase
         }
     }
 
+    // TODO : Limit this endpoint to Teachers / Direction
     /// <summary>
     /// Create a new article
     /// </summary>
@@ -115,8 +116,11 @@ public class ArticlesController : ControllerBase
             entity.UserId = GetUserId();
 
             int articleId = _articleRepository.Create(entity);
+
             if (articleId <= 0)
+            {
                 return BadRequest(nameof(articleId));
+            }
 
             ArticleModel? article = _articleRepository.GetByKey(articleId)?.Map<ArticleModel>();
             if (article == null)
