@@ -2,9 +2,11 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SQLitePCL;
 using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Controllers;
@@ -20,16 +22,33 @@ public class ArticlesController : ControllerBase
     private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
     private const string ERROR = "Something went wrong ! Please contact the administrator ...";
 
+    private readonly ILogger _logger;
+    private readonly IMapper _mapper;
     private readonly IArticleRepository _articleRepository;
     private readonly IArticleCommentRepository _articleCommentRepository;
+    private readonly IUserRepository _userRepository;
 
     /// <summary>
     /// Constructor
     /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="mapper"></param>
     /// <param name="articleRepository"></param>
     /// <param name="articleCommentRepository"></param>
-    public ArticlesController(IArticleRepository articleRepository, IArticleCommentRepository articleCommentRepository)
+    /// <param name="userRepository"></param>
+    public ArticlesController(ILogger<ArticlesController> logger, IMapper mapper, IArticleRepository articleRepository,
+        IArticleCommentRepository articleCommentRepository, IUserRepository userRepository)
     {
+        if (logger is null)
+        {
+            throw new ArgumentNullException(nameof(logger));
+        }
+
+        if (mapper is null)
+        {
+            throw new ArgumentNullException(nameof(mapper));
+        }
+
         if (articleRepository is null)
         {
             throw new ArgumentNullException(nameof(articleRepository));
@@ -40,9 +59,16 @@ public class ArticlesController : ControllerBase
             throw new ArgumentNullException(nameof(articleCommentRepository));
         }
 
+        if (userRepository is null)
+        {
+            throw new ArgumentNullException(nameof(userRepository));
+        }
 
+        _logger = logger;
+        _mapper = mapper;
         _articleRepository = articleRepository;
         _articleCommentRepository = articleCommentRepository;
+        _userRepository = userRepository;
     }
 
     /// <summary>
@@ -60,7 +86,21 @@ public class ArticlesController : ControllerBase
     {
         try
         {
-            IEnumerable<ArticleModel> articles = _articleRepository.GetAll().Select(x => x.Map<ArticleModel>());
+            List<ArticleModel> articles = new List<ArticleModel>();
+
+            IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
+
+            foreach (ArticleEntity articleFromRepo in articlesFromRepo)
+            {
+                UserEntity userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
+
+                ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
+
+                article.User = _mapper.Map<UserModel>(userFromRepo);
+
+                articles.Add(article);
+            }
+
             return Ok(articles);
         }
         catch (Exception e)
@@ -123,8 +163,11 @@ public class ArticlesController : ControllerBase
             }
 
             ArticleModel? article = _articleRepository.GetByKey(articleId)?.Map<ArticleModel>();
-            if (article == null)
+
+            if (article is null)
+            {
                 return NotFound(NOTEXIST);
+            }
 
             return Ok(article);
         }
@@ -133,7 +176,7 @@ public class ArticlesController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
