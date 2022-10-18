@@ -201,18 +201,40 @@ public class ArticlesController : ControllerBase
     public IActionResult Put(int id, [FromBody] ArticleForm form)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
             ArticleEntity entity = form.Map<ArticleEntity>();
+
             entity.UserId = GetUserId();
 
             bool result = _articleRepository.Update(id, entity);
-            if (!result)
-                return BadRequest(nameof(result));
 
-            ArticleModel? article = _articleRepository.GetByKey(id).Map<ArticleModel>();
+            if (!result)
+            {
+                return BadRequest(nameof(result));
+            }
+
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(entity.Id);
+
+            if (articleFromRepo is null)
+            {
+                return NotFound("Updated article does not exist anymore");
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound("Article author doesn't exist!");
+            }
+
+            ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
+
+            article.User = _mapper.Map<UserModel>(userFromRepo);
 
             return Ok(article);
         }
