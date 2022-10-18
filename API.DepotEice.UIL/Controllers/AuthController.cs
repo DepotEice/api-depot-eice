@@ -9,6 +9,7 @@ using API.DepotEice.UIL.Models.Forms;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace API.DepotEice.UIL.Controllers;
@@ -17,6 +18,8 @@ namespace API.DepotEice.UIL.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    public static string SALT = Environment.GetEnvironmentVariable("API_SALT") ?? "salt";
+
     private readonly ILogger _logger;
     private readonly IConfiguration _configuration;
     private readonly ITokenManager _tokenManager;
@@ -59,10 +62,13 @@ public class AuthController : ControllerBase
 
         try
         {
-            var entity = _userRepository.LogIn(form.Email, GenerateHash(form.Password));
+            var entity = _userRepository.LogIn(form.Email, form.Password, SALT);
 
             if (entity == null)
-                return BadRequest("Email or Password are incorrect ! Please try again or contact the administration");
+            {
+                return BadRequest("Email or Password are incorrect ! Please try again or contact the " +
+                    "administration");
+            }
 
             // - récuperer l'utilisateur de la base de données,
             LoggedInUserModel? user = entity.Map<LoggedInUserModel>();
@@ -111,7 +117,7 @@ public class AuthController : ControllerBase
             userEntity = form.Map<UserEntity>();
 
             // TODO : Remove the hardcoded hash
-            string userId = _userRepository.Create(userEntity, form.Password, "salt");
+            string userId = _userRepository.Create(userEntity, form.Password, SALT);
 
             if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
             {
@@ -151,7 +157,7 @@ public class AuthController : ControllerBase
 
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
             {
-                Type = UserTokenData.EMAIL_CONFIRMATION_TOKEN,
+                Type = TokenTypesData.EMAIL_CONFIRMATION_TOKEN,
                 ExpirationDate = DateTime.Now.AddDays(2),
                 UserId = userId,
                 UserSecurityStamp = userEntity.SecurityStamp
@@ -233,12 +239,10 @@ public class AuthController : ControllerBase
                 return BadRequest("This token has already been used");
             }
 
-            //user.SecurityStamp = Guid.NewGuid().ToString();
-
-            //if (!_userRepository.Update(user.Id, user))
-            //{
-            //    _logger.LogError("{date} - Updating User's Security Stamp failed.", DateTime.Now);
-            //}
+            if (!_userRepository.ActivateDeactivateUser(user.Id))
+            {
+                return BadRequest("User activation failed!");
+            }
 
             return Ok("User has been successfully activated");
         }

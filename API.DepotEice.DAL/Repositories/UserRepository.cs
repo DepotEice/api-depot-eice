@@ -23,7 +23,10 @@ public class UserRepository : RepositoryBase, IUserRepository
         if (string.IsNullOrEmpty(id))
             throw new ArgumentNullException(nameof(id));
 
-        string query = "UPDATE [dbo].[Users] SET [IsActive] = @isActive, [SecurityStamp] = NEWID() WHERE [Id] = @id";
+        string query = 
+            "UPDATE [dbo].[Users] " +
+            "SET [IsActive] = @isActive, [EmailConfirmed] = 1, [SecurityStamp] = NEWID() " +
+            "WHERE [Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", id);
@@ -36,22 +39,29 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// 
     /// </summary>
     /// <param name="email"></param>
-    /// <param name="passwordHash"></param>
+    /// <param name="password"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public UserEntity LogIn(string email, string passwordHash)
+    public UserEntity? LogIn(string email, string password, string salt)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
+        {
             throw new ArgumentNullException(nameof(email));
+        }
 
-        if (string.IsNullOrEmpty(passwordHash) || string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentNullException(nameof(passwordHash));
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(password))
+        {
+            throw new ArgumentNullException(nameof(password));
+        }
 
-        string query = "SELECT * FROM [dbo].[Users] WHERE [NormalizedEmail] = @normalizedEmail AND [PasswordHash] = @passwordHash";
+        string query =
+            "SELECT * FROM [dbo].[Users] " +
+            "WHERE [NormalizedEmail] = @normalizedEmail AND [PasswordHash] = [dbo].[fnHashPassword](@password, @salt)";
 
         Command command = new Command(query);
         command.AddParameter("normalizedEmail", email.ToUpper());
-        command.AddParameter("passwordHash", passwordHash);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
 
         return _connection
             .ExecuteReader(command, record => record.DbToUser())
@@ -164,7 +174,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         {
             throw new ArgumentNullException(nameof(entity));
         }
-            
+
         Command command = new Command("spUsers_Create", true);
         command.AddParameter("email", entity.Email);
         command.AddParameter("password", password);

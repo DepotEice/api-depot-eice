@@ -36,7 +36,9 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
     public bool ApproveToken(UserTokenEntity entity)
     {
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
         Command command = new Command("spUserTokens_Approve", true);
 
@@ -44,9 +46,7 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         command.AddParameter("type", entity.Type);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
-        var v = _connection.ExecuteScalar(command);
-        // TODO : Check if the return function is correct
-        return false;
+        return (int)_connection.ExecuteScalar(command) > 0;
     }
 
     /// <inheritdoc/>
@@ -56,6 +56,7 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         throw new NotImplementedException();
     }
 
+    // TODO : Override the method and remove the UserSecurityStamp parameter
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="DatabaseScalarNullException"></exception>

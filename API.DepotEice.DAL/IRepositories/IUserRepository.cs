@@ -9,7 +9,7 @@ public interface IUserRepository : IRepositoryBase<string, UserEntity>
     string GetHashPwdFromEmail(string email);
     UserEntity GetUserByEmail(string email);
     IEnumerable<UserEntity> GetModuleUsers(int moduleId);
-    UserEntity LogIn(string email, string passwordHash);
+    UserEntity? LogIn(string email, string password, string salt);
     bool UpdatePassword(string userId, string passwordHash);
 
     string Create(UserEntity entity, string password, string salt);
