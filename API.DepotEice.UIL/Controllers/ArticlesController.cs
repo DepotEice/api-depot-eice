@@ -124,9 +124,23 @@ public class ArticlesController : ControllerBase
     {
         try
         {
-            ArticleModel? article = _articleRepository.GetByKey(id)?.Map<ArticleModel>();
-            if (article == null)
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+            if (articleFromRepo is null)
+            {
                 return NotFound();
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound("Article author does not exist!");
+            }
+
+            ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
+
+            article.User = _mapper.Map<UserModel>(userFromRepo);
 
             return Ok(article);
         }
