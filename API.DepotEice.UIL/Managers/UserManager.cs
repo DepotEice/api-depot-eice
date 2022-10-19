@@ -4,18 +4,31 @@ using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Managers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class UserManager : IUserManager
     {
         private readonly HttpContext _httpContext;
 
-        public UserManager(HttpContext httpContext)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="httpContextAccessor"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public UserManager(IHttpContextAccessor httpContextAccessor)
         {
-            if (httpContext is null)
+            if (httpContextAccessor is null)
             {
-                throw new ArgumentNullException(nameof(httpContext));
+                throw new ArgumentNullException(nameof(httpContextAccessor));
             }
 
-            _httpContext = httpContext;
+            if (httpContextAccessor.HttpContext is null)
+            {
+                throw new ArgumentNullException(nameof(httpContextAccessor.HttpContext));
+            }
+
+            _httpContext = httpContextAccessor.HttpContext;
         }
 
         /// <summary>
