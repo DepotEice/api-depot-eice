@@ -14,7 +14,7 @@ public interface IRepositoryBase<TKey, TEntity>
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    TEntity GetByKey(TKey key);
+    TEntity? GetByKey(TKey key);
 
     /// <summary>
     /// 

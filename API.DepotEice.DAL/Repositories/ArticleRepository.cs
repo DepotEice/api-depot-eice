@@ -59,7 +59,7 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public ArticleEntity GetByKey(int key)
+    public ArticleEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));
@@ -106,5 +106,15 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
         command.AddParameter("id", key);
 
         return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    public bool ArticleExist(int id)
+    {
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(id));
+        }
+
+        return GetByKey(id) is not null;
     }
 }

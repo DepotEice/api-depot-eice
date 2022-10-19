@@ -21,6 +21,7 @@ public class Program
 
         builder.Services.AddCors();
         builder.Services.AddControllers();
+        builder.Services.AddHttpContextAccessor();
         builder.Services.AddSignalR();
         builder.Services.AddEndpointsApiExplorer();
 
@@ -122,6 +123,7 @@ public class Program
         // builder.Services.AddSingleton(sp => new MsSqlCon(connectionString));
 
         builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
+        builder.Services.AddSingleton<IUserManager, UserManager>();
 
         /******************/
         /*  Repositories  */
