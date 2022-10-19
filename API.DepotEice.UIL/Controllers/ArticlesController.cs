@@ -335,7 +335,7 @@ public class ArticlesController : ControllerBase
     /// <param name="form"></param>
     /// <returns></returns>
     [HttpPost("{id}/Comments")]
-    public IActionResult PostComment(int id, [FromBody] CommentForm form)
+    public IActionResult PostComment(int id, [FromBody] ArticleCommentForm form)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -389,7 +389,7 @@ public class ArticlesController : ControllerBase
     /// <param name="form"></param>
     /// <returns></returns>
     [HttpPut("{id}/Comments/{cId}")]
-    public IActionResult PutComment(int id, int cId, [FromBody] CommentForm form)
+    public IActionResult PutComment(int id, int cId, [FromBody] ArticleCommentForm form)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
