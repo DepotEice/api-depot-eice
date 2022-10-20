@@ -1,11 +1,14 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Repositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Hubs;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
+using API.DepotEice.UIL.PolicyProviders;
 using DevHopTools.DataAccess.Connections;
 using DevHopTools.DataAccess.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -91,10 +94,16 @@ public class Program
             };
         });
 
-        builder.Services.AddAuthorization(options =>
-        {
-            options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
-        });
+        //builder.Services.AddAuthorization(options =>
+        //{
+        //    options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
+        //});
+
+        builder.Services.AddAuthorization();
+
+        builder.Services.AddSingleton<IAuthorizationPolicyProvider, HasRolePolicyProvider>();
+        builder.Services.AddSingleton<IAuthorizationHandler, HasRoleRequirementHandler>();
+
 
         /****************/
         /*  AutoMapper  */
@@ -115,7 +124,6 @@ public class Program
 #if DEBUG
         string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
         //string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
-
 #else
         string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 #endif

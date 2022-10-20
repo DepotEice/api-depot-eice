@@ -1,14 +1,14 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
-using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SQLitePCL;
 using System.Security.Claims;
+using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -17,7 +17,7 @@ namespace API.DepotEice.UIL.Controllers;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
-[Authorize("IsConnected")]
+//[Authorize("IsConnected")]
 public class ArticlesController : ControllerBase
 {
     private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
@@ -87,8 +87,9 @@ public class ArticlesController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> with a list of articles if the operation succeeded without any errors.
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
     /// </returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpGet]
-    [AllowAnonymous]
+    //[AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Get()
