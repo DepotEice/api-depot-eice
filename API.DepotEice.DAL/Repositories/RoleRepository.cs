@@ -30,7 +30,7 @@ public class RoleRepository : RepositoryBase, IRoleRepository
         if (string.IsNullOrEmpty(userId))
             throw new ArgumentNullException(nameof(userId));
 
-        string query = "SELECT r.* FROM [dbo].[UserRoles] ur INNER JOIN [dbo].[Roles] r ON r.Id = ur.[RoleId] WHERE ur.[UserId] = userId";
+        string query = "SELECT r.* FROM [dbo].[UserRoles] ur INNER JOIN [dbo].[Roles] r ON r.Id = ur.[RoleId] WHERE ur.[UserId] = @userId";
 
         Command command = new Command(query);
         command.AddParameter("userId", userId);

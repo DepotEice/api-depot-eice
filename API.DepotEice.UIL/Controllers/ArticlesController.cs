@@ -87,7 +87,7 @@ public class ArticlesController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> with a list of articles if the operation succeeded without any errors.
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
     /// </returns>
-    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [HasRoleAuthorize(RolesEnum.STUDENT)]
     [HttpGet]
     //[AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
