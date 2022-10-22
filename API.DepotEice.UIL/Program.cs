@@ -4,7 +4,6 @@ using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Hubs;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
-using API.DepotEice.UIL.PolicyProviders;
 using DevHopTools.DataAccess.Connections;
 using DevHopTools.DataAccess.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -94,12 +93,12 @@ public class Program
             };
         });
 
-        //builder.Services.AddAuthorization(options =>
-        //{
-        //    options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
-        //});
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
+        });
 
-        builder.Services.AddAuthorization();
+        //builder.Services.AddAuthorization();
 
         builder.Services.AddSingleton<IAuthorizationPolicyProvider, HasRolePolicyProvider>();
         builder.Services.AddSingleton<IAuthorizationHandler, HasRoleRequirementHandler>();

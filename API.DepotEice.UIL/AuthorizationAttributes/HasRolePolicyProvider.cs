@@ -1,9 +1,8 @@
-﻿using API.DepotEice.UIL.AuthorizationAttributes;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using static API.DepotEice.UIL.Data.RolesData;
 
-namespace API.DepotEice.UIL.PolicyProviders
+namespace API.DepotEice.UIL.AuthorizationAttributes
 {
     public class HasRolePolicyProvider : IAuthorizationPolicyProvider
     {

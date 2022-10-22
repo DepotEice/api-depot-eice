@@ -1,4 +1,5 @@
 ﻿using API.DepotEice.DAL.Entities;
+using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;

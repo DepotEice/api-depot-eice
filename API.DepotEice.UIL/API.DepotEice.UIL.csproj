@@ -19,4 +19,8 @@
     <ProjectReference Include="..\API.DepotEice.DAL\API.DepotEice.DAL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="PolicyProviders\" />
+  </ItemGroup>
+
 </Project>

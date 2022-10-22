@@ -17,7 +17,7 @@ namespace API.DepotEice.UIL.Controllers;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
-//[Authorize("IsConnected")]
+[Authorize]
 public class ArticlesController : ControllerBase
 {
     private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
