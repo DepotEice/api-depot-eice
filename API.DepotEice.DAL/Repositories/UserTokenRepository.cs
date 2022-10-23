@@ -36,7 +36,9 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
     public bool ApproveToken(UserTokenEntity entity)
     {
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
         Command command = new Command("spUserTokens_Approve", true);
 
@@ -44,11 +46,8 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         command.AddParameter("type", entity.Type);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
-        // TODO : Check if the return function is correct
         return (int)_connection.ExecuteScalar(command) > 0;
     }
-
-    #region Basic CRUD
 
     /// <inheritdoc/>
     /// <exception cref="NotImplementedException"></exception>
@@ -57,6 +56,7 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         throw new NotImplementedException();
     }
 
+    // TODO : Override the method and remove the UserSecurityStamp parameter
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="DatabaseScalarNullException"></exception>
@@ -67,14 +67,16 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
 
         Command command = new Command("spUserTokens_Create", true);
         command.AddParameter("type", entity.Type);
-        command.AddParameter("expirationDate", entity.ExpirationDateTime);
+        command.AddParameter("expirationDate", entity.ExpirationDate);
         command.AddParameter("userId", entity.UserId);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
         string scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
+        }
 
         return scalarResult;
     }
@@ -117,6 +119,4 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }

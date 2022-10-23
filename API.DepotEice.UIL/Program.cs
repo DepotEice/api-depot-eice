@@ -1,11 +1,13 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Repositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Hubs;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
 using DevHopTools.DataAccess.Connections;
 using DevHopTools.DataAccess.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -21,6 +23,7 @@ public class Program
 
         builder.Services.AddCors();
         builder.Services.AddControllers();
+        builder.Services.AddHttpContextAccessor();
         builder.Services.AddSignalR();
         builder.Services.AddEndpointsApiExplorer();
 
@@ -95,11 +98,17 @@ public class Program
             options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
         });
 
+        //builder.Services.AddAuthorization();
+
+        builder.Services.AddSingleton<IAuthorizationPolicyProvider, HasRolePolicyProvider>();
+        builder.Services.AddSingleton<IAuthorizationHandler, HasRoleRequirementHandler>();
+
+
         /****************/
         /*  AutoMapper  */
         /****************/
 
-        // builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+        builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
         /*************/
         /*  Logging  */
@@ -112,9 +121,8 @@ public class Program
         /****************/
 
 #if DEBUG
-        // string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
-        string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
-
+        string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
+        //string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
 #else
         string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 #endif
@@ -122,6 +130,7 @@ public class Program
         // builder.Services.AddSingleton(sp => new MsSqlCon(connectionString));
 
         builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
+        builder.Services.AddSingleton<IUserManager, UserManager>();
 
         /******************/
         /*  Repositories  */

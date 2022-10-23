@@ -26,11 +26,6 @@ public class UserEntity
     public bool EmailConfirmed { get; set; } = false;
 
     /// <summary>
-    /// Represent <c>Users</c> table's <c>PasswordHash</c> column
-    /// </summary>
-    public string PasswordHash { get; set; } = string.Empty;
-
-    /// <summary>
     /// Represent <c>Users</c> table's <c>FirstName</c> column
     /// </summary>
     public string FirstName { get; set; } = string.Empty;
@@ -39,11 +34,6 @@ public class UserEntity
     /// Represent <c>Users</c> table's <c>LastName</c> column
     /// </summary>
     public string LastName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Represent <c>Users</c> table's <c>ProfilePicture</c> column
-    /// </summary>
-    public string ProfilePicture { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>BirthDate</c> column

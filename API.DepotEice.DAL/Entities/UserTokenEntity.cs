@@ -29,12 +29,12 @@ namespace API.DepotEice.DAL.Entities
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s delivery date and time
         /// </summary>
-        public DateTime DeliveryDateTime { get; set; }
+        public DateTime DeliveryDate { get; set; }
 
         /// <summary>
         /// <see cref="UserTokenEntity"/>'s expiration date and time
         /// </summary>
-        public DateTime ExpirationDateTime { get; set; }
+        public DateTime ExpirationDate { get; set; }
 
         /// <summary>
         /// Linked <see cref="UserEntity"/>'s <see cref="UserEntity.Id"/> property

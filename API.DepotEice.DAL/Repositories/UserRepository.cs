@@ -23,7 +23,10 @@ public class UserRepository : RepositoryBase, IUserRepository
         if (string.IsNullOrEmpty(id))
             throw new ArgumentNullException(nameof(id));
 
-        string query = "UPDATE [dbo].[Users] SET [IsActive] = @isActive, [SecurityStamp] = NEWID() WHERE [Id] = @id";
+        string query = 
+            "UPDATE [dbo].[Users] " +
+            "SET [IsActive] = @isActive, [EmailConfirmed] = 1, [SecurityStamp] = NEWID() " +
+            "WHERE [Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", id);
@@ -36,22 +39,29 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// 
     /// </summary>
     /// <param name="email"></param>
-    /// <param name="passwordHash"></param>
+    /// <param name="password"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public UserEntity LogIn(string email, string passwordHash)
+    public UserEntity? LogIn(string email, string password, string salt)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
+        {
             throw new ArgumentNullException(nameof(email));
+        }
 
-        if (string.IsNullOrEmpty(passwordHash) || string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentNullException(nameof(passwordHash));
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(password))
+        {
+            throw new ArgumentNullException(nameof(password));
+        }
 
-        string query = "SELECT * FROM [dbo].[Users] WHERE [NormalizedEmail] = @normalizedEmail AND [PasswordHash] = @passwordHash";
+        string query =
+            "SELECT * FROM [dbo].[Users] " +
+            "WHERE [NormalizedEmail] = @normalizedEmail AND [PasswordHash] = [dbo].[fnHashPassword](@password, @salt)";
 
         Command command = new Command(query);
         command.AddParameter("normalizedEmail", email.ToUpper());
-        command.AddParameter("passwordHash", passwordHash);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
 
         return _connection
             .ExecuteReader(command, record => record.DbToUser())
@@ -139,9 +149,6 @@ public class UserRepository : RepositoryBase, IUserRepository
             .SingleOrDefault();
     }
 
-    #region Basic CRUD
-
-    /// <inheritdoc/>
     public IEnumerable<UserEntity> GetAll()
     {
         string query = "SELECT * FROM [dbo].[Users]";
@@ -151,20 +158,29 @@ public class UserRepository : RepositoryBase, IUserRepository
         return _connection.ExecuteReader(command, user => user.DbToUser());
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Creates a user in the database. The password hashing happens in the database with the help
+    /// of the salt
+    /// </summary>
+    /// <param name="entity">The <see cref="UserEntity"/> to create</param>
+    /// <param name="password">User's password that is going to be hashed</param>
+    /// <param name="salt">The application salt used to hash the password</param>
+    /// <returns>The newly created ID of the user if it went well</returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="DatabaseScalarNullException"></exception>
-    public string Create(UserEntity entity)
+    public string Create(UserEntity entity, string password, string salt)
     {
-        if (entity == null)
+        if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
         Command command = new Command("spUsers_Create", true);
         command.AddParameter("email", entity.Email);
-        command.AddParameter("passwordHash", entity.PasswordHash);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
         command.AddParameter("firstname", entity.FirstName);
         command.AddParameter("lastname", entity.LastName);
-        command.AddParameter("profilePicture", entity.ProfilePicture);
         command.AddParameter("birthdate", entity.BirthDate);
 
         string scalarResult = _connection.ExecuteScalar(command).ToString();
@@ -175,8 +191,17 @@ public class UserRepository : RepositoryBase, IUserRepository
         return scalarResult;
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
+    /// <summary>
+    /// Not implemented
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public string Create(UserEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+
     public UserEntity GetByKey(string key)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -192,8 +217,6 @@ public class UserRepository : RepositoryBase, IUserRepository
             .SingleOrDefault();
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
     public bool Update(string key, UserEntity entity)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -207,14 +230,11 @@ public class UserRepository : RepositoryBase, IUserRepository
         command.AddParameter("id", entity.Id);
         command.AddParameter("firstName", entity.FirstName);
         command.AddParameter("lastName", entity.LastName);
-        command.AddParameter("profilePicture", entity.ProfilePicture);
         command.AddParameter("birthDate", entity.BirthDate);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
-    /// <inheritdoc/>
-    /// <exception cref="ArgumentNullException"></exception>
     public bool Delete(string key)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
@@ -227,6 +247,4 @@ public class UserRepository : RepositoryBase, IUserRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }

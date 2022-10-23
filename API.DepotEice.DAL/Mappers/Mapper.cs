@@ -119,10 +119,8 @@ internal static class Mapper
             Email = record["Email"] is DBNull ? null : (string)record["Email"],
             NormalizedEmail = (record["NormalizedEmail"] is DBNull) ? null : (string)record["NormalizedEmail"],
             EmailConfirmed = (bool)record["EmailConfirmed"],
-            PasswordHash = record["PasswordHash"] is DBNull ? null : (string)record["PasswordHash"],
             FirstName = record["FirstName"] is DBNull ? null : (string)record["FirstName"],
             LastName = record["LastName"] is DBNull ? null : (string)record["LastName"],
-            ProfilePicture = record["ProfilePicture"] is DBNull ? null : (string)record["ProfilePicture"],
             BirthDate = record["BirthDate"] is DBNull ? null : (DateTime)record["BirthDate"],
             ConcurrencyStamp = record["ConcurrencyStamp"] is DBNull ? null : record["ConcurrencyStamp"].ToString(),
             SecurityStamp = record["SecurityStamp"] is DBNull ? null : record["SecurityStamp"].ToString(),
@@ -142,8 +140,8 @@ internal static class Mapper
 
             Type = (string)record["Type"],
             Value = (string)record["Value"],
-            DeliveryDateTime = (DateTime)record["DeliveryDate"],
-            ExpirationDateTime = (DateTime)record["ExpirationDate"],
+            DeliveryDate = (DateTime)record["DeliveryDate"],
+            ExpirationDate = (DateTime)record["ExpirationDate"],
             UserId = record["UserId"].ToString() ??
                 throw new NullReferenceException("Record key UserId returned null!")
         };
