@@ -131,6 +131,7 @@ public class Program
 
         builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
         builder.Services.AddSingleton<IUserManager, UserManager>();
+        builder.Services.AddSingleton<IDateTimeManager, DateTimeManager>();
 
         /******************/
         /*  Repositories  */

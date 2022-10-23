@@ -19,9 +19,12 @@ public class AppointmentsController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IAppointmentRepository _appointmentRepository;
     private readonly IUserManager _userManager;
+    private readonly IOpeningHoursRepository _openingHoursRepository;
+    private readonly IDateTimeManager _dateTimeManager;
 
     public AppointmentsController(ILogger<AppointmentsController> logger, IMapper mapper,
-        IAppointmentRepository appointmentRepository, IUserManager userManager)
+        IAppointmentRepository appointmentRepository, IUserManager userManager,
+        IOpeningHoursRepository openingHoursRepository, IDateTimeManager dateTimeManager)
     {
         if (logger is null)
         {
@@ -43,10 +46,22 @@ public class AppointmentsController : ControllerBase
             throw new ArgumentNullException(nameof(userManager));
         }
 
+        if (openingHoursRepository is null)
+        {
+            throw new ArgumentNullException(nameof(openingHoursRepository));
+        }
+
+        if (dateTimeManager is null)
+        {
+            throw new ArgumentNullException(nameof(dateTimeManager));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _appointmentRepository = appointmentRepository;
         _userManager = userManager;
+        _openingHoursRepository = openingHoursRepository;
+        _dateTimeManager = dateTimeManager;
     }
 
     [HasRoleAuthorize(RolesEnum.DIRECTION, false)]
@@ -87,6 +102,7 @@ public class AppointmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Post([FromBody] AppointmentForm appointment)
     {
+        // TODO :  Check if the appointment is between opening hours and don't overlap any other appointment
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -94,6 +110,11 @@ public class AppointmentsController : ControllerBase
 
         try
         {
+            if (!_dateTimeManager.DateTimeIsAvailable(appointment))
+            {
+                return BadRequest();
+            }
+
             var appointmentEntity = _mapper.Map<AppointmentEntity>(appointment);
 
             string? userid = _userManager.GetCurrentUserId;
@@ -132,6 +153,11 @@ public class AppointmentsController : ControllerBase
 
         try
         {
+            if (!_dateTimeManager.DateTimeIsAvailable(appointment))
+            {
+                return BadRequest();
+            }
+
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
@@ -165,6 +191,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
+    [HasRoleAuthorize(RolesEnum.DIRECTION, false)]
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
@@ -183,7 +210,5 @@ public class AppointmentsController : ControllerBase
         {
             return BadRequest(e);
         }
-
-        return Ok();
     }
 }
