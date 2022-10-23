@@ -130,8 +130,6 @@ public class Program
         // builder.Services.AddSingleton(sp => new MsSqlCon(connectionString));
 
         builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
-        builder.Services.AddSingleton<IUserManager, UserManager>();
-        builder.Services.AddSingleton<IDateTimeManager, DateTimeManager>();
 
         /******************/
         /*  Repositories  */
@@ -148,6 +146,9 @@ public class Program
         builder.Services.AddScoped<IScheduleFileRepository, ScheduleFileRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+
+        builder.Services.AddTransient<IDateTimeManager, DateTimeManager>();
+        builder.Services.AddTransient<IUserManager, UserManager>();
 
         var app = builder.Build();
 

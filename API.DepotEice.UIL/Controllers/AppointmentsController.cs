@@ -64,13 +64,30 @@ public class AppointmentsController : ControllerBase
         _dateTimeManager = dateTimeManager;
     }
 
-    [HasRoleAuthorize(RolesEnum.DIRECTION, false)]
+    [HasRoleAuthorize(RolesEnum.GUEST, true)]
     [HttpGet]
     public IActionResult Get()
     {
-        var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository.GetAll());
+        if (User.Claims.Any(c => c.Value.Equals(DIRECTION_ROLE)))
+        {
+            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository.GetAll());
+            return Ok(appointments);
+        }
+        else
+        {
+            string? userId = _userManager.GetCurrentUserId;
 
-        return Ok(appointments);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest();
+            }
+
+            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository
+                .GetAll()
+                .Where(a => a.UserId.Equals(userId)));
+
+            return Ok(appointments);
+        }
     }
 
     [HasRoleAuthorize(RolesEnum.GUEST)]
@@ -89,9 +106,12 @@ public class AppointmentsController : ControllerBase
             return NotFound();
         }
 
-        var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository
-            .GetAll()
-            .Where(a => a.UserId.Equals(userId)));
+        var appointments = _mapper.Map<AppointmentModel>(_appointmentRepository.GetByKey(id));
+
+        if (appointments.UserId != userId && !_userManager.IsInRole(DIRECTION_ROLE))
+        {
+            return Unauthorized();
+        }
 
         return Ok(appointments);
     }
@@ -205,6 +225,48 @@ public class AppointmentsController : ControllerBase
             }
 
             return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e);
+        }
+    }
+
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [HttpGet(nameof(Accept))]
+    public IActionResult Accept(int id)
+    {
+        try
+        {
+            var result = _appointmentRepository.AppointmentDecision(id, true);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e);
+        }
+    }
+
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [HttpGet(nameof(Cancel))]
+    public IActionResult Cancel(int id)
+    {
+        try
+        {
+            var result = _appointmentRepository.AppointmentDecision(id, false);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
         }
         catch (Exception e)
         {

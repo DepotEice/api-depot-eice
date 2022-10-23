@@ -55,7 +55,7 @@ public class OpeningHoursController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
-        var openingHours = _mapper.Map<OpeningHoursModel>(_openingHoursRepository.GetAll());
+        var openingHours = _mapper.Map<IEnumerable<OpeningHoursModel>>(_openingHoursRepository.GetAll());
 
         return Ok(openingHours);
     }

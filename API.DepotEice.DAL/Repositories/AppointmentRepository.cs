@@ -67,7 +67,7 @@ public class AppointmentRepository : RepositoryBase, IAppointmentRepository
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public AppointmentEntity GetByKey(int key)
+    public AppointmentEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));

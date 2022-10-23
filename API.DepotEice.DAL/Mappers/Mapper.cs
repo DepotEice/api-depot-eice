@@ -13,7 +13,7 @@ internal static class Mapper
             StartAt = (DateTime)record["StartAt"],
             EndAt = (DateTime)record["EndAt"],
             IsAccepted = (bool)record["IsAccepted"],
-            UserId = (string)record["UserId"]
+            UserId = record["UserId"].ToString()
         };
     }
 

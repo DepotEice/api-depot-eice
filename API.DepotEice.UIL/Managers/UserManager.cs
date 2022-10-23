@@ -59,5 +59,15 @@ namespace API.DepotEice.UIL.Managers
                     .Any(r => r.Value.Equals(RolesData.DIRECTION_ROLE));
             }
         }
+
+        /// <summary>
+        /// Check if User is in role
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        public bool IsInRole(string role)
+        {
+            return _httpContext.User.Claims.Any(c => c.Value.Equals(role));
+        }
     }
 }

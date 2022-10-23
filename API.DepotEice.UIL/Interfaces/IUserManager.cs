@@ -19,5 +19,12 @@
         /// false Otherwise
         /// </returns>
         bool IsDirection { get; }
+
+        /// <summary>
+        /// Check if User is in role
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        bool IsInRole(string role);
     }
 }
