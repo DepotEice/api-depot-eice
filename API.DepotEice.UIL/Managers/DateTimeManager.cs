@@ -44,6 +44,11 @@ namespace API.DepotEice.UIL.Managers
             var startDate = appointment.StartAt;
             var endDate = appointment.EndAt;
 
+            if (startDate < DateTime.Now || endDate < DateTime.Now)
+            {
+                return false;
+            }
+
             if (!_openingHoursRepository.GetAll().Any(oh => oh.OpenAt < startDate && oh.CloseAt > endDate))
             {
                 return false;
