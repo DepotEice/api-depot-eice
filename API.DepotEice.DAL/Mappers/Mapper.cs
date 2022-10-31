@@ -41,8 +41,10 @@ internal static class Mapper
             Body = (string)record["Body"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
+            DeletedAt = (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"],
             IsPinned = (bool)record["IsPinned"],
-            UserId = record["UserId"].ToString()
+            UserId = record["UserId"].ToString() ??
+                throw new NullReferenceException("Record[\"UserId\"] is null")
         };
     }
 

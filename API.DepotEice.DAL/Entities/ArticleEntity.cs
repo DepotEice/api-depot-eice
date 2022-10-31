@@ -37,6 +37,11 @@ namespace API.DepotEice.DAL.Entities
         public DateTime? UpdatedAt { get; set; }
 
         /// <summary>
+        /// <see cref="ArticleEntity"/>'s deleted date and time
+        /// </summary>
+        public DateTime? DeletedAt { get; set; }
+
+        /// <summary>
         /// Specify if <see cref="ArticleEntity"/> is pinned
         /// </summary>
         public bool IsPinned { get; set; }
