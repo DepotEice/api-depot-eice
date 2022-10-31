@@ -105,8 +105,8 @@ internal static class Mapper
             Id = (int)record["Id"],
             Title = (record["Title"] is DBNull) ? null : (string)record["Title"],
             Details = (record["Details"] is DBNull) ? null : (string)record["Details"],
-            StartsAt = (DateTime)record["StartsAt"],
-            EndsAt = (DateTime)record["EndsAt"],
+            StartAt = (DateTime)record["StartAt"],
+            EndAt = (DateTime)record["EndAt"],
             ModuleId = (int)record["ModuleId"]
         };
     }

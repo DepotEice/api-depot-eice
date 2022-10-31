@@ -13,22 +13,22 @@ public class ScheduleEntity
     /// <summary>
     /// Represent the <c>Title</c> column in the database
     /// </summary>
-    public string Title { get; set; }
+    public string? Title { get; set; }
 
     /// <summary>
     /// Represent the <c>Details</c> column in the database
     /// </summary>
-    public string Details { get; set; }
+    public string? Details { get; set; }
 
     /// <summary>
     /// Represent the <c>StartsAt</c> column in the database
     /// </summary>
-    public DateTime StartsAt { get; set; }
+    public DateTime StartAt { get; set; }
 
     /// <summary>
     /// Represent the <c>EndsAt</c> column in the database
     /// </summary>
-    public DateTime EndsAt { get; set; }
+    public DateTime EndAt { get; set; }
 
     /// <summary>
     /// Represent the <c>ModuleId</c> column and foreign key in the database

@@ -57,8 +57,8 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
         Command command = new Command("spSchedules_Create", true);
         command.AddParameter("title", entity.Title);
         command.AddParameter("details", entity.Details);
-        command.AddParameter("startsAt", entity.StartsAt);
-        command.AddParameter("endsAt", entity.EndsAt);
+        command.AddParameter("startsAt", entity.StartAt);
+        command.AddParameter("endsAt", entity.EndAt);
         command.AddParameter("moduleId", entity.ModuleId);
 
         string scalarResult = _connection.ExecuteScalar(command).ToString();
@@ -103,8 +103,8 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
         command.AddParameter("id", key);
         command.AddParameter("title", entity.Title);
         command.AddParameter("details", entity.Details);
-        command.AddParameter("startsAt", entity.StartsAt);
-        command.AddParameter("endsAt", entity.EndsAt);
+        command.AddParameter("startsAt", entity.StartAt);
+        command.AddParameter("endsAt", entity.EndAt);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
