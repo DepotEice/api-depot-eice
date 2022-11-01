@@ -7,7 +7,7 @@ public interface IUserRepository : IRepositoryBase<string, UserEntity>
 {
     bool ActivateDeactivateUser(string id, bool isActive = true);
     string GetHashPwdFromEmail(string email);
-    UserEntity GetUserByEmail(string email);
+    UserEntity? GetUserByEmail(string email);
     IEnumerable<UserEntity> GetModuleUsers(int moduleId);
     UserEntity? LogIn(string email, string password, string salt);
     bool UpdatePassword(string userId, string passwordHash);

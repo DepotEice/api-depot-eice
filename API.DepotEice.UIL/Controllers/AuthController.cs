@@ -155,6 +155,11 @@ public class AuthController : ControllerBase
 
             userEntity = _userRepository.GetByKey(userId);
 
+            if (userEntity is null)
+            {
+                return NotFound("User couldn't be created!");
+            }
+
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
             {
                 Type = TokenTypesData.EMAIL_CONFIRMATION_TOKEN,
@@ -189,6 +194,58 @@ public class AuthController : ControllerBase
             }
 
             return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet(nameof(RequestNewPassword))]
+    public IActionResult RequestNewPassword(string email)
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            UserEntity? userFromRepo = _userRepository.GetUserByEmail(email);
+
+            if (userFromRepo is null)
+            {
+                return BadRequest();
+            }
+
+            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
+            {
+                Type = TokenTypesData.PASSWORD_FORGET,
+                ExpirationDate = DateTime.Now.AddHours(2),
+                UserId = userFromRepo.Id,
+                UserSecurityStamp = userFromRepo.SecurityStamp
+            });
+
+            if (string.IsNullOrEmpty(createdUserTokenID))
+            {
+                return BadRequest("An error occured during token creation");
+            }
+
+            UserTokenEntity? tokenFromRepo = _userTokenRepository.GetByKey(createdUserTokenID);
+
+            if (tokenFromRepo is null)
+            {
+                return NotFound("Created token couldn't be retrieved");
+            }
+
+            bool result = MailManager.SendPasswordRequestEmail(userFromRepo.Id, tokenFromRepo.Value, email);
+
+            if (!result)
+            {
+                return BadRequest("The mail couldn't be sent!");
+            }
+
+            return Ok();
         }
         catch (Exception e)
         {

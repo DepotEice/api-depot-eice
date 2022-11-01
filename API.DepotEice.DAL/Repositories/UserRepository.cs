@@ -134,7 +134,7 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <param name="email"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public UserEntity GetUserByEmail(string email)
+    public UserEntity? GetUserByEmail(string email)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
             throw new ArgumentNullException(nameof(email));
