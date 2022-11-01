@@ -72,4 +72,10 @@ public class UsersController : ControllerBase
     {
         return Ok();
     }
+
+    [HttpPost(nameof(Password))]
+    public IActionResult Password([FromBody] PasswordForm passwordForm)
+    {
+
+    }
 }
