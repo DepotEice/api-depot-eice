@@ -97,11 +97,15 @@ public class UserRepository : RepositoryBase, IUserRepository
     public bool UpdatePassword(string userId, string passwordHash)
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+        {
             throw new ArgumentNullException(nameof(userId));
+        }
 
         if (string.IsNullOrEmpty(passwordHash) || string.IsNullOrWhiteSpace(passwordHash))
+        {
             throw new ArgumentNullException(nameof(passwordHash));
-
+        }
+        // TODO : Update the query to update the password
         string query = "UPDATE [dbo].[Users] SET [PasswordHash] = @passwordHash, [SecurityStamp] = NEWID() WHERE [Id] = @id";
 
         Command command = new Command(query);
