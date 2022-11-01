@@ -170,11 +170,16 @@ public class AuthController : ControllerBase
 
             UserTokenEntity? token = _userTokenRepository.GetByKey(createdUserTokenID);
 
+            if (token is null)
+            {
+                return BadRequest("Token couldn't be created");
+            }
+
             if (createdUserTokenID is not null)
             {
                 try
                 {
-                    if (!MailManager.SendActivationEmail(userId, token.Value, userEntity.NormalizedEmail))
+                    if (!MailManager.SendActivationEmail(token.Id, token.Value, userEntity.NormalizedEmail))
                     {
                         _logger.LogWarning("{date} - Sending the activation email to user with ID \"{userId}\" " +
                             "failed!", DateTime.Now, userId);
