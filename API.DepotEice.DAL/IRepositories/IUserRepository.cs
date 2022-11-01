@@ -10,7 +10,6 @@ public interface IUserRepository : IRepositoryBase<string, UserEntity>
     UserEntity? GetUserByEmail(string email);
     IEnumerable<UserEntity> GetModuleUsers(int moduleId);
     UserEntity? LogIn(string email, string password, string salt);
-    bool UpdatePassword(string userId, string passwordHash);
-
+    bool UpdatePassword(string userId, string password, string salt);
     string Create(UserEntity entity, string password, string salt);
 }

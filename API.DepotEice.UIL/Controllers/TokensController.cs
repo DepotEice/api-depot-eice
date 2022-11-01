@@ -54,7 +54,7 @@ namespace API.DepotEice.UIL.Controllers
 
             UserTokenEntity? tokenFromRepo = _userTokenRepository
                 .GetAll()
-                .SingleOrDefault(ut => ut.Value.Equals(token));
+                .FirstOrDefault(ut => ut.Value.Equals(token) && ut.ExpirationDate > DateTime.Now);
 
             if (tokenFromRepo is null)
             {

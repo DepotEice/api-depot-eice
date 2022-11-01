@@ -12,6 +12,8 @@ namespace API.DepotEice.UIL.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
+    public static string SALT = Environment.GetEnvironmentVariable("API_SALT") ?? "salt";
+
     private readonly IUserRepository _userRepository;
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
@@ -108,7 +110,7 @@ public class UsersController : ControllerBase
                 return Unauthorized();
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password);
+            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, SALT);
 
             if (!result)
             {
@@ -119,14 +121,9 @@ public class UsersController : ControllerBase
         }
         else
         {
-            // TODO : Token password update
-            // 1. Verify if token is valid
-            // 2. Verify if token's user id is the same as the user asking the change
-            // 3. Verify if user exist
-
             UserTokenEntity? userTokenFromRepo = _userTokenRepository
-                .GetAll()
-                .SingleOrDefault(ut => ut.Value.Equals(token));
+                .GetUserTokens(passwordForm.UserId)
+                .FirstOrDefault(ut => ut.Value.Equals(token) && ut.ExpirationDate > DateTime.Now);
 
             if (userTokenFromRepo is null)
             {
@@ -143,7 +140,7 @@ public class UsersController : ControllerBase
                 return Unauthorized();
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password);
+            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, SALT);
 
             if (!result)
             {
