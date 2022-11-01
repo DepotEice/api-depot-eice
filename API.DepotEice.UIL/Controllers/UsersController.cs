@@ -74,8 +74,21 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost(nameof(Password))]
-    public IActionResult Password([FromBody] PasswordForm passwordForm)
+    public IActionResult Password([FromBody] PasswordForm passwordForm, string? token = null)
     {
+        if (passwordForm is null)
+        {
+            return BadRequest("The body cannot be null!");
+        }
 
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (string.IsNullOrEmpty(token))
+        {
+
+        }
     }
 }

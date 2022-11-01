@@ -8,6 +8,12 @@ namespace API.DepotEice.UIL.Models.Forms
     public class PasswordForm
     {
         /// <summary>
+        /// ID of the user to whom the password is changed
+        /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "User's ID is required to change the password!")]
+        public string UserId { get; set; } = string.Empty;
+
+        /// <summary>
         /// New password
         /// </summary>
         [Required(AllowEmptyStrings = false, ErrorMessage = "The password is required !")]
