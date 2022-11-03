@@ -103,7 +103,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public IActionResult SignUp([FromBody] RegisterForm form)
+    public async Task<IActionResult> SignUp([FromBody] RegisterForm form)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -179,7 +179,8 @@ public class AuthController : ControllerBase
             {
                 try
                 {
-                    if (!MailManager.SendActivationEmail(token.Id, token.Value, userEntity.NormalizedEmail))
+                    //if (!MailManager.SendActivationEmail(token.Id, token.Value, userEntity.NormalizedEmail))
+                    if (!await MailManager.SendActivationEmailAsync(token.Id, token.Value, userEntity.NormalizedEmail))
                     {
                         _logger.LogWarning("{date} - Sending the activation email to user with ID \"{userId}\" " +
                             "failed!", DateTime.Now, userId);
@@ -207,7 +208,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet(nameof(RequestNewPassword))]
-    public IActionResult RequestNewPassword(string email)
+    public async Task<IActionResult> RequestNewPassword(string email)
     {
         if (string.IsNullOrEmpty(email))
         {
@@ -243,7 +244,8 @@ public class AuthController : ControllerBase
                 return NotFound("Created token couldn't be retrieved");
             }
 
-            bool result = MailManager.SendPasswordRequestEmail(userFromRepo.Id, tokenFromRepo.Value, email);
+            //bool result = MailManager.SendPasswordRequestEmail(userFromRepo.Id, tokenFromRepo.Value, email);
+            bool result = await MailManager.SendPasswordRequestEmailAsync(userFromRepo.Id, tokenFromRepo.Value, email);
 
             if (!result)
             {

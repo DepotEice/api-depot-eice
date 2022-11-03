@@ -1,4 +1,8 @@
-﻿using System.Net;
+﻿using Mailjet.Client;
+using Mailjet.Client.Resources;
+using Mailjet.Client.TransactionalEmails;
+using Mailjet.Client.TransactionalEmails.Response;
+using System.Net;
 using System.Net.Mail;
 using System.Text;
 
@@ -9,6 +13,37 @@ namespace API.DepotEice.UIL.Managers
     /// </summary>
     public static class MailManager
     {
+        public static async Task<bool> SendActivationEmailAsync(string tokenId, string userToken, string destinationEmail)
+        {
+            MailjetClient client = new MailjetClient(
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PUBLIC") ??
+                    throw new NullReferenceException("There is no Environment variable named TFE_MAILJET_API_KEY_PUBLIC"),
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ??
+                    throw new NullReferenceException("There is no environment variable named TFE_MAILJET_API_KEY_PRIVATE"));
+
+            MailjetRequest request = new MailjetRequest()
+            {
+                Resource = Send.Resource,
+            };
+
+            TransactionalEmail email = new TransactionalEmailBuilder()
+                .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
+                .WithSubject("Activation de votre compte Depot EICE")
+                .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
+                    "<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p> " +
+#if DEBUG
+                    $"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>")
+#else
+                    $"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
+#endif
+                .WithTo(new SendContact(destinationEmail))
+                .Build();
+
+            TransactionalEmailResponse response = await client.SendTransactionalEmailAsync(email);
+
+            return response.Messages.Length == 1;
+        }
+
         /// <summary>
         /// Send the account activation email
         /// </summary>
@@ -58,6 +93,37 @@ namespace API.DepotEice.UIL.Managers
             {
                 throw;
             }
+        }
+
+        public static async Task<bool> SendPasswordRequestEmailAsync(string userId, string userToken, string destinationEmail)
+        {
+            MailjetClient client = new MailjetClient(
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PUBLIC") ??
+                    throw new NullReferenceException("There is no Environment variable named TFE_MAILJET_API_KEY_PUBLIC"),
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ?? 
+                    throw new NullReferenceException("There is no environment variable named TFE_MAILJET_API_KEY_PRIVATE"));
+
+            MailjetRequest request = new MailjetRequest()
+            {
+                Resource = Send.Resource,
+            };
+
+            TransactionalEmail email = new TransactionalEmailBuilder()
+                .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
+                .WithSubject("Mot de passe oublié")
+                .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
+                    "<p>Veuillez cliquer sur le lien ci-dessous pour réinitialiser votre mot de passe</p> " +
+#if DEBUG
+                    $"<a href=\"https://localhost:7245/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>")
+#else
+                    $"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>")
+#endif
+                .WithTo(new SendContact(destinationEmail))
+                .Build();
+
+            TransactionalEmailResponse response = await client.SendTransactionalEmailAsync(email);
+
+            return response.Messages.Length == 1;
         }
 
         public static bool SendPasswordRequestEmail(string userId, string userToken, string email)
