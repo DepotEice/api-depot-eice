@@ -9,6 +9,6 @@
         public DateTime? UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         public bool Pinned { get; set; }
-        public UserModel User { get; set; }
+        public string userId { get; set; }
     }
 }

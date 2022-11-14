@@ -68,7 +68,7 @@ public class OpeningHoursController : ControllerBase
         return Ok(openingHour);
     }
 
-    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    //[HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpPost]
     public IActionResult Post([FromBody] OpeningHoursForm openingHours)
     {
@@ -145,7 +145,7 @@ public class OpeningHoursController : ControllerBase
         }
     }
 
-    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    //[HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {

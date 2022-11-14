@@ -17,7 +17,6 @@ namespace API.DepotEice.UIL.Controllers;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
 public class ArticlesController : ControllerBase
 {
     private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
@@ -87,7 +86,6 @@ public class ArticlesController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> with a list of articles if the operation succeeded without any errors.
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
     /// </returns>
-    [HasRoleAuthorize(RolesEnum.STUDENT)]
     [HttpGet]
     //[AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -106,7 +104,12 @@ public class ArticlesController : ControllerBase
 
                 ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
 
-                article.User = _mapper.Map<UserModel>(userFromRepo);
+                if (userFromRepo is null)
+                {
+                    return NotFound("Article creator doesn't exist!");
+                }
+
+                article.userId = userFromRepo.Id;
 
                 articles.Add(article);
             }
@@ -150,7 +153,7 @@ public class ArticlesController : ControllerBase
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
 
-            article.User = _mapper.Map<UserModel>(userFromRepo);
+            article.userId = userFromRepo.Id;
 
             return Ok(article);
         }
@@ -169,6 +172,7 @@ public class ArticlesController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> and the object article if the creation went well
     /// <see cref="StatusCodes.Status400BadRequest"/> if an error occurred during the process
     /// </returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpPost]
     public IActionResult Post([FromBody] ArticleForm form)
     {
@@ -264,7 +268,7 @@ public class ArticlesController : ControllerBase
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
 
-            article.User = _mapper.Map<UserModel>(userFromRepo);
+            article.userId = userFromRepo.Id;
 
             return Ok(article);
         }
