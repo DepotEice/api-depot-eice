@@ -44,7 +44,6 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
 
         command.AddParameter("id", entity.Id);
         command.AddParameter("type", entity.Type);
-        command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
         return (int)_connection.ExecuteScalar(command) > 0;
     }
@@ -53,7 +52,11 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
     /// <exception cref="NotImplementedException"></exception>
     public IEnumerable<UserTokenEntity> GetAll()
     {
-        throw new NotImplementedException();
+        string query = "SELECT * FROM [dbo].[UserTokens]";
+
+        Command command = new Command(query);
+
+        return _connection.ExecuteReader(command, ut => ut.DbToUserToken());
     }
 
     // TODO : Override the method and remove the UserSecurityStamp parameter
@@ -71,7 +74,7 @@ public class UserTokenRepository : RepositoryBase, IUserTokenRepository
         command.AddParameter("userId", entity.UserId);
         command.AddParameter("userSecurityStamp", entity.UserSecurityStamp);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
         {

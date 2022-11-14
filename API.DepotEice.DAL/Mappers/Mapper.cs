@@ -13,7 +13,7 @@ internal static class Mapper
             StartAt = (DateTime)record["StartAt"],
             EndAt = (DateTime)record["EndAt"],
             IsAccepted = (bool)record["IsAccepted"],
-            UserId = (string)record["UserId"]
+            UserId = record["UserId"].ToString()
         };
     }
 
@@ -41,8 +41,10 @@ internal static class Mapper
             Body = (string)record["Body"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = (record["UpdatedAt"] is DBNull) ? null : (DateTime)record["UpdatedAt"],
+            DeletedAt = (record["DeletedAt"] is DBNull) ? null : (DateTime)record["DeletedAt"],
             IsPinned = (bool)record["IsPinned"],
-            UserId = record["UserId"].ToString()
+            UserId = record["UserId"].ToString() ??
+                throw new NullReferenceException("Record[\"UserId\"] is null")
         };
     }
 
@@ -105,8 +107,8 @@ internal static class Mapper
             Id = (int)record["Id"],
             Title = (record["Title"] is DBNull) ? null : (string)record["Title"],
             Details = (record["Details"] is DBNull) ? null : (string)record["Details"],
-            StartsAt = (DateTime)record["StartsAt"],
-            EndsAt = (DateTime)record["EndsAt"],
+            StartAt = (DateTime)record["StartAt"],
+            EndAt = (DateTime)record["EndAt"],
             ModuleId = (int)record["ModuleId"]
         };
     }

@@ -103,7 +103,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public IActionResult SignUp([FromBody] RegisterForm form)
+    public async Task<IActionResult> SignUp([FromBody] RegisterForm form)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -155,6 +155,11 @@ public class AuthController : ControllerBase
 
             userEntity = _userRepository.GetByKey(userId);
 
+            if (userEntity is null)
+            {
+                return NotFound("User couldn't be created!");
+            }
+
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
             {
                 Type = TokenTypesData.EMAIL_CONFIRMATION_TOKEN,
@@ -165,11 +170,17 @@ public class AuthController : ControllerBase
 
             UserTokenEntity? token = _userTokenRepository.GetByKey(createdUserTokenID);
 
+            if (token is null)
+            {
+                return BadRequest("Token couldn't be created");
+            }
+
             if (createdUserTokenID is not null)
             {
                 try
                 {
-                    if (!MailManager.SendActivationEmail(userId, token.Value, userEntity.NormalizedEmail))
+                    //if (!MailManager.SendActivationEmail(token.Id, token.Value, userEntity.NormalizedEmail))
+                    if (!await MailManager.SendActivationEmailAsync(token.Id, token.Value, userEntity.NormalizedEmail))
                     {
                         _logger.LogWarning("{date} - Sending the activation email to user with ID \"{userId}\" " +
                             "failed!", DateTime.Now, userId);
@@ -189,6 +200,59 @@ public class AuthController : ControllerBase
             }
 
             return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet(nameof(RequestNewPassword))]
+    public async Task<IActionResult> RequestNewPassword(string email)
+    {
+        if (string.IsNullOrEmpty(email))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            UserEntity? userFromRepo = _userRepository.GetUserByEmail(email);
+
+            if (userFromRepo is null)
+            {
+                return BadRequest();
+            }
+
+            string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
+            {
+                Type = TokenTypesData.PASSWORD_FORGET,
+                ExpirationDate = DateTime.Now.AddHours(2),
+                UserId = userFromRepo.Id,
+                UserSecurityStamp = userFromRepo.SecurityStamp
+            });
+
+            if (string.IsNullOrEmpty(createdUserTokenID))
+            {
+                return BadRequest("An error occured during token creation");
+            }
+
+            UserTokenEntity? tokenFromRepo = _userTokenRepository.GetByKey(createdUserTokenID);
+
+            if (tokenFromRepo is null)
+            {
+                return NotFound("Created token couldn't be retrieved");
+            }
+
+            //bool result = MailManager.SendPasswordRequestEmail(userFromRepo.Id, tokenFromRepo.Value, email);
+            bool result = await MailManager.SendPasswordRequestEmailAsync(userFromRepo.Id, tokenFromRepo.Value, email);
+
+            if (!result)
+            {
+                return BadRequest("The mail couldn't be sent!");
+            }
+
+            return Ok();
         }
         catch (Exception e)
         {

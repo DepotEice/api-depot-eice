@@ -55,17 +55,19 @@ public class AppointmentRepository : RepositoryBase, IAppointmentRepository
         command.AddParameter("endAt", entity.EndAt);
         command.AddParameter("userId", entity.UserId);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
-
+        }
+            
         return int.Parse(scalarResult);
     }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public AppointmentEntity GetByKey(int key)
+    public AppointmentEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));

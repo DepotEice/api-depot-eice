@@ -23,7 +23,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         if (string.IsNullOrEmpty(id))
             throw new ArgumentNullException(nameof(id));
 
-        string query = 
+        string query =
             "UPDATE [dbo].[Users] " +
             "SET [IsActive] = @isActive, [EmailConfirmed] = 1, [SecurityStamp] = NEWID() " +
             "WHERE [Id] = @id";
@@ -91,22 +91,25 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// 
     /// </summary>
     /// <param name="userId"></param>
-    /// <param name="passwordHash"></param>
+    /// <param name="password"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool UpdatePassword(string userId, string passwordHash)
+    public bool UpdatePassword(string userId, string password, string salt)
     {
         if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+        {
             throw new ArgumentNullException(nameof(userId));
+        }
 
-        if (string.IsNullOrEmpty(passwordHash) || string.IsNullOrWhiteSpace(passwordHash))
-            throw new ArgumentNullException(nameof(passwordHash));
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(password))
+        {
+            throw new ArgumentNullException(nameof(password));
+        }
 
-        string query = "UPDATE [dbo].[Users] SET [PasswordHash] = @passwordHash, [SecurityStamp] = NEWID() WHERE [Id] = @id";
-
-        Command command = new Command(query);
-        command.AddParameter("id", userId);
-        command.AddParameter("passwordHash", passwordHash);
+        Command command = new Command("spUsers_UpdatePassword", true);
+        command.AddParameter("userId", userId);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
@@ -134,7 +137,7 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <param name="email"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public UserEntity GetUserByEmail(string email)
+    public UserEntity? GetUserByEmail(string email)
     {
         if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
             throw new ArgumentNullException(nameof(email));
