@@ -87,7 +87,7 @@ public class ArticlesController : ControllerBase
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred.
     /// </returns>
     [HttpGet]
-    //[AllowAnonymous]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Get()
@@ -163,7 +163,6 @@ public class ArticlesController : ControllerBase
         }
     }
 
-    // TODO : Limit this endpoint to Teachers / Direction
     /// <summary>
     /// Create a new article
     /// </summary>

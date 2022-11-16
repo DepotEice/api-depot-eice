@@ -41,7 +41,7 @@ public class TokenManager : ITokenManager
         SecurityTokenDescriptor tokenDescriptor = new()
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.UtcNow.AddDays(1),
             SigningCredentials = credentials,
             Audience = _builder.Configuration["AppSettings:Audience"],
             Issuer = _builder.Configuration["AppSettings:Issuer"]
