@@ -6,4 +6,5 @@ public interface IArticleRepository : IRepositoryBase<int, ArticleEntity>
 {
     bool ArticleExist(int id);
     bool ArticlePinDecision(int id, bool isPinned = true);
+    bool Restore(int key);
 }

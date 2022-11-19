@@ -79,7 +79,7 @@ public class AppointmentsController : ControllerBase
 
             if (string.IsNullOrEmpty(userId))
             {
-                return BadRequest();
+                return Unauthorized();
             }
 
             var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository
@@ -133,6 +133,11 @@ public class AppointmentsController : ControllerBase
             if (!_dateTimeManager.DateTimeIsAvailable(appointment))
             {
                 return BadRequest();
+            }
+
+            if (!_appointmentRepository.GetAll().Any(a => a.StartAt == appointment.StartAt))
+            {
+                return BadRequest("Hours not available");
             }
 
             var appointmentEntity = _mapper.Map<AppointmentEntity>(appointment);

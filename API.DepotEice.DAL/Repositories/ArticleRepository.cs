@@ -108,6 +108,22 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
+    public bool Restore(int key)
+    {
+        if (key <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(key));
+        }
+
+        string query = "UPDATE [dbo].[Articles] SET [DeletedAt] = NULL WHERE [Id] = @id";
+
+        Command command = new Command(query);
+
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
     public bool ArticleExist(int id)
     {
         if (id <= 0)

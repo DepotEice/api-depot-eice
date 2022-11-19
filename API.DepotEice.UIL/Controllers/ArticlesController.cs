@@ -303,6 +303,39 @@ public class ArticlesController : ControllerBase
     }
 
     /// <summary>
+    /// Restore article
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [HttpPut("Restore/{id}")]
+    public IActionResult Restore(int id)
+    {
+        try
+        {
+            var articleFromRepo = _articleRepository.GetByKey(id);
+
+            if (articleFromRepo is null)
+            {
+                return NotFound(id);
+            }
+
+            articleFromRepo.DeletedAt = null;
+
+            if (!_articleRepository.Restore(id))
+            {
+                return BadRequest(ERROR);
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    /// <summary>
     /// 
     /// </summary>
     /// <param name="id"></param>
