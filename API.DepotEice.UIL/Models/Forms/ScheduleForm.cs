@@ -5,14 +5,14 @@ namespace API.DepotEice.UIL.Models.Forms
     public class ScheduleForm
     {
         [MaxLength(100)]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
-        public string Details { get; set; }
-
-        [Required]
-        public DateTime StartsAt { get; set; }
+        public string? Details { get; set; }
 
         [Required]
-        public DateTime EndsAt { get; set; }
+        public DateTime StartAt { get; set; }
+
+        [Required]
+        public DateTime EndAt { get; set; }
     }
 }

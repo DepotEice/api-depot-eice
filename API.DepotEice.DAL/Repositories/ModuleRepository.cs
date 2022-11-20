@@ -17,7 +17,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     /// <param name="moduleId"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public IEnumerable<UserEntity> GetModuleStudents(int moduleId)
+    public IEnumerable<UserEntity> GetModuleUsers(int moduleId)
     {
         if (moduleId <= 0)
             throw new ArgumentOutOfRangeException(nameof(moduleId));
@@ -28,6 +28,36 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         command.AddParameter("moduleId", moduleId);
 
         return _connection.ExecuteReader(command, x => x.DbToUser());
+    }
+
+    public IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role)
+    {
+        if (moduleId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
+
+        if (string.IsNullOrEmpty(role))
+        {
+            throw new ArgumentNullException(nameof(role));
+        }
+
+        string query = @"
+            SELECT u.*
+            FROM Modules AS m
+            INNER JOIN UserModules AS um ON um.ModuleId = m.Id
+            INNER JOIN Users AS u ON u.Id = um.UserId
+            INNER JOIN UserRoles AS ur ON ur.UserId = u.Id
+            INNER JOIN Roles AS r ON r.Id = ur.RoleId
+            WHERE m.Id = @moduleId AND r.Name = @role
+            ";
+
+        Command command = new Command(query);
+
+        command.AddParameter("moduleId", moduleId);
+        command.AddParameter("role", role);
+
+        return _connection.ExecuteReader(command, u => u.DbToUser());
     }
 
     /// <summary>
@@ -63,7 +93,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     /// <returns></returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool StudentApply(string userId, int moduleId)
+    public bool AddUserToModule(string userId, int moduleId)
     {
         if (moduleId <= 0)
             throw new ArgumentOutOfRangeException(nameof(moduleId));
@@ -80,7 +110,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
-    public bool StudentAcceptExempt(string userId, int moduleId, bool isAccepted = true)
+    public bool AcceptUser(string userId, int moduleId, bool isAccepted = true)
     {
         string query = "UPDATE [dbo].[UserModules] SET [IsAccepted] = @isAccepted WHERE [UserId] = @userId AND [ModuleId] = @moduleId";
         Command command = new Command(query);
@@ -184,9 +214,11 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     public bool Delete(int key)
     {
         if (key <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(key));
+        }
 
-        string query = "DELETE FROM [Modules] WHERE [Modules].[Id] = @id";
+        string query = "DELETE FROM [dbo].[Modules] WHERE [Modules].[Id] = @id";
 
         Command command = new Command(query);
 

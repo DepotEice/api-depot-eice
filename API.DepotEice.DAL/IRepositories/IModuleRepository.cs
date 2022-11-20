@@ -4,9 +4,10 @@ namespace API.DepotEice.DAL.IRepositories;
 
 public interface IModuleRepository : IRepositoryBase<int, ModuleEntity>
 {
-    IEnumerable<UserEntity> GetModuleStudents(int moduleId);
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId);
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role);
     IEnumerable<ModuleEntity> GetUserModules(string userId);
-    bool StudentApply(string studentId, int moduleId);
-    bool StudentAcceptExempt(string userId, int moduleId, bool decision);
+    bool AddUserToModule(string studentId, int moduleId);
+    bool AcceptUser(string userId, int moduleId, bool decision);
     bool DeleteUserFromModule(string userId, int moduleId);
 }

@@ -114,7 +114,9 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
     public bool Delete(int key)
     {
         if (key <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(key));
+        }
 
         string query = "DELETE FROM [dbo].[Schedules] WHERE [Id] = @id";
 

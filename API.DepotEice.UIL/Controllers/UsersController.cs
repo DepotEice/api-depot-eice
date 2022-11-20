@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Models.Forms;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -48,12 +49,27 @@ public class UsersController : ControllerBase
         _roleRepository = roleRepository;
     }
 
-    [HttpGet]
+    [HttpGet()]
     public IActionResult Get()
     {
         try
         {
             return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("teachers")]
+    public IActionResult GetTeachers()
+    {
+        try
+        {
+            var users = _userRepository.GetUsersByRole(RolesData.TEACHER_ROLE);
+
+            return Ok(users);
         }
         catch (Exception e)
         {

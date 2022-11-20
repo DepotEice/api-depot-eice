@@ -1,10 +1,12 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -12,21 +14,60 @@ namespace API.DepotEice.UIL.Controllers;
 [ApiController]
 public class ModulesController : ControllerBase
 {
+    private readonly ILogger<ModulesController> _logger;
     private readonly IMapper _mapper;
     private readonly IModuleRepository _moduleRepository;
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IScheduleFileRepository _scheduleFileRepository;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ModulesController(
-        IMapper mapper,
-        IModuleRepository moduleRepository,
-        IScheduleRepository scheduleRepository,
-        IScheduleFileRepository scheduleFileRepository)
+    public ModulesController(ILogger<ModulesController> logger, IMapper mapper, IModuleRepository moduleRepository,
+        IScheduleRepository scheduleRepository, IScheduleFileRepository scheduleFileRepository,
+        IRoleRepository roleRepository, IUserRepository userRepository)
     {
+        if (logger is null)
+        {
+            throw new ArgumentNullException(nameof(logger));
+        }
+
+        if (mapper is null)
+        {
+            throw new ArgumentNullException(nameof(mapper));
+        }
+
+        if (moduleRepository is null)
+        {
+            throw new ArgumentNullException(nameof(moduleRepository));
+        }
+
+        if (scheduleRepository is null)
+        {
+            throw new ArgumentNullException(nameof(scheduleRepository));
+        }
+
+        if (scheduleFileRepository is null)
+        {
+            throw new ArgumentNullException(nameof(scheduleFileRepository));
+        }
+
+        if (roleRepository is null)
+        {
+            throw new ArgumentNullException(nameof(roleRepository));
+        }
+
+        if (userRepository is null)
+        {
+            throw new ArgumentNullException(nameof(userRepository));
+        }
+
+        _logger = logger;
         _mapper = mapper;
         _moduleRepository = moduleRepository;
         _scheduleRepository = scheduleRepository;
         _scheduleFileRepository = scheduleFileRepository;
+        _roleRepository = roleRepository;
+        _userRepository = userRepository;
     }
 
     [HttpGet]
@@ -34,7 +75,25 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            IEnumerable<ModuleModel> modules = _moduleRepository.GetAll().Select(x => x.Map<ModuleModel>());
+            IEnumerable<ModuleEntity> modulesFromRepo = _moduleRepository.GetAll();
+
+            var modules = _mapper.Map<IEnumerable<ModuleModel>>(modulesFromRepo);
+
+            foreach (var module in modules)
+            {
+                var usersFromRepo = _moduleRepository.GetModuleUsers(module.Id);
+
+                foreach (var user in usersFromRepo)
+                {
+                    var roles = _roleRepository.GetUserRoles(user.Id);
+
+                    if (roles.Any(r => r.Name.Equals(RolesData.TEACHER_ROLE)))
+                    {
+                        module.TeacherId = user.Id;
+                        break;
+                    }
+                }
+            }
 
             return Ok(modules);
         }
@@ -49,10 +108,23 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            ModuleModel module = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(id));
+            var moduleFromRepo = _moduleRepository.GetByKey(id);
 
-            if (module == null)
-                return NotFound();
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no module with ID \"{id}\"");
+            }
+
+            ModuleModel module = _mapper.Map<ModuleModel>(moduleFromRepo);
+
+            var moduleUsers = _moduleRepository.GetModuleUsers(id, RolesData.TEACHER_ROLE);
+
+            var teacher = moduleUsers.SingleOrDefault();
+
+            if (teacher is not null)
+            {
+                module.TeacherId = teacher.Id;
+            }
 
             return Ok(module);
         }
@@ -70,15 +142,41 @@ public class ModulesController : ControllerBase
 
         try
         {
-            int moduleId = _moduleRepository.Create(form.Map<ModuleEntity>());
+            var moduleToCreate = _mapper.Map<ModuleEntity>(form);
+
+            int moduleId = _moduleRepository.Create(moduleToCreate);
 
             if (moduleId <= 0)
-                return BadRequest("The creation failed");
+            {
+                return BadRequest("Module was not created");
+            }
 
-            ModuleModel? result = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(moduleId));
+            var moduleFromRepo = _moduleRepository.GetByKey(moduleId);
 
-            if (result == null)
-                return NotFound();
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"Module with ID \"{moduleId}\" doesn't exist");
+            }
+
+            if (!string.IsNullOrEmpty(form.TeacherId))
+            {
+                bool addUserResult = _moduleRepository.AddUserToModule(form.TeacherId, moduleFromRepo.Id);
+
+                if (addUserResult)
+                {
+                    _logger.LogInformation($"{DateTime.Now} - User with ID \"{form.TeacherId}\" correctly added " +
+                        $"to the module with ID \"{moduleFromRepo.Id}\"");
+                }
+                else
+                {
+                    _logger.LogError($"{DateTime.Now} - User with ID \"{form.TeacherId}\" couldn't be added to " +
+                        $"module with ID \"{moduleFromRepo.Id}\"");
+                }
+            }
+
+            ModuleModel result = _mapper.Map<ModuleModel>(moduleFromRepo);
+
+            result.TeacherId = form.TeacherId;
 
             return Ok(result);
         }
@@ -97,14 +195,33 @@ public class ModulesController : ControllerBase
         try
         {
             ModuleEntity entity = form.Map<ModuleEntity>();
+
             entity.Id = id;
 
             bool result = _moduleRepository.Update(id, entity);
 
             if (!result)
-                return BadRequest();
+            {
+                return BadRequest($"The update of Module with ID \"{id}\" failed");
+            }
 
-            ModuleModel? module = _mapper.Map<ModuleModel>(_moduleRepository.GetByKey(id));
+            var moduleFromRepo = _moduleRepository.GetByKey(id);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"Recently create module with ID \"{id}\" could not be found");
+            }
+
+            ModuleModel? module = _mapper.Map<ModuleModel>(moduleFromRepo);
+
+            var moduleUsers = _moduleRepository.GetModuleUsers(id, RolesData.TEACHER_ROLE);
+
+            var teacher = moduleUsers.SingleOrDefault();
+
+            if (teacher is not null)
+            {
+                module.TeacherId = teacher.Id;
+            }
 
             return Ok(module);
         }
@@ -123,7 +240,7 @@ public class ModulesController : ControllerBase
 
             if (!result)
             {
-                return BadRequest();
+                return BadRequest($"The deletion of Module with ID \"{id}\" failed");
             }
 
             return Ok();
@@ -134,17 +251,42 @@ public class ModulesController : ControllerBase
         }
     }
 
-    [HttpGet("{mId}/Schedules")]
-    public IActionResult GetSchedules(int mId)
+    [HttpGet("Schedules")]
+    public IActionResult GetSchedules()
     {
         try
         {
-            IEnumerable<ScheduleModel> schedules = _scheduleFileRepository.GetAll().Select(x => _mapper.Map<ScheduleModel>(x));
+            IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetAll();
+
+            IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
 
             return Ok(schedules);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedules)}\n" +
+                $"{e.Message}\n{e.StackTrace}");
+
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/Schedules")]
+    public IActionResult GetSchedules(int mId)
+    {
+        try
+        {
+            IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(mId);
+
+            IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+
+            return Ok(schedules);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedules)} " +
+                $"with Module ID {mId}\n{e.Message}\n{e.StackTrace}");
+
             return BadRequest(e.Message);
         }
     }
@@ -154,13 +296,24 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            var entity = _scheduleRepository.GetByKey(sId);
-            ScheduleModel schedule = _mapper.Map<ScheduleModel>(entity);
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository
+                .GetModuleSchedules(mId)
+                .SingleOrDefault(s => s.Id == sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"There is no Schedule with ID \"{sId}\" for Module \"{mId}\"");
+            }
+
+            ScheduleModel schedule = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
             return Ok(schedule);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedule)} " +
+                $"with Module ID {mId} and Schedule ID \"{sId}\"\n{e.Message}\n{e.StackTrace}");
+
             return BadRequest(e.Message);
         }
     }
@@ -169,18 +322,33 @@ public class ModulesController : ControllerBase
     public IActionResult PostSchedule(int mId, [FromBody] ScheduleForm form)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            int scheduleId = _scheduleRepository.Create(_mapper.Map<ScheduleEntity>(form));
-            var entity = _scheduleRepository.GetByKey(scheduleId);
-            ScheduleModel schedule = entity.Map<ScheduleModel>();
+            ScheduleEntity scheduleToCreate = _mapper.Map<ScheduleEntity>(form);
+            scheduleToCreate.ModuleId = mId;
+
+            int scheduleId = _scheduleRepository.Create(scheduleToCreate);
+
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(scheduleId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"The recently create Schedule could not be found");
+            }
+
+            ScheduleModel schedule = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
             return Ok(schedule);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(PostSchedule)}\n" +
+                $"{e.Message}\n{e.StackTrace}");
+
             return BadRequest(e.Message);
         }
     }
@@ -189,23 +357,38 @@ public class ModulesController : ControllerBase
     public IActionResult PutSchedule(int mId, int sId, [FromBody] ScheduleForm form)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            var entity = form.Map<ScheduleEntity>();
-            bool result = _scheduleRepository.Update(sId, entity);
+            ScheduleEntity scheduleToUpdate = _mapper.Map<ScheduleEntity>(form);
+            scheduleToUpdate.ModuleId = mId;
+
+            bool result = _scheduleRepository.Update(sId, scheduleToUpdate);
 
             if (!result)
-                return BadRequest(nameof(result));
+            {
+                return BadRequest($"The update of the Schedule with ID \"{sId}\" failed");
+            }
 
-            entity = _scheduleRepository.GetByKey(sId);
-            ScheduleModel? schedule = entity.Map<ScheduleModel>();
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"The Schedule with ID \"{sId}\" could not be found");
+            }
+
+            ScheduleModel schedule = _mapper.Map<ScheduleModel>(scheduleFromRepo);
 
             return Ok(schedule);
         }
         catch (Exception e)
         {
+            _logger.LogError($"An exception was thrown when trying to call {nameof(PutSchedule)} width Module " +
+                $"ID \"{mId}\" and Schedule ID \"{sId}\"\n{e.Message}\n{e.StackTrace}");
+
             return BadRequest(e.Message);
         }
     }
@@ -218,9 +401,12 @@ public class ModulesController : ControllerBase
             bool result = _scheduleRepository.Delete(sId);
 
             if (!result)
-                return BadRequest();
+            {
+                return BadRequest($"The deletion of the Schedule with ID \"{sId}\" for Module with ID " +
+                    $"\"{mId}\" Failed");
+            }
 
-            return NoContent();
+            return Ok();
         }
         catch (Exception e)
         {
@@ -371,7 +557,7 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            IEnumerable<UserModel> students = _moduleRepository.GetModuleStudents(mId).Select(x => x.Map<UserModel>());
+            IEnumerable<UserModel> students = _moduleRepository.GetModuleUsers(mId).Select(x => x.Map<UserModel>());
             return Ok(students);
         }
         catch (Exception e)
@@ -385,7 +571,7 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            bool result = _moduleRepository.StudentApply(sId, mId);
+            bool result = _moduleRepository.AddUserToModule(sId, mId);
 
             if (!result)
                 return BadRequest("Something went wrong ...");
@@ -405,7 +591,7 @@ public class ModulesController : ControllerBase
         {
             // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
             // cannot be accessible by guests or students. Only by Teacher or Higher
-            bool result = _moduleRepository.StudentAcceptExempt(sId, mId, decision);
+            bool result = _moduleRepository.AcceptUser(sId, mId, decision);
 
             if (!result)
                 return BadRequest("Something went wrong ...");

@@ -250,4 +250,26 @@ public class UserRepository : RepositoryBase, IUserRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
+
+    public IEnumerable<UserEntity> GetUsersByRole(string role)
+    {
+        if (string.IsNullOrEmpty(role))
+        {
+            throw new ArgumentNullException(nameof(role));
+        }
+
+        string query = @"
+            SELECT u.* FROM [dbo].[UserRoles] AS ur 
+            INNER JOIN Roles AS r ON r.Id = ur.RoleId 
+            INNER JOIN Users AS u ON u.Id = ur.UserId
+            WHERE r.Name = @role";
+
+        Command command = new Command(query);
+
+        command.AddParameter("role", role);
+
+        var result = _connection.ExecuteReader(command, u => u.DbToUser());
+
+        return result;
+    }
 }
