@@ -134,6 +134,42 @@ public class ModulesController : ControllerBase
         }
     }
 
+    [HttpGet("RequestingUsers")]
+    public IActionResult GetUserRequestingModule()
+    {
+        try
+        {
+            var modulesFromRepo = _moduleRepository.GetAll();
+
+            List<UserRequestingModuleModel> usersNotAccepted = new();
+
+            foreach (var module in modulesFromRepo)
+            {
+                IEnumerable<UserEntity> notAcceptedUsers = _moduleRepository
+                    .GetModuleUsers(module.Id, RolesData.STUDENT_ROLE, false);
+
+                var users = _mapper.Map<IEnumerable<UserRequestingModuleModel>>(notAcceptedUsers);
+
+                foreach (var user in users)
+                {
+                    user.ModuleId = module.Id;
+                    user.ModuleName = module.Name;
+                }
+
+                usersNotAccepted.AddRange(users);
+            }
+
+            return Ok(usersNotAccepted);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to execute " +
+                $"{nameof(GetUserRequestingModule)}.\n{e.Message}\n{e.StackTrace}");
+
+            return BadRequest(e.Message);
+        }
+    }
+
     [HttpPost]
     public IActionResult Post([FromBody] ModuleForm form)
     {

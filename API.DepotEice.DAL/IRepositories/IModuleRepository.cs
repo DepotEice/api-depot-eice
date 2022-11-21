@@ -6,6 +6,7 @@ public interface IModuleRepository : IRepositoryBase<int, ModuleEntity>
 {
     IEnumerable<UserEntity> GetModuleUsers(int moduleId);
     IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role);
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role, bool isAccepted);
     IEnumerable<ModuleEntity> GetUserModules(string userId);
     bool AddUserToModule(string studentId, int moduleId);
     bool AcceptUser(string userId, int moduleId, bool decision);

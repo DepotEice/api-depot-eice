@@ -9,6 +9,8 @@ namespace API.DepotEice.UIL.Profiles
         public UserProfile()
         {
             CreateMap<UserEntity, UserModel>();
+
+            CreateMap<UserEntity, UserRequestingModuleModel>();
         }
     }
 }

@@ -22,7 +22,11 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         if (moduleId <= 0)
             throw new ArgumentOutOfRangeException(nameof(moduleId));
 
-        string query = "SELECT u.* FROM [dbo].[UsersModules] um INNER JOIN [dbo].[Users] u ON u.[Id] = um.[UserId] WHERE [ModuleId] = @moduleId";
+        string query =
+            @"SELECT u.* 
+            FROM [dbo].[UserModules] um 
+            INNER JOIN [dbo].[Users] u ON u.[Id] = um.[UserId] 
+            WHERE [ModuleId] = @moduleId";
 
         Command command = new Command(query);
         command.AddParameter("moduleId", moduleId);
@@ -56,6 +60,36 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
 
         command.AddParameter("moduleId", moduleId);
         command.AddParameter("role", role);
+
+        return _connection.ExecuteReader(command, u => u.DbToUser());
+    }
+
+    public IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role, bool isAccepted)
+    {
+        if (moduleId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
+
+        if (string.IsNullOrEmpty(role))
+        {
+            throw new ArgumentNullException(nameof(role));
+        }
+
+        string query =
+            @"SELECT u.*
+            FROM Modules AS m
+            INNER JOIN UserModules AS um ON um.ModuleId = m.Id
+            INNER JOIN Users AS u ON u.Id = um.UserId
+            INNER JOIN UserRoles AS ur ON ur.UserId = u.Id
+            INNER JOIN Roles AS r ON r.Id = ur.RoleId
+            WHERE m.Id = @moduleId AND r.Name = @role AND ur.IsAccepted = @isAccepted";
+
+        Command command = new Command(query);
+
+        command.AddParameter("moduleId", moduleId);
+        command.AddParameter("role", role);
+        command.AddParameter("isAccepted", isAccepted);
 
         return _connection.ExecuteReader(command, u => u.DbToUser());
     }
