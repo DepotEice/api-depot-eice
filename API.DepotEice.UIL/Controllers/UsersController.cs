@@ -1,7 +1,9 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Data;
+using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -16,16 +18,22 @@ public class UsersController : ControllerBase
     public static string SALT = Environment.GetEnvironmentVariable("API_SALT") ?? "salt";
 
     private readonly ILogger _logger;
+    private readonly IMapper _mapper;
     private readonly IUserRepository _userRepository;
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
 
-    public UsersController(ILogger<UsersController> logger, IUserRepository userRepository,
+    public UsersController(ILogger<UsersController> logger, IMapper mapper, IUserRepository userRepository,
         IUserTokenRepository userTokenRepository, IRoleRepository roleRepository)
     {
         if (logger is null)
         {
             throw new ArgumentNullException(nameof(logger));
+        }
+
+        if (mapper is null)
+        {
+            throw new ArgumentNullException(nameof(mapper));
         }
 
         if (userRepository is null)
@@ -44,6 +52,7 @@ public class UsersController : ControllerBase
         }
 
         _logger = logger;
+        _mapper = mapper;
         _userRepository = userRepository;
         _userTokenRepository = userTokenRepository;
         _roleRepository = roleRepository;
@@ -80,6 +89,30 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult Get(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest($"Provide the correct ID");
+        }
+
+        try
+        {
+            var userFromRepo = _userRepository.GetByKey(id);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            UserModel user = _mapper.Map<UserModel>(userFromRepo);
+
+            return Ok(user);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve users from " +
+                $"repository and return the data.\n{e.Message}\n{e.StackTrace}");
+        }
+
         return Ok();
     }
 

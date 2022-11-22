@@ -11,4 +11,5 @@ public interface IModuleRepository : IRepositoryBase<int, ModuleEntity>
     bool AddUserToModule(string studentId, int moduleId);
     bool AcceptUser(string userId, int moduleId, bool decision);
     bool DeleteUserFromModule(string userId, int moduleId);
+    bool? GetUserModuleStatus(int moduleId, string userId);
 }

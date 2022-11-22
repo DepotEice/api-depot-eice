@@ -1,6 +1,7 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Data;
+using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
@@ -21,10 +22,11 @@ public class ModulesController : ControllerBase
     private readonly IScheduleFileRepository _scheduleFileRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IUserManager _userManager;
 
     public ModulesController(ILogger<ModulesController> logger, IMapper mapper, IModuleRepository moduleRepository,
         IScheduleRepository scheduleRepository, IScheduleFileRepository scheduleFileRepository,
-        IRoleRepository roleRepository, IUserRepository userRepository)
+        IRoleRepository roleRepository, IUserRepository userRepository, IUserManager userManager)
     {
         if (logger is null)
         {
@@ -61,6 +63,11 @@ public class ModulesController : ControllerBase
             throw new ArgumentNullException(nameof(userRepository));
         }
 
+        if (userManager is null)
+        {
+            throw new ArgumentNullException(nameof(userManager));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _moduleRepository = moduleRepository;
@@ -68,6 +75,7 @@ public class ModulesController : ControllerBase
         _scheduleFileRepository = scheduleFileRepository;
         _roleRepository = roleRepository;
         _userRepository = userRepository;
+        _userManager = userManager;
     }
 
     [HttpGet]
@@ -167,6 +175,66 @@ public class ModulesController : ControllerBase
                 $"{nameof(GetUserRequestingModule)}.\n{e.Message}\n{e.StackTrace}");
 
             return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/UserRequestStatus")]
+    public IActionResult GetUserRequestStatus(int mId)
+    {
+        string? userId = _userManager.GetCurrentUserId;
+
+        if (userId is null)
+        {
+            return BadRequest();
+        }
+
+        bool? userIsAccepted = _moduleRepository.GetUserModuleStatus(mId, userId);
+
+        return Ok(userIsAccepted);
+    }
+
+    [HttpGet("{mId}/UserRequestStatus/{userId}")]
+    public IActionResult GetUserRequestStatus(int mId, string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return BadRequest(nameof(userId));
+        }
+
+        bool? userIsAccepted = _moduleRepository.GetUserModuleStatus(mId, userId);
+
+        return Ok(userIsAccepted);
+    }
+
+    [HttpPost("{mId}/RequestAcceptance")]
+    public IActionResult RequestAcceptance(int mId)
+    {
+        try
+        {
+            var moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound(nameof(mId));
+            }
+
+            ModuleModel module = _mapper.Map<ModuleModel>(moduleFromRepo);
+
+            var moduleUsers = _moduleRepository.GetModuleUsers(mId, RolesData.TEACHER_ROLE);
+
+            var teacher = moduleUsers.SingleOrDefault();
+
+            if (teacher is not null)
+            {
+                module.TeacherId = teacher.Id;
+            }
+
+            return Ok(module);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown.\n{e.Message}\n{e.StackTrace}");
+            return BadRequest();
         }
     }
 

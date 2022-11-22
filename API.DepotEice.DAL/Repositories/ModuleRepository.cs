@@ -83,7 +83,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
             INNER JOIN Users AS u ON u.Id = um.UserId
             INNER JOIN UserRoles AS ur ON ur.UserId = u.Id
             INNER JOIN Roles AS r ON r.Id = ur.RoleId
-            WHERE m.Id = @moduleId AND r.Name = @role AND ur.IsAccepted = @isAccepted";
+            WHERE m.Id = @moduleId AND r.Name = @role AND um.IsAccepted = @isAccepted";
 
         Command command = new Command(query);
 
@@ -92,6 +92,31 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         command.AddParameter("isAccepted", isAccepted);
 
         return _connection.ExecuteReader(command, u => u.DbToUser());
+    }
+
+    public bool? GetUserModuleStatus(int moduleId, string userId)
+    {
+        if (moduleId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new ArgumentNullException(nameof(userId));
+        }
+
+        string query =
+            @"SELECT um.IsAccepted
+            FROM UserModules AS um
+            WHERE um.UserId = @userId AND um.ModuleId = @moduleId";
+
+        Command command = new Command(query);
+
+        command.AddParameter("userId", userId);
+        command.AddParameter("moduleId", moduleId);
+
+        return _connection.ExecuteReader(command, u => (bool)u["IsActive"]).SingleOrDefault();
     }
 
     /// <summary>
