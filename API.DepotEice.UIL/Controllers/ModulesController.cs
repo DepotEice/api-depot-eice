@@ -380,11 +380,38 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(mId);
+            string? userId = _userManager.GetCurrentUserId;
 
-            IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
 
-            return Ok(schedules);
+            bool isDirection = _roleRepository.GetUserRoles(userId).Any(r => r.Name.Equals(RolesData.DIRECTION_ROLE));
+
+            if (isDirection)
+            {
+                IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(mId);
+
+                IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+
+                return Ok(schedules);
+            }
+
+            var userModules = _moduleRepository.GetUserModules(userId);
+
+            List<ScheduleModel> schedulesList = new();
+
+            foreach (var module in userModules)
+            {
+                var schedulesFromRepo = _scheduleRepository.GetModuleSchedules(module.Id);
+
+                IEnumerable<ScheduleModel> schedulesMapped = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+
+                schedulesList.AddRange(schedulesMapped);
+            }
+
+            return Ok(schedulesList);
         }
         catch (Exception e)
         {
@@ -395,18 +422,16 @@ public class ModulesController : ControllerBase
         }
     }
 
-    [HttpGet("{mId}/Schedules/{sId}")]
-    public IActionResult GetSchedule(int mId, int sId)
+    [HttpGet("Schedules/{sId}")]
+    public IActionResult GetSchedule(int sId)
     {
         try
         {
-            ScheduleEntity? scheduleFromRepo = _scheduleRepository
-                .GetModuleSchedules(mId)
-                .SingleOrDefault(s => s.Id == sId);
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
 
             if (scheduleFromRepo is null)
             {
-                return NotFound($"There is no Schedule with ID \"{sId}\" for Module \"{mId}\"");
+                return NotFound($"There is no Schedule with ID \"{sId}\"");
             }
 
             ScheduleModel schedule = _mapper.Map<ScheduleModel>(scheduleFromRepo);
@@ -416,7 +441,7 @@ public class ModulesController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedule)} " +
-                $"with Module ID {mId} and Schedule ID \"{sId}\"\n{e.Message}\n{e.StackTrace}");
+                $"and Schedule ID \"{sId}\"\n{e.Message}\n{e.StackTrace}");
 
             return BadRequest(e.Message);
         }
@@ -518,14 +543,32 @@ public class ModulesController : ControllerBase
         }
     }
 
-    [HttpGet("{mId}/Schedules/{sId}/Files")]
-    public IActionResult GetScheduleFiles(int mId, int sId)
+    [HttpGet("Schedules/{sId}/Files")]
+    public IActionResult GetScheduleFiles(int sId)
     {
         try
         {
-            IEnumerable<ScheduleFileModel> scheduleFiles = _scheduleFileRepository
-                .GetScheduleFiles(sId)
-                .Select(x => x.Map<ScheduleFileModel>());
+            IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo = _scheduleFileRepository.GetScheduleFiles(sId);
+
+            List<ScheduleFileModel> scheduleFiles = new();
+
+            foreach (var scheduleFile in scheduleFilesFromRepo)
+            {
+                ScheduleFileModel scheduleFileModel = _mapper.Map<ScheduleFileModel>(scheduleFile);
+
+                if (!System.IO.File.Exists(scheduleFileModel.FilePath))
+                {
+                    return NotFound("The file doesn't exist in the file system");
+                }
+
+                string fileName = Path.GetFileName(scheduleFileModel.FilePath);
+                string fileExtension = Path.GetExtension(scheduleFileModel.FilePath);
+
+                scheduleFileModel.FileName = fileName;
+                scheduleFileModel.FileExtension = fileExtension;
+
+                scheduleFiles.Add(scheduleFileModel);
+            }
 
             return Ok(scheduleFiles);
         }

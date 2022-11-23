@@ -43,7 +43,11 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
     /// <exception cref="NotImplementedException"></exception>
     public IEnumerable<ScheduleEntity> GetAll()
     {
-        throw new NotImplementedException();
+        string query = "SELECT * FROM [dbo].[Schedules]";
+
+        Command command = new Command(query);
+
+        return _connection.ExecuteReader(command, s => s.DbToSchedule());
     }
 
     /// <inheritdoc/>
