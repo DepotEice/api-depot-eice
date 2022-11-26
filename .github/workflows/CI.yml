@@ -6,14 +6,13 @@ on:
   push:    
     branches: [main]
 
+env:
+  DOTNET_VERSION: '6.0.x'
+
 jobs:
   deploy:
     # Our previously created self-hosted runner
     runs-on: self-hosted
-
-    strategy:
-      matrix:
-        dotnet: ["6.0.x"]
 
     # A sequence of tasks that will execute as part of the job
     steps:
