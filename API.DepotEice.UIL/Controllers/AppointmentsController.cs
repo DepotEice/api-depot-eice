@@ -238,7 +238,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
-    [HttpGet($"nameof(Accept)/{{id}}")]
+    [HttpGet($"{nameof(Accept)}/{{id}}")]
     public IActionResult Accept(int id)
     {
         try
@@ -259,7 +259,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
-    [HttpGet($"nameof(Cancel)/{{id}}")]
+    [HttpGet($"{nameof(Cancel)}/{{id}}")]
     public IActionResult Cancel(int id)
     {
         try
