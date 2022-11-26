@@ -2,136 +2,135 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Mappers;
 using API.DepotEice.Helpers.Exceptions;
-using DevHopTools.Connection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DevHopTools.DataAccess;
+using DevHopTools.DataAccess.Interfaces;
 
-namespace API.DepotEice.DAL.Repositories
+namespace API.DepotEice.DAL.Repositories;
+
+public class ArticleRepository : RepositoryBase, IArticleRepository
 {
-    public class ArticleRepository : IArticleRepository
+    public ArticleRepository(IDevHopConnection connection) : base(connection) { }
+
+    public bool ArticlePinDecision(int id, bool isPinned = true)
     {
-        private readonly Connection _connection;
+        if (id <= 0)
+            throw new ArgumentOutOfRangeException(nameof(id));
 
-        public ArticleRepository(Connection connection)
+        string query = "UPDATE [dbo].[Articles] SET [Pinned] = @isPinned WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", id);
+        command.AddParameter("isPinned", isPinned);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    /// <inheritdoc/>
+    /// <returns></returns>
+    public IEnumerable<ArticleEntity> GetAll()
+    {
+        Command command = new Command("SELECT * FROM [dbo].[Articles]");
+
+        return _connection.ExecuteReader(command, article => article.DbToArticle());
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="DatabaseScalarNullException"></exception>
+    public int Create(ArticleEntity entity)
+    {
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
+
+        Command command = new Command("spArticleCreate", true);
+
+        command.AddParameter("title", entity.Title);
+        command.AddParameter("body", entity.Body);
+        command.AddParameter("pinned", entity.IsPinned);
+        command.AddParameter("userId", entity.UserId);
+
+        string scalarResult = _connection.ExecuteScalar(command).ToString();
+
+        if (string.IsNullOrEmpty(scalarResult))
+            throw new DatabaseScalarNullException(nameof(scalarResult));
+
+        return int.Parse(scalarResult);
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public ArticleEntity? GetByKey(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "SELECT * FROM [Articles] WHERE [Articles].[Id] = @id";
+
+        Command command = new Command(query);
+
+        command.AddParameter("id", key);
+
+        return _connection
+            .ExecuteReader(command, article => article.DbToArticle())
+            .SingleOrDefault();
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool Update(int key, ArticleEntity entity)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "UPDATE [dbo].[Articles] SET [Title] = @title, [Body] = @body WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+        command.AddParameter("title", entity.Title);
+        command.AddParameter("body", entity.Body);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool Delete(int key)
+    {
+        if (key <= 0)
+            throw new ArgumentOutOfRangeException(nameof(key));
+
+        string query = "DELETE FROM [dbo].[Articles] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    public bool Restore(int key)
+    {
+        if (key <= 0)
         {
-            if (connection is null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            _connection = connection;
+            throw new ArgumentOutOfRangeException(nameof(key));
         }
 
-        /// <summary>
-        /// Create a new <c>Article</c> record in the database
-        /// </summary>
-        /// <param name="entity">
-        /// The entity to create
-        /// </param>
-        /// <returns>
-        /// The ID of the newly created record. <c>0</c> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="DatabaseScalarNullException"></exception>
-        public int Create(ArticleEntity entity)
+        string query = "UPDATE [dbo].[Articles] SET [DeletedAt] = NULL WHERE [Id] = @id";
+
+        Command command = new Command(query);
+
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    public bool ArticleExist(int id)
+    {
+        if (id <= 0)
         {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-
-            Command command = new Command("spCreateArticle", true);
-
-            command.AddParameter("title", entity.Title);
-            command.AddParameter("body", entity.Body);
-            command.AddParameter("pinned", entity.Pinned);
-            command.AddParameter("userId", entity.UserId);
-
-            string? scalarResult = _connection.ExecuteScalar(command).ToString();
-
-            if (string.IsNullOrEmpty(scalarResult))
-            {
-                throw new DatabaseScalarNullException(nameof(scalarResult));
-            }
-
-            return int.Parse(scalarResult);
+            throw new ArgumentOutOfRangeException(nameof(id));
         }
 
-        /// <summary>
-        /// Delete the <paramref name="entity"/> record from the database
-        /// </summary>
-        /// <param name="entity">
-        /// The <c>Article</c> record to delete
-        /// </param>
-        /// <returns>
-        /// <c>true</c> If one or more row was affected by the query. <c>false</c> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool Delete(ArticleEntity entity)
-        {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-
-            Command command = new Command("spDeleteArticle", true);
-
-            command.AddParameter("id", entity.Id);
-
-            return _connection.ExecuteNonQuery(command) > 0;
-        }
-
-        /// <summary>
-        /// Retrieve all <c>Article</c> records from the database
-        /// </summary>
-        /// <returns>
-        /// An <see cref="IEnumerable{T}"/> of <see cref="ArticleEntity"/>
-        /// </returns>
-        public IEnumerable<ArticleEntity> GetAll()
-        {
-            Command command = new Command("SELECT * FROM [dbo].[Articles]");
-
-            return _connection
-                .ExecuteReader(command, article => Mapper.DbToArticle(article));
-        }
-
-        /// <summary>
-        /// Retrieve an <c>Article</c> record from the database
-        /// </summary>
-        /// <param name="key">
-        /// <c>Article</c>'s ID
-        /// </param>
-        /// <returns>
-        /// <c>null</c> If more than one or no record at all. <see cref="ArticleEntity"/> otherwise
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ArticleEntity? GetByKey(int key)
-        {
-            if (key <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(key));
-            }
-
-            Command command = new Command("spGetArticle", true);
-
-            command.AddParameter("id", key);
-
-            return _connection
-                .ExecuteReader(command, article => Mapper.DbToArticle(article))
-                .SingleOrDefault();
-        }
-
-        public bool PinArticle(int id, bool isPinned)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Update(ArticleEntity entity)
-        {
-            throw new NotImplementedException();
-        }
+        return GetByKey(id) is not null;
     }
 }

@@ -1,14 +1,10 @@
 ﻿using API.DepotEice.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace API.DepotEice.DAL.IRepositories
+namespace API.DepotEice.DAL.IRepositories;
+
+public interface IArticleRepository : IRepositoryBase<int, ArticleEntity>
 {
-    public interface IArticleRepository : IRepositoryBase<ArticleEntity, int>
-    {
-        bool PinArticle(int id, bool isPinned);
-    }
+    bool ArticleExist(int id);
+    bool ArticlePinDecision(int id, bool isPinned = true);
+    bool Restore(int key);
 }

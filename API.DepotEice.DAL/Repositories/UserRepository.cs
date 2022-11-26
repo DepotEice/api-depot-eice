@@ -2,202 +2,274 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.DAL.Mappers;
 using API.DepotEice.Helpers.Exceptions;
-using DevHopTools.Connection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using DevHopTools.DataAccess;
+using DevHopTools.DataAccess.Interfaces;
 
-namespace API.DepotEice.DAL.Repositories
+namespace API.DepotEice.DAL.Repositories;
+
+public class UserRepository : RepositoryBase, IUserRepository
 {
-    public class UserRepository : IUserRepository
+    public UserRepository(IDevHopConnection connection) : base(connection) { }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="isActive"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool ActivateDeactivateUser(string id, bool isActive = true)
     {
-        private readonly Connection _connection;
+        if (string.IsNullOrEmpty(id))
+            throw new ArgumentNullException(nameof(id));
 
-        public UserRepository(Connection connection)
+        string query =
+            "UPDATE [dbo].[Users] " +
+            "SET [IsActive] = @isActive, [EmailConfirmed] = 1, [SecurityStamp] = NEWID() " +
+            "WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", id);
+        command.AddParameter("isActive", isActive);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="email"></param>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public UserEntity? LogIn(string email, string password, string salt)
+    {
+        if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
         {
-            if (connection is null)
-            {
-                throw new ArgumentNullException(nameof(connection));
-            }
-
-            _connection = connection;
+            throw new ArgumentNullException(nameof(email));
         }
 
-        /// <summary>
-        /// Activate or deactivate <see cref="UserEntity"/> by settings its IsActive property
-        /// </summary>
-        /// <param name="id">
-        /// ID of the <see cref="UserEntity"/> to activate/deactivate
-        /// </param>
-        /// <param name="isActive">
-        /// <see cref="UserEntity"/>'s activation tag
-        /// </param>
-        /// <returns>
-        /// <c>true</c> If the record has correctly been modified. <c>false</c> Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool ActivateUser(string id, bool isActive)
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(password))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            Command command = new Command("spActivateUser", true);
-
-            command.AddParameter("id", id);
-            command.AddParameter("isActive", isActive);
-
-            return _connection.ExecuteNonQuery(command) > 0;
+            throw new ArgumentNullException(nameof(password));
         }
 
-        /// <inheritdoc/>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="DatabaseScalarNullException"></exception>
-        public string Create(UserEntity entity)
+        string query =
+            "SELECT * FROM [dbo].[Users] " +
+            "WHERE [NormalizedEmail] = @normalizedEmail AND [PasswordHash] = [dbo].[fnHashPassword](@password, @salt)";
+
+        Command command = new Command(query);
+        command.AddParameter("normalizedEmail", email.ToUpper());
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
+
+        return _connection
+            .ExecuteReader(command, record => record.DbToUser())
+            .SingleOrDefault();
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="moduleId"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IEnumerable<UserEntity> GetModuleUsers(int moduleId)
+    {
+        if (moduleId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(moduleId));
+
+        string query = "SELECT u.* FROM [dbo].[UserModules] um INNER JOIN [dbo].[Users] u ON u.[Id] = um.UserId WHERE [ModuleId] = @moduleId";
+
+        Command command = new Command(query);
+        command.AddParameter("moduleId", moduleId);
+
+        return _connection.ExecuteReader(command, user => user.DbToUser());
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool UpdatePassword(string userId, string password, string salt)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
         {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-
-            Command command = new Command("spCreateUser", true);
-
-            command.AddParameter("email", entity.Email);
-            command.AddParameter("password", entity.Password);
-            command.AddParameter("salt", entity.Salt);
-            command.AddParameter("firstName", entity.FirstName);
-            command.AddParameter("lastName", entity.LastName);
-            command.AddParameter("profilePicture", entity.ProfilePicture);
-            command.AddParameter("birthdate", entity.BirthDate);
-
-            string? scalarResult = _connection.ExecuteScalar(command).ToString();
-
-            if (string.IsNullOrEmpty(scalarResult))
-            {
-                throw new DatabaseScalarNullException(nameof(scalarResult));
-            }
-
-            return scalarResult;
+            throw new ArgumentNullException(nameof(userId));
         }
 
-        /// <inheritdoc/>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool Delete(UserEntity entity)
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(password))
         {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-
-            Command command = new Command("spDeleteUser", true);
-
-            command.AddParameter("id", entity.Id);
-
-            return _connection.ExecuteNonQuery(command) > 0;
+            throw new ArgumentNullException(nameof(password));
         }
 
-        public IEnumerable<UserEntity> GetAll()
+        Command command = new Command("spUsers_UpdatePassword", true);
+        command.AddParameter("userId", userId);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public string GetHashPwdFromEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
+            throw new ArgumentNullException(nameof(email));
+
+        string query = "SELECT [PasswordHash] FROM [dbo].[Users] WHERE [NormalizedEmail] = @normalizedEmail";
+        Command command = new Command(query);
+        command.AddParameter("normalizedEmail", email.ToUpper());
+        return _connection.ExecuteScalar(command).ToString(); ;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public UserEntity? GetUserByEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(email))
+            throw new ArgumentNullException(nameof(email));
+
+        string query = "SELECT * FROM [dbo].[Users] WHERE [NormalizedEmail] = @normalizedEmail";
+
+        Command command = new Command(query);
+        command.AddParameter("normalizedEmail", email.ToUpper());
+
+        return _connection
+            .ExecuteReader(command, user => user.DbToUser())
+            .SingleOrDefault();
+    }
+
+    public IEnumerable<UserEntity> GetAll()
+    {
+        string query = "SELECT * FROM [dbo].[Users]";
+
+        Command command = new Command(query);
+
+        return _connection.ExecuteReader(command, user => user.DbToUser());
+    }
+
+    /// <summary>
+    /// Creates a user in the database. The password hashing happens in the database with the help
+    /// of the salt
+    /// </summary>
+    /// <param name="entity">The <see cref="UserEntity"/> to create</param>
+    /// <param name="password">User's password that is going to be hashed</param>
+    /// <param name="salt">The application salt used to hash the password</param>
+    /// <returns>The newly created ID of the user if it went well</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="DatabaseScalarNullException"></exception>
+    public string Create(UserEntity entity, string password, string salt)
+    {
+        if (entity is null)
         {
-            string query = "SELECT * FROM [dbo].[Users]";
-
-            Command command = new Command(query);
-
-            return _connection.ExecuteReader(command, user => Mapper.DbToUser(user));
+            throw new ArgumentNullException(nameof(entity));
         }
 
-        /// <inheritdoc/>
-        /// <exception cref="ArgumentNullException"></exception>
-        public UserEntity? GetByKey(string key)
+        Command command = new Command("spUsers_Create", true);
+        command.AddParameter("email", entity.Email);
+        command.AddParameter("password", password);
+        command.AddParameter("salt", salt);
+        command.AddParameter("firstname", entity.FirstName);
+        command.AddParameter("lastname", entity.LastName);
+        command.AddParameter("birthdate", entity.BirthDate);
+
+        string scalarResult = _connection.ExecuteScalar(command).ToString();
+
+        if (string.IsNullOrEmpty(scalarResult))
+            throw new DatabaseScalarNullException(nameof(scalarResult));
+
+        return scalarResult;
+    }
+
+    /// <summary>
+    /// Not implemented
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public string Create(UserEntity entity)
+    {
+        throw new NotImplementedException();
+    }
+
+    public UserEntity GetByKey(string key)
+    {
+        if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
+            throw new ArgumentNullException(nameof(key));
+
+        string query = "SELECT * FROM [dbo].[Users] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection
+            .ExecuteReader(command, user => user.DbToUser())
+            .SingleOrDefault();
+    }
+
+    public bool Update(string key, UserEntity entity)
+    {
+        if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
+            throw new ArgumentNullException(nameof(key));
+
+        if (entity is null)
+            throw new ArgumentNullException(nameof(entity));
+
+        Command command = new Command("spUsers_UpdateInformations", true);
+
+        command.AddParameter("id", entity.Id);
+        command.AddParameter("firstName", entity.FirstName);
+        command.AddParameter("lastName", entity.LastName);
+        command.AddParameter("birthDate", entity.BirthDate);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    public bool Delete(string key)
+    {
+        if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
+            throw new ArgumentNullException(nameof(key));
+
+        string query = "DELETE FROM [dbo].[Users] WHERE [Id] = @id";
+
+        Command command = new Command(query);
+        command.AddParameter("id", key);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    public IEnumerable<UserEntity> GetUsersByRole(string role)
+    {
+        if (string.IsNullOrEmpty(role))
         {
-            if (string.IsNullOrEmpty(key))
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            Command command = new Command("spGetUser", true);
-
-            command.AddParameter("id", key);
-
-            return _connection
-                .ExecuteReader(command, user => Mapper.DbToUser(user))
-                .SingleOrDefault();
+            throw new ArgumentNullException(nameof(role));
         }
 
-        /// <inheritdoc/>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool Update(UserEntity entity)
-        {
-            if (entity is null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
+        string query = @"
+            SELECT u.* FROM [dbo].[UserRoles] AS ur 
+            INNER JOIN Roles AS r ON r.Id = ur.RoleId 
+            INNER JOIN Users AS u ON u.Id = ur.UserId
+            WHERE r.Name = @role";
 
-            Command command = new Command("spUpdateUserInformations", true);
+        Command command = new Command(query);
 
-            command.AddParameter("id", entity.Id);
-            command.AddParameter("firstName", entity.FirstName);
-            command.AddParameter("lastName", entity.LastName);
-            command.AddParameter("profilePicture", entity.ProfilePicture);
-            command.AddParameter("birthDate", entity.BirthDate);
+        command.AddParameter("role", role);
 
-            return _connection.ExecuteNonQuery(command) > 0;
-        }
+        var result = _connection.ExecuteReader(command, u => u.DbToUser());
 
-        /// <summary>
-        /// Update a <see cref="UserEntity"/> record's <see cref="UserEntity.Password"/> 
-        /// property
-        /// </summary>
-        /// <param name="id">
-        /// The ID of the <see cref="UserEntity"/> record to update
-        /// </param>
-        /// <param name="oldPassword">
-        /// The old password of the <see cref="UserEntity"/>. If this parameter doesn't match the
-        /// user's actual password, the method returns <c>false</c>
-        /// </param>
-        /// <param name="newPassword">
-        /// The new password
-        /// </param>
-        /// <param name="salt">
-        /// Application's salt
-        /// </param>
-        /// <returns>
-        /// <c>true</c> If the password update has successfully been executed. <c>false</c> 
-        /// Otherwise
-        /// </returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public bool UpdatePassword(string id, string oldPassword, string newPassword, string salt)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (string.IsNullOrEmpty(oldPassword))
-            {
-                throw new ArgumentNullException(nameof(oldPassword));
-            }
-
-            if (string.IsNullOrEmpty(newPassword))
-            {
-                throw new ArgumentNullException(nameof(newPassword));
-            }
-
-            if (string.IsNullOrEmpty(salt))
-            {
-                throw new ArgumentNullException(nameof(salt));
-            }
-
-            Command command = new Command("spUpdateUserPassword", true);
-
-            command.AddParameter("id", id);
-            command.AddParameter("oldPassword", oldPassword);
-            command.AddParameter("newPassword", newPassword);
-            command.AddParameter("salt", salt);
-
-            return _connection.ExecuteNonQuery(command) > 0;
-        }
+        return result;
     }
 }

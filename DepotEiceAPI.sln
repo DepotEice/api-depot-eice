@@ -3,15 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API.DepotEice.BLL", "API.DepotEice.BLL\API.DepotEice.BLL.csproj", "{686840C2-F042-4634-87DA-737E1E378142}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API.DepotEice.DAL", "API.DepotEice.DAL\API.DepotEice.DAL.csproj", "{386E9F30-A5E1-41D3-8EBA-A6EC642EFE11}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API.DepotEice.Test", "API.DepotEice.Test\API.DepotEice.Test.csproj", "{8E454C33-94E7-42A7-879C-0C8C36835F97}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API.DepotEice.UIL", "API.DepotEice.UIL\API.DepotEice.UIL.csproj", "{0DC3EB5F-F85C-4EC5-BF07-0D51957C5A23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API.DepotEice.Helpers", "API.DepotEice.Helpers\API.DepotEice.Helpers.csproj", "{45E2ADDD-0F92-45F2-B785-A31C9FE2DDFB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API.DepotEice.Helpers", "API.DepotEice.Helpers\API.DepotEice.Helpers.csproj", "{45E2ADDD-0F92-45F2-B785-A31C9FE2DDFB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "[10] DAL", "[10] DAL", "{795152AC-9971-428F-BC00-30D4CAF15694}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "[30] UIL", "[30] UIL", "{01CF202C-96C5-411F-BA29-1F5B80B2007D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "[99] Helpers", "[99] Helpers", "{E0C5DC94-0615-4321-886B-64539A45728F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "[80] Tests", "[80] Tests", "{5941FE5B-0103-4523-9EAE-315EFC898340}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,10 +25,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{686840C2-F042-4634-87DA-737E1E378142}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{686840C2-F042-4634-87DA-737E1E378142}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{686840C2-F042-4634-87DA-737E1E378142}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{686840C2-F042-4634-87DA-737E1E378142}.Release|Any CPU.Build.0 = Release|Any CPU
 		{386E9F30-A5E1-41D3-8EBA-A6EC642EFE11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{386E9F30-A5E1-41D3-8EBA-A6EC642EFE11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{386E9F30-A5E1-41D3-8EBA-A6EC642EFE11}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -42,6 +44,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{386E9F30-A5E1-41D3-8EBA-A6EC642EFE11} = {795152AC-9971-428F-BC00-30D4CAF15694}
+		{8E454C33-94E7-42A7-879C-0C8C36835F97} = {5941FE5B-0103-4523-9EAE-315EFC898340}
+		{0DC3EB5F-F85C-4EC5-BF07-0D51957C5A23} = {01CF202C-96C5-411F-BA29-1F5B80B2007D}
+		{45E2ADDD-0F92-45F2-B785-A31C9FE2DDFB} = {E0C5DC94-0615-4321-886B-64539A45728F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E68DD534-5DE6-4564-87F1-6465CA966A08}

@@ -1,54 +1,56 @@
-﻿using API.DepotEice.UIL.IManagers;
+﻿using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Linq;
 
-namespace API.DepotEice.UIL.Managers
+namespace API.DepotEice.UIL.Managers;
+
+public class TokenManager : ITokenManager
 {
-    public class TokenManager : ITokenManager
+    private readonly WebApplicationBuilder _builder;
+
+    public TokenManager(WebApplicationBuilder builder)
     {
-        private readonly WebApplicationBuilder _builder;
+        _builder = builder;
+    }
 
-        public TokenManager(WebApplicationBuilder builder)
+    public string GenerateJWT(LoggedInUserModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model.Email);
+
+        string? secretStr = _builder.Configuration["AppSettings:Secret"];
+        byte[] secretArr = Encoding.ASCII.GetBytes(secretStr);
+
+        SymmetricSecurityKey securityKey = new(secretArr);
+
+        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha512);
+
+        List<Claim> claims = new List<Claim>();
+        claims.Add(new Claim(ClaimTypes.Sid, model.Id.ToString()));
+        claims.Add(new Claim(ClaimTypes.Email, model.Email));
+
+        if (model.Roles.Count() > 0)
         {
-            _builder = builder;
+            claims.AddRange(model.Roles.Select(role => new Claim(ClaimTypes.Role, role.Name)));
         }
 
-        public string GenerateJWT(LoggedInUserModel model)
+        // generate token that is valid for 7 days
+        SecurityTokenDescriptor tokenDescriptor = new()
         {
-            ArgumentNullException.ThrowIfNull(model.Email);
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(1),
+            SigningCredentials = credentials,
+            Audience = _builder.Configuration["AppSettings:Audience"],
+            Issuer = _builder.Configuration["AppSettings:Issuer"]
+        };
 
-            string? secretStr = _builder.Configuration["AppSettings:Secret"];
-            byte[] secretArr = Encoding.ASCII.GetBytes(secretStr);
+        JwtSecurityTokenHandler tokenHandler = new();
 
-            SymmetricSecurityKey securityKey = new(secretArr);
+        var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha512);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Sid, model.Id.ToString()),
-                new Claim(ClaimTypes.Email, model.Email),
-                // TODO - Le reste des informations de l'utilisateur
-            };
-
-            // generate token that is valid for 7 days
-            SecurityTokenDescriptor tokenDescriptor = new()
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = credentials,
-                Audience = _builder.Configuration["AppSettings:Audience"],
-                Issuer = _builder.Configuration["AppSettings:Issuer"]
-            };
-
-            JwtSecurityTokenHandler tokenHandler = new();
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-
-            return tokenHandler.WriteToken(token);
-        }
+        return tokenHandler.WriteToken(token);
     }
 }

@@ -1,16 +1,15 @@
 ﻿using API.DepotEice.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace API.DepotEice.DAL.IRepositories
+namespace API.DepotEice.DAL.IRepositories;
+
+public interface IModuleRepository : IRepositoryBase<int, ModuleEntity>
 {
-    public interface IModuleRepository : IRepositoryBase<ModuleEntity, int>
-    {
-        bool AddUser(int id, string userId);
-        bool RemoveUser(int id, string userId);
-        IEnumerable<ModuleEntity> GetUserModules(string userId);
-    }
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId);
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role);
+    IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role, bool isAccepted);
+    IEnumerable<ModuleEntity> GetUserModules(string userId);
+    bool AddUserToModule(string studentId, int moduleId);
+    bool AcceptUser(string userId, int moduleId, bool decision);
+    bool DeleteUserFromModule(string userId, int moduleId);
+    bool? GetUserModuleStatus(int moduleId, string userId);
 }
