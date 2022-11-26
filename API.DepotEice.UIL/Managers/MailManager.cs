@@ -34,7 +34,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                     $"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
+                    $"<a href=\"https://www.domain.com/auth/activation?token={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();

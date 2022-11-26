@@ -582,32 +582,50 @@ public class ModulesController : ControllerBase
     public IActionResult PostScheduleFiles(int mId, int sId, [FromForm] ScheduleFileForm file)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            ModuleModel? module = _moduleRepository.GetByKey(mId)?.Map<ModuleModel>();
-            if (module == null)
-                return NotFound("Le module n'existe pas !");
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
 
-            ScheduleModel? schedule = _scheduleRepository.GetByKey(sId)?.Map<ScheduleModel>();
-            if (schedule == null)
-                return NotFound("Le schedule n'existe pas !");
+            if (moduleFromRepo is null)
+            {
+                return NotFound();
+            }
 
-            string imagePath = SaveImageAndGetPath(file);
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound();
+            }
+
+            string filePath = SaveImageAndGetPath(file);
 
             ScheduleFileEntity entity = new ScheduleFileEntity()
             {
-                FilePath = imagePath,
+                FilePath = filePath,
                 ScheduleId = sId
             };
 
             int scheduleFileId = _scheduleFileRepository.Create(entity);
 
             if (scheduleFileId <= 0)
+            {
+                System.IO.File.Delete(filePath);
                 return BadRequest(nameof(scheduleFileId));
+            }
 
-            ScheduleFileModel? scheduleFile = _scheduleFileRepository.GetByKey(scheduleFileId)?.Map<ScheduleFileModel>();
+            ScheduleFileEntity? scheduleFileFromRepo = _scheduleFileRepository.GetByKey(scheduleFileId);
+
+            if (scheduleFileFromRepo is null)
+            {
+                return NotFound();
+            }
+
+            ScheduleFileModel? scheduleFile = _mapper.Map<ScheduleFileModel>(scheduleFileFromRepo);
 
             return Ok(scheduleFile);
         }
@@ -622,19 +640,30 @@ public class ModulesController : ControllerBase
     {
         try
         {
-            ModuleModel? module = _moduleRepository.GetByKey(mId)?.Map<ModuleModel>();
-            if (module == null)
-                return NotFound("Le module n'existe pas !");
+            var moduleFromRepo = _moduleRepository.GetByKey(mId);
 
-            ScheduleModel? schedule = _scheduleRepository.GetByKey(sId)?.Map<ScheduleModel>();
-            if (schedule == null)
-                return NotFound("Le schedule n'existe pas !");
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"No module with ID \"{mId}\" was found");
+            }
 
-            ScheduleFileModel? scheduleFile = _scheduleFileRepository.GetByKey(fId)?.Map<ScheduleFileModel>();
-            if (scheduleFile == null)
-                return NotFound("Aucune fichier existant !");
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
 
-            string filePath = scheduleFile.FilePath;
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"No Schedule with ID \"{sId}\" was found");
+            }
+
+            ScheduleFileEntity? scheduleFileFromRepo = _scheduleFileRepository.GetByKey(fId);
+
+            if (scheduleFileFromRepo is null)
+            {
+                return NotFound($"No Schedule File with ID \"{fId}\" was found");
+            }
+
+            ScheduleFileModel scheduleFile = _mapper.Map<ScheduleFileModel>(scheduleFileFromRepo);
+
+            string filePath = scheduleFileFromRepo.FilePath;
 
             FileInfo fileInfo = new FileInfo(filePath);
 
@@ -643,7 +672,9 @@ public class ModulesController : ControllerBase
                 bool result = _scheduleFileRepository.Delete(fId);
 
                 if (!result)
-                    return BadRequest("Something went wrong ...");
+                {
+                    return BadRequest($"The deletion of the file with ID \"{scheduleFile.Id}\" failed");
+                }
 
                 fileInfo.Delete();
             }
@@ -652,7 +683,7 @@ public class ModulesController : ControllerBase
                 return BadRequest(e.Message);
             }
 
-            return NoContent();
+            return Ok();
         }
         catch (Exception e)
         {
@@ -772,6 +803,7 @@ public class ModulesController : ControllerBase
     private static string SaveImageAndGetPath(ScheduleFileForm file)
     {
         string fileName = file.File.FileName;
+
         string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
 
         var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
