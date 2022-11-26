@@ -32,4 +32,4 @@ jobs:
 
       # We will output publish files to the folder we previously created
       - name: Publish
-        run: dotnet publish -c Release -o /release
+        run: dotnet publish -c Release -o /apps/api-depot-eice/
