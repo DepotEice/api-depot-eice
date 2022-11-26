@@ -7,7 +7,7 @@ namespace API.DepotEice.UIL.Models.Forms
     {
         [Display(Name = "File")]
         [Required(ErrorMessage = "Pick a File")]
-        [AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".txt", ".pdf" }, ErrorMessage = "Your file's filetype is not valid.")]
+        //[AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".txt", ".pdf" }, ErrorMessage = "Your file's filetype is not valid.")]
         public IFormFile File { get; set; }
     }
 }

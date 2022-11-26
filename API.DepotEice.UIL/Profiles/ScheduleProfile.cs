@@ -12,6 +12,8 @@ namespace API.DepotEice.UIL.Profiles
             CreateMap<ScheduleEntity, ScheduleModel>();
 
             CreateMap<ScheduleForm, ScheduleEntity>();
+
+            CreateMap<ScheduleFileEntity, ScheduleFileModel>();
         }
     }
 }
