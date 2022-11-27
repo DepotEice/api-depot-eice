@@ -33,8 +33,3 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "somePassword@187"
-
-  web-depot-eice:
-    image: aspirio/web-depot-eice
-    networks:
-      depot-eice:
