@@ -5,9 +5,7 @@ networks:
 
 services:
   api-depot-eice:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: aspirio/api-depot-eice
     networks:
       depot-eice:
     ports:
@@ -20,6 +18,9 @@ services:
       JWT_SECRET: "wtpp-JfGWkyViHdg4bW_Hrfx_jlD01mxLnBexWsEHVu97aVfcd2FgvmP-mHufvltwEb9mGG61eBLft-O2W7V0A"
       PASSWORD_SALT: "5C2iqv9FSwEIqiD9ZOrDCQhvK8OFnVJUCelLsikTZBUk4xuZnt4HlFj1PbbiHimx58LAGtZc9+tbEI9pyT9x4A=="
       MSSQL_CONNECTION_STRING: "Data Source=db-depot-eice,1433;Initial Catalog=DepotEice;User ID=sa;Password=somePassword@187;Trusted_Connection=False;Integrated Security=False;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"
+      TFE_MAILJET_API_KEY_PUBLIC: "f40de3ed16e8436773cc3621e8fc13ce"
+      TFE_MAILJET_API_KEY_PRIVATE: "197c47c5615c7b157f8aff7d5f631547"
+      DOMAIN_NAME: ""
     depends_on:
       - db-depot-eice
 
