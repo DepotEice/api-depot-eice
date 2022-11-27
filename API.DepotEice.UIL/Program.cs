@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Net;
 using System.Reflection;
 using System.Text;
 
@@ -79,6 +80,8 @@ public class Program
             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
         });
 
+        // Retrieving JWT Token data from environment
+#if DEBUG
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters()
@@ -92,13 +95,35 @@ public class Program
                 ValidAudience = builder.Configuration["AppSettings:Audience"]
             };
         });
+#else
+        string jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_SECRET\"");
+        string jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_ISSUER\"");
+        string jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_AUDIENCE\"");
 
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
+                ValidateAudience = true,
+                ValidAudience = jwtAudience
+            };
+        });
+#endif
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
         });
-
-        //builder.Services.AddAuthorization();
 
         builder.Services.AddSingleton<IAuthorizationPolicyProvider, HasRolePolicyProvider>();
         builder.Services.AddSingleton<IAuthorizationHandler, HasRoleRequirementHandler>();
@@ -124,7 +149,9 @@ public class Program
         string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
         //string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
 #else
-        string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        string connectionString = Environment.GetEnvironmentVariable("MSSQL_CONNECTION_STRING") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                $"MSSQL_CONNECTION_STRING");
 #endif
         builder.Services.AddSingleton<IDevHopConnection, MsSqlCon>(o => new MsSqlCon(connectionString));
         // builder.Services.AddSingleton(sp => new MsSqlCon(connectionString));
@@ -152,12 +179,12 @@ public class Program
 
         var app = builder.Build();
 
-        if (app.Environment.IsDevelopment())
-        {
+        //if (app.Environment.IsDevelopment())
+        //{
             app.UseDeveloperExceptionPage();
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Depot.Eice v1"));
-        }
+        //}
 
         app.UseStaticFiles();
 

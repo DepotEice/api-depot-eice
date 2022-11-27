@@ -18,8 +18,6 @@ namespace API.DepotEice.UIL.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    public static string SALT = Environment.GetEnvironmentVariable("API_SALT") ?? "salt";
-
     private readonly ILogger _logger;
     private readonly IConfiguration _configuration;
     private readonly ITokenManager _tokenManager;
@@ -62,7 +60,7 @@ public class AuthController : ControllerBase
 
         try
         {
-            var entity = _userRepository.LogIn(form.Email, form.Password, SALT);
+            var entity = _userRepository.LogIn(form.Email, form.Password, GetSalt());
 
             if (entity == null)
             {
@@ -117,7 +115,7 @@ public class AuthController : ControllerBase
             userEntity = form.Map<UserEntity>();
 
             // TODO : Remove the hardcoded hash
-            string userId = _userRepository.Create(userEntity, form.Password, SALT);
+            string userId = _userRepository.Create(userEntity, form.Password, GetSalt());
 
             if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
             {
@@ -318,11 +316,12 @@ public class AuthController : ControllerBase
 
     private string GetSalt()
     {
+#if DEBUG
         return _configuration.GetValue<string>("AppSettings:Secret");
-    }
-
-    private string GenerateHash(string password)
-    {
-        return password.GenerateHMACSHA512(Encoding.UTF8.GetBytes(GetSalt()));
+#else
+        return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                $"\"PASSWORD_SALT\"");
+#endif
     }
 }

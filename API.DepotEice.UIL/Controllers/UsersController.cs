@@ -15,16 +15,15 @@ namespace API.DepotEice.UIL.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
-    public static string SALT = Environment.GetEnvironmentVariable("API_SALT") ?? "salt";
-
     private readonly ILogger _logger;
+    private readonly IConfiguration _configuration;
     private readonly IMapper _mapper;
     private readonly IUserRepository _userRepository;
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
 
     public UsersController(ILogger<UsersController> logger, IMapper mapper, IUserRepository userRepository,
-        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository)
+        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository, IConfiguration configuration)
     {
         if (logger is null)
         {
@@ -51,11 +50,17 @@ public class UsersController : ControllerBase
             throw new ArgumentNullException(nameof(roleRepository));
         }
 
+        if(configuration is null)
+        {
+            throw new ArgumentNullException(nameof(configuration));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _userRepository = userRepository;
         _userTokenRepository = userTokenRepository;
         _roleRepository = roleRepository;
+        _configuration = configuration;
     }
 
     [HttpGet()]
@@ -179,7 +184,7 @@ public class UsersController : ControllerBase
                 return Unauthorized();
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, SALT);
+            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, GetSalt());
 
             if (!result)
             {
@@ -209,7 +214,7 @@ public class UsersController : ControllerBase
                 return Unauthorized();
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, SALT);
+            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, GetSalt());
 
             if (!result)
             {
@@ -218,5 +223,16 @@ public class UsersController : ControllerBase
 
             return Ok();
         }
+    }
+
+    private string GetSalt()
+    {
+#if DEBUG
+        return _configuration.GetValue<string>("AppSettings:Secret");
+#else
+        return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                $"\"PASSWORD_SALT\"");
+#endif
     }
 }

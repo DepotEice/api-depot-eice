@@ -1,3 +1,9 @@
 # DepotEiceAPI
 
-test
+## Environment variables
+
+* JWT_AUDIENCE
+* JWT_ISSUER
+* JWT_SECRET
+* MSSQL_CONNECTION_STRING
+* PASSWORD_SALT
