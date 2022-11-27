@@ -22,7 +22,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: shatsijev/api-depot-eice
+          images: aspirio/api-depot-eice
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
