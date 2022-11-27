@@ -21,4 +21,4 @@ RUN dotnet publish "API.DepotEice.UIL.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "API.DepotEice.UIL.dll"]
+ENTRYPOINT ["dotnet", "API.DepotEice.UIL.dll", "--server.urls", "http://+:80"]
