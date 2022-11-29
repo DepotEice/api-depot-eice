@@ -39,7 +39,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                     $"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}.com/auth/activation?token={userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}auth/activation?token={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
@@ -72,7 +72,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                 body.Append($"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>");
 #else
-                body.Append($"<a href=\"https://www.{DOMAIN_NAME}.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
+                body.Append($"<a href=\"https://www.{DOMAIN_NAME}auth/activation?token={userToken}\">Cliquez-ici</a>");
 #endif
 
                 using (MailMessage mail = new())
@@ -121,7 +121,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                     $"<a href=\"https://localhost:7245/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}.com/auth/activation?token={userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}auth/activation?token={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
@@ -152,7 +152,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                 body.Append($"<a href=\"https://localhost:7245/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>");
 #else
-                body.Append($"<a href=\"https://www.{DOMAIN_NAME}.com/auth/activation?token={userToken}\">Cliquez-ici</a>");
+                body.Append($"<a href=\"https://www.{DOMAIN_NAME}auth/activation?token={userToken}\">Cliquez-ici</a>");
 #endif
                 using (MailMessage mail = new())
                 {

@@ -317,7 +317,7 @@ public class AuthController : ControllerBase
     private string GetSalt()
     {
 #if DEBUG
-        return _configuration.GetValue<string>("AppSettings:Secret");
+        return _configuration.GetValue<string>("AppSettings:Salt");
 #else
         return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
             throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
