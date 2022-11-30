@@ -234,6 +234,7 @@ public class ArticlesController : ControllerBase
         try
         {
             ArticleEntity entity = _mapper.Map<ArticleEntity>(form);
+            entity.Id = id;
 
             string? userId = _userManager.GetCurrentUserId;
 

@@ -1,6 +1,10 @@
 ﻿using API.DepotEice.UIL.AuthorizationAttributes;
+using API.DepotEice.UIL.Models;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers
@@ -11,6 +15,7 @@ namespace API.DepotEice.UIL.Controllers
     {
         private readonly ILogger _logger;
         private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly HttpClient _httpClient;
 
         public ImagesController(ILogger<ImagesController> logger, IWebHostEnvironment hostEnvironment)
         {
@@ -24,23 +29,31 @@ namespace API.DepotEice.UIL.Controllers
                 throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
+
             _logger = logger;
             _hostEnvironment = hostEnvironment;
+            _httpClient = new HttpClient()
+            {
+                BaseAddress = new Uri("http://freeimage.host/api/1/upload/")
+            };
         }
 
         [HttpGet("{fileName}")]
         public async Task<IActionResult> GetImage(string fileName)
         {
-            FileInfo infos = new FileInfo($"./images/{fileName}");
+            Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
 
-            if (!infos.Exists)
+            Cloudinary cloudinary = new Cloudinary(account);
+
+            GetResourceResult result = cloudinary.GetResource(fileName);
+
+            string extension = fileName.Split('.').Last();
+
+            using (var webClient = new WebClient())
             {
-                return NotFound(fileName);
+                byte[] imageBytes = webClient.DownloadData(result.Url);
+                return File(imageBytes, $"image/{extension}");
             }
-
-            byte[] bytes = System.IO.File.ReadAllBytes($"./images/{fileName}");
-
-            return File(bytes, $"image/{infos.Extension}");
         }
 
         [HasRoleAuthorize(RolesEnum.DIRECTION)]
@@ -52,6 +65,10 @@ namespace API.DepotEice.UIL.Controllers
                 return BadRequest($"{nameof(uploadFiles)} is null");
             }
 
+            Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
+
+            Cloudinary cloudinary = new Cloudinary(account);
+
             foreach (var file in uploadFiles)
             {
                 if (file.Length <= 0)
@@ -59,17 +76,17 @@ namespace API.DepotEice.UIL.Controllers
                     return BadRequest($"{nameof(file)} is empty");
                 }
 
-                if (!Directory.Exists("./images"))
-                {
-                    Directory.CreateDirectory("./images");
-                }
 
-                using (Stream fileStream = new FileStream($"./images/{file.FileName}", FileMode.Create))
+                Stream stream = file.OpenReadStream();
+
+                var uploadParams = new ImageUploadParams()
                 {
-                    await file.CopyToAsync(fileStream);
-                }
+                    File = new FileDescription(file.FileName, stream),
+                    PublicId = file.FileName
+                };
+
+                var uploadResult = cloudinary.Upload(uploadParams);
             }
-
 
 
             return Ok();

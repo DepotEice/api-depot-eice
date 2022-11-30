@@ -21,7 +21,12 @@ public class TokenManager : ITokenManager
     {
         ArgumentNullException.ThrowIfNull(model.Email);
 
+#if DEBUG
         string? secretStr = _builder.Configuration["AppSettings:Secret"];
+#else
+        string? secretStr = Environment.GetEnvironmentVariable("JWT_SECRET") ??
+            throw new NullReferenceException($"There is no environment variable named JWT_SECRET");
+#endif
         byte[] secretArr = Encoding.ASCII.GetBytes(secretStr);
 
         SymmetricSecurityKey securityKey = new(secretArr);
@@ -36,7 +41,7 @@ public class TokenManager : ITokenManager
         {
             claims.AddRange(model.Roles.Select(role => new Claim(ClaimTypes.Role, role.Name)));
         }
-
+#if DEBUG
         // generate token that is valid for 7 days
         SecurityTokenDescriptor tokenDescriptor = new()
         {
@@ -46,7 +51,18 @@ public class TokenManager : ITokenManager
             Audience = _builder.Configuration["AppSettings:Audience"],
             Issuer = _builder.Configuration["AppSettings:Issuer"]
         };
-
+#else
+        SecurityTokenDescriptor tokenDescriptor = new()
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(1),
+            SigningCredentials = credentials,
+            Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
+                throw new NullReferenceException("There is no environment variable named JWT_AUDIENCE"),
+            Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
+                throw new NullReferenceException("There is no environment variable named JWT_ISSUER")
+        };
+#endif
         JwtSecurityTokenHandler tokenHandler = new();
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
