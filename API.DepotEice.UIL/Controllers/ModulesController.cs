@@ -5,7 +5,10 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using DevHopTools.Mappers;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
 
@@ -135,6 +138,42 @@ public class ModulesController : ControllerBase
             }
 
             return Ok(module);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet("{mId}/HasRole/{roleName}")]
+    public IActionResult HasRole(int mId, string roleName)
+    {
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized();
+            }
+
+            var moduleUsers = _moduleRepository.GetModuleUsers(mId);
+
+            var moduleCurrentUser = moduleUsers.SingleOrDefault(u => u.Id.Equals(currentUserId));
+
+            if (moduleCurrentUser is null)
+            {
+                return Ok(false);
+            }
+
+            var userRoles = _roleRepository.GetUserRoles(moduleCurrentUser.Id);
+
+            if (userRoles.Any(r => r.Name.Equals(roleName)))
+            {
+                return Ok(true);
+            }
+
+            return Ok(false);
         }
         catch (Exception e)
         {
@@ -554,6 +593,7 @@ public class ModulesController : ControllerBase
 
             foreach (var scheduleFile in scheduleFilesFromRepo)
             {
+#if DEBUG
                 ScheduleFileModel scheduleFileModel = _mapper.Map<ScheduleFileModel>(scheduleFile);
 
                 if (!System.IO.File.Exists(scheduleFileModel.FilePath))
@@ -568,6 +608,11 @@ public class ModulesController : ControllerBase
                 scheduleFileModel.FileExtension = fileExtension;
 
                 scheduleFiles.Add(scheduleFileModel);
+#else
+                Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
+
+                Cloudinary cloudinary = new Cloudinary(account);
+#endif
             }
 
             return Ok(scheduleFiles);
@@ -612,11 +657,13 @@ public class ModulesController : ControllerBase
 
             int scheduleFileId = _scheduleFileRepository.Create(entity);
 
+#if DEBUG
             if (scheduleFileId <= 0)
             {
                 System.IO.File.Delete(filePath);
                 return BadRequest(nameof(scheduleFileId));
             }
+#endif
 
             ScheduleFileEntity? scheduleFileFromRepo = _scheduleFileRepository.GetByKey(scheduleFileId);
 
@@ -802,6 +849,7 @@ public class ModulesController : ControllerBase
 
     private static string SaveImageAndGetPath(ScheduleFileForm file)
     {
+#if DEBUG
         string fileName = file.File.FileName;
 
         string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileName;
@@ -809,5 +857,22 @@ public class ModulesController : ControllerBase
         var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/", uniqueFileName);
         file.File.CopyTo(new FileStream(imagePath, FileMode.Create, FileAccess.Write));
         return imagePath;
+#else
+        Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
+
+        Cloudinary cloudinary = new Cloudinary(account);
+
+        Stream stream = file.File.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams()
+        {
+            File = new FileDescription(file.File.FileName, stream),
+            PublicId = file.File.FileName
+        };
+
+        var uploadResult = cloudinary.Upload(uploadParams);
+
+        return uploadResult.Url.ToString();
+#endif
     }
 }

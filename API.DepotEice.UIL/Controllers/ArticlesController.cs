@@ -100,7 +100,7 @@ public class ArticlesController : ControllerBase
 
             foreach (ArticleEntity articleFromRepo in articlesFromRepo)
             {
-                UserEntity userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
+                UserEntity? userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
 
                 ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
 

@@ -116,7 +116,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         command.AddParameter("userId", userId);
         command.AddParameter("moduleId", moduleId);
 
-        return _connection.ExecuteReader(command, u => (bool)u["IsActive"]).SingleOrDefault();
+        return _connection.ExecuteReader(command, u => (bool?)u["IsActive"]).SingleOrDefault();
     }
 
     /// <summary>
