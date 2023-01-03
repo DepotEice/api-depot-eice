@@ -22,7 +22,7 @@ public class TokenManager : ITokenManager
         ArgumentNullException.ThrowIfNull(model.Email);
 
 #if DEBUG
-        string? secretStr = _builder.Configuration["AppSettings:Secret"];
+        string? secretStr = _builder.Configuration["JWT:JWT_SECRET"];
 #else
         string? secretStr = Environment.GetEnvironmentVariable("JWT_SECRET") ??
             throw new NullReferenceException($"There is no environment variable named JWT_SECRET");
@@ -48,8 +48,8 @@ public class TokenManager : ITokenManager
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddDays(1),
             SigningCredentials = credentials,
-            Audience = _builder.Configuration["AppSettings:Audience"],
-            Issuer = _builder.Configuration["AppSettings:Issuer"]
+            Audience = _builder.Configuration["JWT:JWT_AUDIENCE"],
+            Issuer = _builder.Configuration["JWT:JWT_ISSUER"]
         };
 #else
         SecurityTokenDescriptor tokenDescriptor = new()

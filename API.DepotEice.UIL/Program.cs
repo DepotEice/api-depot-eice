@@ -16,11 +16,27 @@ using System.Text;
 
 namespace API.DepotEice.UIL;
 
+/// <summary>
+/// App's entry class
+/// </summary>
 public class Program
 {
+    /// <summary>
+    /// App's entry point
+    /// </summary>
+    /// <param name="args">Arguments</param>
+    /// <exception cref="NullReferenceException"></exception>
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.WebHost.ConfigureAppConfiguration((hostContext, webBuilder) =>
+        {
+            if (hostContext.HostingEnvironment.IsDevelopment())
+            {
+                webBuilder.AddUserSecrets<Program>();
+            }
+        });
 
         builder.Services.AddCors();
         builder.Services.AddControllers();
@@ -75,26 +91,22 @@ public class Program
                 }
             });
 
-            // using System.Reflection;
-            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            string xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
         });
 
-        // Retrieving JWT Token data from environment
 #if DEBUG
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters()
-            {
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Secret"])),
-                ValidateIssuer = true,
-                ValidIssuer = builder.Configuration["AppSettings:Issuer"],
-                ValidateAudience = true,
-                ValidAudience = builder.Configuration["AppSettings:Audience"]
-            };
-        });
+        string jwtSecret = builder.Configuration["JWT:JWT_SECRET"] ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_SECRET\"");
+
+        string jwtIssuer = builder.Configuration["JWT:JWT_ISSUER"] ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_ISSUER\"");
+
+        string jwtAudience = builder.Configuration["JWT:JWT_AUDIENCE"] ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
+                $"\"JWT_AUDIENCE\"");
 #else
         string jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET") ??
             throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
@@ -105,6 +117,7 @@ public class Program
         string jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
             throw new NullReferenceException($"{DateTime.Now} - There is no environment variable with name " +
                 $"\"JWT_AUDIENCE\"");
+#endif
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         {
@@ -119,7 +132,7 @@ public class Program
                 ValidAudience = jwtAudience
             };
         });
-#endif
+
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("IsConnected", policy => policy.RequireAuthenticatedUser());
@@ -146,15 +159,15 @@ public class Program
         /****************/
 
 #if DEBUG
-        string connectionString = builder.Configuration.GetConnectionString("LocalAspirio");
-        //string connectionString = builder.Configuration.GetConnectionString("LocalCrysis90war");
+        string connectionString = builder.Configuration["DATASOURCE:MSSQL_CONNECTION_STRING"] ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                $"MSSQL_CONNECTION_STRING");
 #else
         string connectionString = Environment.GetEnvironmentVariable("MSSQL_CONNECTION_STRING") ??
             throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
                 $"MSSQL_CONNECTION_STRING");
 #endif
         builder.Services.AddSingleton<IDevHopConnection, MsSqlCon>(o => new MsSqlCon(connectionString));
-        // builder.Services.AddSingleton(sp => new MsSqlCon(connectionString));
 
         builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
 
@@ -179,12 +192,12 @@ public class Program
 
         var app = builder.Build();
 
-        //if (app.Environment.IsDevelopment())
-        //{
+        if (app.Environment.IsDevelopment())
+        {
             app.UseDeveloperExceptionPage();
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Depot.Eice v1"));
-        //}
+        }
 
         app.UseStaticFiles();
 

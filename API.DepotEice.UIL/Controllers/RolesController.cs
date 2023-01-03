@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.DepotEice.UIL.Controllers
 {
+    /// <summary>
+    /// The controller for the roles
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class RolesController : ControllerBase
@@ -15,6 +18,14 @@ namespace API.DepotEice.UIL.Controllers
         private readonly IRoleRepository _roleRepository;
         private readonly IUserManager _userManager;
 
+        /// <summary>
+        /// Instanciate the Roles controller
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="mapper"></param>
+        /// <param name="roleRepository"></param>
+        /// <param name="userManager"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public RolesController(ILogger<RolesController> logger, IMapper mapper, IRoleRepository roleRepository,
             IUserManager userManager)
         {
@@ -44,6 +55,14 @@ namespace API.DepotEice.UIL.Controllers
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Verify if the current user has the required role
+        /// </summary>
+        /// <param name="roleName">The name of the role on which the verification is passed</param>
+        /// <returns>
+        /// BadRequest if the role name is null or empty or if an error occured during the request
+        /// Unauthorized if the current user's ID is null or empty
+        /// </returns>
         [HttpGet("HasRole/{roleName}")]
         public IActionResult HasRole(string roleName)
         {
@@ -63,7 +82,7 @@ namespace API.DepotEice.UIL.Controllers
 
                 var roles = _roleRepository.GetUserRoles(userId);
 
-                return Ok(roles.SingleOrDefault(r => r.Name.ToUpper().Equals(roleName.ToUpper())) is not null);
+                return Ok(roles.Any(r => r.Name.ToUpper().Equals(roleName.ToUpper())));
             }
             catch (Exception ex)
             {
@@ -74,6 +93,14 @@ namespace API.DepotEice.UIL.Controllers
             }
         }
 
+        /// <summary>
+        /// Verify if a certain user has a role
+        /// </summary>
+        /// <param name="roleName">The name of the role on which the verification is done</param>
+        /// <param name="userId">The ID of the User on which the verification is done</param>
+        /// <returns>
+        /// Bad request if the user ID or the role name is null or empty or if an exception occured
+        /// </returns>
         [HttpGet("HasRole/{roleName}/{userId}")]
         public IActionResult HasRole(string roleName, string userId)
         {
@@ -91,7 +118,7 @@ namespace API.DepotEice.UIL.Controllers
             {
                 var roles = _roleRepository.GetUserRoles(userId);
 
-                return Ok(roles.SingleOrDefault(r => r.Name.ToUpper().Equals(roleName.ToUpper())) is not null);
+                return Ok(roles.Any(r => r.Name.ToUpper().Equals(roleName.ToUpper())));
             }
             catch (Exception ex)
             {
