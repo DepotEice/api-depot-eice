@@ -158,7 +158,7 @@ public class UsersController : ControllerBase
     /// <param name="token"></param>
     /// <returns></returns>
     [HttpPost(nameof(UpdatePassword))]
-    public IActionResult UpdatePassword([FromBody] PasswordForm passwordForm, string? token = null)
+    public IActionResult UpdatePassword([FromBody] PasswordForm passwordForm)
     {
         if (passwordForm is null)
         {
