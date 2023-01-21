@@ -122,7 +122,10 @@ public class AuthController : ControllerBase
             LoggedInUserModel? user = userFromRepo.Map<LoggedInUserModel>();
             user.Roles = _roleRepository.GetUserRoles(user.Id).Select(x => x.Map<RoleModel>());
 
-            TokenModel token = new() { Token = _tokenManager.GenerateJWT(user) };
+            TokenModel token = new() 
+            { 
+                Token = _tokenManager.GenerateJWT(user) 
+            };
 
             return Ok(token);
         }
