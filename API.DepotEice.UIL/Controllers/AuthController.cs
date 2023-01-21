@@ -143,11 +143,11 @@ public class AuthController : ControllerBase
     /// <see cref="StatusCodes.Status204NoContent"/> If The role Guest could not be created or
     /// if the user couldn't be added to the role
     /// </returns>
-    [HttpPost(nameof(SignUp))]
+    [HttpPost(nameof(Register))]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> SignUp([FromBody] RegisterForm form)
+    public async Task<IActionResult> Register([FromBody] RegisterForm form)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
