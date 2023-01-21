@@ -294,13 +294,17 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="passwordForm">The Password registerForm</param>
     /// <param name="token">The token provided by mail</param>
-    /// <returns></returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK" /> If the operation was successful
+    /// <see cref="StatusCodes.Status400BadRequest"/>
+    /// <see cref="StatusCodes.Status404NotFound"/> If the token doesn't exist
+    /// </returns>
     [HttpPost(nameof(ResetPassword))]
     public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string token)
     {
         if (passwordForm is null)
         {
-            return BadRequest("The body cannot be null!");
+            return BadRequest("The body content cannot be null!");
         }
 
         if (!ModelState.IsValid)
@@ -346,17 +350,27 @@ public class AuthController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+            return BadRequest("An error occurred while trying to reset the password, please contact the administrator");
 #endif
         }
     }
 
-    [HttpGet(nameof(RequestNewPassword))]
-    public async Task<IActionResult> RequestNewPassword(string email)
+    /// <summary>
+    /// Request a new password. Called when the user forgot his password. Only takes the email address in parameters
+    /// </summary>
+    /// <param name="email">The email address of the user</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the operation was successful
+    /// <see cref="StatusCodes.Status404NotFound"/> If there is no user having the given email or if the newly created
+    /// token couldn't be found
+    /// <see cref="StatusCodes.Status400BadRequest"/>
+    /// </returns>
+    [HttpPost(nameof(RequestPassword))]
+    public async Task<IActionResult> RequestPassword(string email)
     {
         if (string.IsNullOrEmpty(email))
         {
-            return BadRequest();
+            return BadRequest("The body content cannot be null or empty");
         }
 
         try
@@ -365,7 +379,11 @@ public class AuthController : ControllerBase
 
             if (userFromRepo is null)
             {
-                return BadRequest();
+#if DEBUG
+                return NotFound($"There is no user with this email address : \"{email}\"");
+#else
+                return Ok();
+#endif
             }
 
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
@@ -385,22 +403,27 @@ public class AuthController : ControllerBase
 
             if (tokenFromRepo is null)
             {
-                return NotFound("Created token couldn't be retrieved");
+                return NotFound("The newly created token couldn't be found");
             }
 
-            //bool result = MailManager.SendPasswordRequestEmail(userFromRepo.Id, tokenFromRepo.Value, email);
             bool result = await MailManager.SendPasswordRequestEmailAsync(userFromRepo.Id, tokenFromRepo.Value, email);
 
             if (!result)
             {
-                return BadRequest("The mail couldn't be sent!");
+                return BadRequest("The mail couldn't be sent!, please contact the administrator");
             }
 
             return Ok();
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(RequestPassword)}\" : " +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to request a new password, please contact the administrator");
+#endif
         }
     }
 
