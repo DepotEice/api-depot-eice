@@ -14,20 +14,20 @@ namespace API.DepotEice.UIL.Managers;
 /// </summary>
 public class TokenManager : ITokenManager
 {
-    private readonly WebApplicationBuilder _builder;
+    private readonly IConfiguration _configuration;
     private readonly ILogger _logger;
 
     /// <summary>
     /// Instanciate <see cref="TokenManager"/>
     /// </summary>
-    /// <param name="builder"></param>
+    /// <param name="configuration"></param>
     /// <param name="logger"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    public TokenManager(WebApplicationBuilder builder, ILogger<TokenManager> logger)
+    public TokenManager(IConfiguration configuration, ILogger<TokenManager> logger)
     {
-        if (builder is null)
+        if (configuration is null)
         {
-            throw new ArgumentNullException(nameof(builder));
+            throw new ArgumentNullException(nameof(configuration));
         }
 
         if (logger is null)
@@ -35,7 +35,7 @@ public class TokenManager : ITokenManager
             throw new ArgumentNullException(nameof(logger));
         }
 
-        _builder = builder;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -55,7 +55,7 @@ public class TokenManager : ITokenManager
         }
 
 #if DEBUG
-        string? secretStr = _builder.Configuration["JWT:JWT_SECRET"];
+        string? secretStr = _configuration["JWT:JWT_SECRET"];
 #else
         string? secretStr = Environment.GetEnvironmentVariable("JWT_SECRET") ??
             throw new NullReferenceException($"There is no environment variable named JWT_SECRET");
@@ -88,9 +88,9 @@ public class TokenManager : ITokenManager
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddDays(7),
             SigningCredentials = credentials,
-            Audience = _builder.Configuration["JWT:JWT_AUDIENCE"] ??
+            Audience = _configuration["JWT:JWT_AUDIENCE"] ??
                 throw new NullReferenceException("There is no environment variable named JWT_AUDIENCE"),
-            Issuer = _builder.Configuration["JWT:JWT_ISSUER"] ??
+            Issuer = _configuration["JWT:JWT_ISSUER"] ??
                 throw new NullReferenceException("There is no environment variable named JWT_ISSUER")
         };
 #else
@@ -134,12 +134,12 @@ public class TokenManager : ITokenManager
         }
 
         JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-        byte[] key = Encoding.UTF8.GetBytes(_builder.Configuration["JWT:JWT_SECRET"]);
+        byte[] key = Encoding.UTF8.GetBytes(_configuration["JWT:JWT_SECRET"]);
 
         TokenValidationParameters tokenValidationParameters = new TokenValidationParameters()
         {
-            ValidIssuer = _builder.Configuration["JWT:JWT_ISSUER"],
-            ValidAudience = _builder.Configuration["JWT:JWT_AUDIENCE"],
+            ValidIssuer = _configuration["JWT:JWT_ISSUER"],
+            ValidAudience = _configuration["JWT:JWT_AUDIENCE"],
             ValidateIssuer = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuerSigningKey = true,
@@ -165,7 +165,7 @@ public class TokenManager : ITokenManager
                 return false;
             }
 
-            return true;
+            return validatedTokenUserId.Equals(userId);
         }
         catch (SecurityTokenException e)
         {

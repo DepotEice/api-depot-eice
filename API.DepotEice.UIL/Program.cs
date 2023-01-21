@@ -169,7 +169,7 @@ public class Program
 #endif
         builder.Services.AddSingleton<IDevHopConnection, MsSqlCon>(o => new MsSqlCon(connectionString));
 
-        builder.Services.AddSingleton<ITokenManager>(new TokenManager(builder));
+        builder.Services.AddSingleton<ITokenManager, TokenManager>();
 
         /******************/
         /*  Repositories  */
