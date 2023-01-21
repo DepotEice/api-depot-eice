@@ -93,7 +93,7 @@ public class AuthController : ControllerBase
     /// <summary>
     /// If user's credentials are correct, sign in the user and generate and return a JWT Token
     /// </summary>
-    /// <param name="form"></param>
+    /// <param name="loginForm"></param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If the user credentials are correct and a JWT 
     /// token was generated
@@ -103,13 +103,21 @@ public class AuthController : ControllerBase
     [HttpPost(nameof(Login))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult Login([FromBody] LoginForm form)
+    public IActionResult Login([FromBody] LoginForm loginForm)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (loginForm is null)
+        {
+            return BadRequest("The body content cannot be null!");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
 
         try
         {
-            UserEntity? userFromRepo = _userRepository.LogIn(form.Email, form.Password, GetSalt());
+            UserEntity? userFromRepo = _userRepository.LogIn(loginForm.Email, loginForm.Password, GetSalt());
 
             if (userFromRepo is null)
             {
@@ -122,9 +130,9 @@ public class AuthController : ControllerBase
             LoggedInUserModel? user = userFromRepo.Map<LoggedInUserModel>();
             user.Roles = _roleRepository.GetUserRoles(user.Id).Select(x => x.Map<RoleModel>());
 
-            TokenModel token = new() 
-            { 
-                Token = _tokenManager.GenerateJWT(user) 
+            TokenModel token = new()
+            {
+                Token = _tokenManager.GenerateJWT(user)
             };
 
             return Ok(token);
