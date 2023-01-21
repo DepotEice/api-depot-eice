@@ -15,6 +15,9 @@ using System.Text;
 
 namespace API.DepotEice.UIL.Controllers;
 
+/// <summary>
+/// Take charge of all the endpoints related to the authentication like Login, Register and so on
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -26,14 +29,48 @@ public class AuthController : ControllerBase
     private readonly IRoleRepository _roleRepository;
     private readonly IUserTokenRepository _userTokenRepository;
 
-    public AuthController(
-        ILogger<AuthController> logger,
-        IConfiguration configuration,
-        ITokenManager tokenManager,
-        IUserRepository userRepository,
-        IRoleRepository roleRepository,
-        IUserTokenRepository userTokenRepository)
+    /// <summary>
+    /// Instanciate the AuthController. Each parameter being injected
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="configuration"></param>
+    /// <param name="tokenManager"></param>
+    /// <param name="userRepository"></param>
+    /// <param name="roleRepository"></param>
+    /// <param name="userTokenRepository"></param>
+    public AuthController(ILogger<AuthController> logger, IConfiguration configuration, ITokenManager tokenManager,
+        IUserRepository userRepository, IRoleRepository roleRepository, IUserTokenRepository userTokenRepository)
     {
+        if (logger is null)
+        {
+            throw new ArgumentNullException(nameof(logger));
+        }
+
+        if (configuration is null)
+        {
+            throw new ArgumentNullException(nameof(configuration));
+        }
+
+        if (tokenManager is null)
+        {
+            throw new ArgumentNullException(nameof(tokenManager));
+        }
+
+        if (userRepository is null)
+        {
+            throw new ArgumentNullException(nameof(userRepository));
+        }
+
+        if (roleRepository is null)
+        {
+            throw new ArgumentNullException(nameof(roleRepository));
+        }
+
+        if (userTokenRepository is null)
+        {
+            throw new ArgumentNullException(nameof(userTokenRepository));
+        }
+
         _logger = logger;
         _configuration = configuration;
         _tokenManager = tokenManager;
