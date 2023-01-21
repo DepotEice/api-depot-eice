@@ -6,6 +6,7 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
+using AutoMapper;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -23,6 +24,7 @@ namespace API.DepotEice.UIL.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ILogger _logger;
+    private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly ITokenManager _tokenManager;
     private readonly IUserRepository _userRepository;
@@ -33,17 +35,24 @@ public class AuthController : ControllerBase
     /// Instanciate the AuthController. Each parameter being injected
     /// </summary>
     /// <param name="logger"></param>
+    /// <param name="mapper"></param>
     /// <param name="configuration"></param>
     /// <param name="tokenManager"></param>
     /// <param name="userRepository"></param>
     /// <param name="roleRepository"></param>
     /// <param name="userTokenRepository"></param>
-    public AuthController(ILogger<AuthController> logger, IConfiguration configuration, ITokenManager tokenManager,
-        IUserRepository userRepository, IRoleRepository roleRepository, IUserTokenRepository userTokenRepository)
+    public AuthController(ILogger<AuthController> logger, IMapper mapper, IConfiguration configuration,
+        ITokenManager tokenManager, IUserRepository userRepository, IRoleRepository roleRepository,
+        IUserTokenRepository userTokenRepository)
     {
         if (logger is null)
         {
             throw new ArgumentNullException(nameof(logger));
+        }
+
+        if (mapper is null)
+        {
+            throw new ArgumentNullException(nameof(mapper));
         }
 
         if (configuration is null)
@@ -72,11 +81,13 @@ public class AuthController : ControllerBase
         }
 
         _logger = logger;
+        _mapper = mapper;
         _configuration = configuration;
         _tokenManager = tokenManager;
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _userTokenRepository = userTokenRepository;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -123,54 +134,60 @@ public class AuthController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+            return BadRequest("An error occurred while trying to login, please contact the administrator");
 #endif
         }
     }
 
     /// <summary>
-    /// Register a new User
+    /// Create a new inactive user, assign him to a GUEST role and send an activation email
     /// </summary>
-    /// <param name="form">
-    /// The user form for registration in json format
+    /// <param name="registerForm">
+    /// The user registerForm for registration in json format
     /// </param>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK"/> If the user was correctly created.
+    /// <see cref="StatusCodes.Status200OK"/> If the user registration was successful.
     /// <para/>
-    /// <see cref="StatusCodes.Status400BadRequest"/> If the email is already used or if the 
-    /// user creation failed.
+    /// <see cref="StatusCodes.Status400BadRequest"/>
     /// <para/>
-    /// <see cref="StatusCodes.Status204NoContent"/> If The role Guest could not be created or
-    /// if the user couldn't be added to the role
     /// </returns>
     [HttpPost(nameof(Register))]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Register([FromBody] RegisterForm form)
+    public async Task<IActionResult> Register([FromBody] RegisterForm registerForm)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (registerForm is null)
+        {
+            return BadRequest($"The body content cannot be null!");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
 
         try
         {
-            UserEntity? userEntity = _userRepository.GetUserByEmail(form.Email);
+            UserEntity? userEntity = _userRepository.GetUserByEmail(registerForm.Email);
 
             if (userEntity is not null)
-                return BadRequest("There is already an account with this email! Please try with another mail or contact the administration.");
-
-            userEntity = form.Map<UserEntity>();
-
-            // TODO : Remove the hardcoded hash
-            string userId = _userRepository.Create(userEntity, form.Password, GetSalt());
-
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest(nameof(userId));
+                return BadRequest("There is already an account with this email! Please try with another mail or " +
+                    "contact the administration.");
             }
 
-            RoleModel? guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
+            userEntity = _mapper.Map<UserEntity>(registerForm);
 
-            if (guestRole is null)
+            string? userId = _userRepository.Create(userEntity, registerForm.Password, GetSalt());
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User creation failed");
+            }
+
+            RoleEntity? guestRoleFromRepo = _roleRepository.GetByName(RolesData.GUEST_ROLE);
+
+            if (guestRoleFromRepo is null)
             {
                 string roleId = _roleRepository.Create(new RoleEntity()
                 {
@@ -182,26 +199,28 @@ public class AuthController : ControllerBase
                     return BadRequest();
                 }
 
-                guestRole = _roleRepository.GetByName(RolesData.GUEST_ROLE).Map<RoleModel>();
+                guestRoleFromRepo = _roleRepository.GetByName(RolesData.GUEST_ROLE):
 
-                if (guestRole is null)
+                if (guestRoleFromRepo is null)
                 {
-                    return BadRequest(guestRole);
+                    return BadRequest(guestRoleFromRepo);
                 }
             }
+
+            RoleModel guestRole = _mapper.Map<RoleModel>(guestRoleFromRepo);
 
             bool result = _roleRepository.AddUser(guestRole.Id, userId);
 
             if (!result)
             {
-                return BadRequest(nameof(result));
+                return BadRequest($"An error occurred while trying to add the user to the role \"{RolesData.GUEST_ROLE}\"");
             }
 
             userEntity = _userRepository.GetByKey(userId);
 
             if (userEntity is null)
             {
-                return NotFound("User couldn't be created!");
+                return NotFound("The newly created user couldn't be found!");
             }
 
             string createdUserTokenID = _userTokenRepository.Create(new UserTokenEntity()
@@ -223,38 +242,46 @@ public class AuthController : ControllerBase
             {
                 try
                 {
-                    //if (!MailManager.SendActivationEmail(token.Id, token.Value, userEntity.NormalizedEmail))
                     if (!await MailManager.SendActivationEmailAsync(token.Id, token.Value, userEntity.NormalizedEmail))
                     {
                         _logger.LogWarning("{date} - Sending the activation email to user with ID \"{userId}\" " +
                             "failed!", DateTime.Now, userId);
+
+                        return BadRequest("The activation email couldn't be sent, please contact the administror");
                     }
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("{date} An exception was thrown when trying to send the action email for user " +
-                        "with ID \"{userId}\" with token value {tokenValue} at address {normalizedEmail}. Exception " +
-                        "message : {message}",
-                                     DateTime.Now,
-                                     userId,
-                                     token.Value,
-                                     userEntity.NormalizedEmail,
-                                     e.Message);
+                    _logger.LogError($"{DateTime.Now} An exception was thrown when trying to send the action email " +
+                        $"for user with ID \"{userId}\" with token value {token.Value} at address {userEntity.NormalizedEmail}.\n" +
+                        $"\"{e.Message}\"\"n\"{e.StackTrace}\"");
+
+#if DEBUG
+                    return BadRequest(e.Message);
+#else
+                    return BadRequest("An error occurred while trying to send the activation email, please contact the administrator");
+#endif
                 }
             }
 
-            return NoContent();
+            return Ok();
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Register)}\" : " +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to register, please contact the administrator");
+#endif
         }
     }
 
     /// <summary>
     /// Reset user's password by providing the token received by mail
     /// </summary>
-    /// <param name="passwordForm">The Password form</param>
+    /// <param name="passwordForm">The Password registerForm</param>
     /// <param name="token">The token provided by mail</param>
     /// <returns></returns>
     [HttpPost(nameof(ResetPassword))]
