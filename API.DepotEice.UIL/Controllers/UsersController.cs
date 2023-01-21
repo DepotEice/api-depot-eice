@@ -194,7 +194,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UpdatePassword)} : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : " +
                 $"\"{e.Message}\"\n\"{e.Message}\"");
 
 #if DEBUG

@@ -52,25 +52,26 @@ public class AuthController : ControllerBase
     /// <para />
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occured during authentication
     /// </returns>
-    [HttpPost(nameof(SignIn))]
+    [HttpPost(nameof(Login))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult SignIn([FromBody] LoginForm form)
+    public IActionResult Login([FromBody] LoginForm form)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         try
         {
-            var entity = _userRepository.LogIn(form.Email, form.Password, GetSalt());
+            UserEntity? userFromRepo = _userRepository.LogIn(form.Email, form.Password, GetSalt());
 
-            if (entity == null)
+            if (userFromRepo is null)
             {
                 return BadRequest("Email or Password are incorrect ! Please try again or contact the " +
                     "administration");
             }
 
-            // - récuperer l'utilisateur de la base de données,
-            LoggedInUserModel? user = entity.Map<LoggedInUserModel>();
+            // TODO : Adapt the following code because it is really strange
+
+            LoggedInUserModel? user = userFromRepo.Map<LoggedInUserModel>();
             user.Roles = _roleRepository.GetUserRoles(user.Id).Select(x => x.Map<RoleModel>());
 
             TokenModel token = new() { Token = _tokenManager.GenerateJWT(user) };
@@ -79,7 +80,14 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Login)}\" : " +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+#endif
         }
     }
 
