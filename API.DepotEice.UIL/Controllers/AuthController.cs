@@ -8,6 +8,7 @@ using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -202,6 +203,62 @@ public class AuthController : ControllerBase
         catch (Exception e)
         {
             return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost()]
+    public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string? token = null)
+    {
+        if (passwordForm is null)
+        {
+            return BadRequest("The body cannot be null!");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            UserTokenEntity? userTokenFromRepo = _userTokenRepository
+                .GetUserTokens(passwordForm.UserId)
+                .FirstOrDefault(ut => ut.Value.Equals(token) && ut.ExpirationDate > DateTime.Now);
+
+            if (userTokenFromRepo is null)
+            {
+                return NotFound("Token doesn't exist");
+            }
+
+            if (!_userTokenRepository.ApproveToken(userTokenFromRepo))
+            {
+                return BadRequest("Token is invalid or expired");
+            }
+
+            if (!passwordForm.UserId.Equals(userTokenFromRepo.UserId))
+            {
+                return Unauthorized();
+            }
+
+            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, GetSalt());
+
+            if (!result)
+            {
+                return BadRequest("Password update failed");
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UpdatePassword)} : " +
+                $"\"{e.Message}\"\n\"{e.Message}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+#endif
         }
     }
 

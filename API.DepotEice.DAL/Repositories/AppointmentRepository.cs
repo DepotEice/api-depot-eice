@@ -12,11 +12,11 @@ public class AppointmentRepository : RepositoryBase, IAppointmentRepository
     public AppointmentRepository(IDevHopConnection connection) : base(connection) { }
 
     /// <summary>
-    /// 
+    /// Set the appointment's IsAccepted property to the value of <paramref name="isAccepted"/>
     /// </summary>
-    /// <param name="appointmentId"></param>
-    /// <param name="isAccepted"></param>
-    /// <returns></returns>
+    /// <param name="appointmentId">The ID of the appointment</param>
+    /// <param name="isAccepted">The value of the IsAccepted field</param>
+    /// <returns><c>true</c> If the operation completed successfully. <c>false</c> Otherwise</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public bool AppointmentDecision(int appointmentId, bool isAccepted = true)
     {
@@ -61,7 +61,7 @@ public class AppointmentRepository : RepositoryBase, IAppointmentRepository
         {
             throw new DatabaseScalarNullException(nameof(scalarResult));
         }
-            
+
         return int.Parse(scalarResult);
     }
 
