@@ -427,12 +427,19 @@ public class AuthController : ControllerBase
         }
     }
 
+    // TODO : Rename the method to 'VerifyEmail' ?
+    // TODO : Move the Guest role assignation to this method instead of Register
     /// <summary>
-    /// 
+    /// Activate the User's account by verifying the passed token in parameter with the existing token in the database
     /// </summary>
-    /// <param name="tokenId"></param>
-    /// <param name="tokenValue"></param>
-    /// <returns></returns>
+    /// <param name="tokenId">The ID of the token to verify</param>
+    /// <param name="tokenValue">The value of the token received by mail</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the activation was successful
+    /// <see cref="StatusCodes.Status404NotFound"/> If the requested token doesn't exist or if the user requesting it
+    /// doesn't exist either
+    /// <see cref="StatusCodes.Status400BadRequest"/>
+    /// </returns>
     [HttpGet(nameof(Activate))]
     public IActionResult Activate(string tokenId, string tokenValue)
     {
