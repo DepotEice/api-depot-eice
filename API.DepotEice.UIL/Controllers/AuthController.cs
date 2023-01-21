@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// If user's credentials are correct, sign in the user by generating a JWT Token
+    /// If user's credentials are correct, sign in the user and generate and return a JWT Token
     /// </summary>
     /// <param name="form"></param>
     /// <returns>
