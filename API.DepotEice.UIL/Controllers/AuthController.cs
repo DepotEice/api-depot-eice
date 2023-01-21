@@ -9,6 +9,7 @@ using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.IIS.Core;
 using Newtonsoft.Json.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
@@ -139,7 +140,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Login)}\" : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Login)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 
 #if DEBUG
@@ -279,7 +280,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Register)}\" : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Register)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 #if DEBUG
             return BadRequest(e.Message);
@@ -344,7 +345,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(ResetPassword)} : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(ResetPassword)} :\n" +
                 $"\"{e.Message}\"\n\"{e.Message}\"");
 
 #if DEBUG
@@ -417,7 +418,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(RequestPassword)}\" : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(RequestPassword)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 #if DEBUG
             return BadRequest(e.Message);
@@ -486,13 +487,46 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Activate)}\" : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Activate)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 #if DEBUG
             return BadRequest(e.Message);
 #else
             return BadRequest("An error occurred while trying to active the user, please contact the administrator");
 #endif
+        }
+    }
+
+    /// <summary>
+    /// Validate the JWT Token and return user's roles and permissions
+    /// </summary>
+    /// <param name="jwtToken">The User's JWT Token</param>
+    /// <returns>
+    /// </returns>
+    [HttpGet(nameof(Authorize))]
+    public IActionResult Authorize(string jwtToken)
+    {
+        if (string.IsNullOrEmpty(jwtToken))
+        {
+            return BadRequest("The token in parameter cannot null or empty");
+        }
+
+        try
+        {
+            // TODO : Implement the logic
+            throw new NotImplementedException();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Authorize)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to authorize user, please contact the administrator");
+#endif
+
         }
     }
 
