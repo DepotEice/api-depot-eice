@@ -206,8 +206,14 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost()]
-    public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string? token = null)
+    /// <summary>
+    /// Reset user's password by providing the token received by mail
+    /// </summary>
+    /// <param name="passwordForm">The Password form</param>
+    /// <param name="token">The token provided by mail</param>
+    /// <returns></returns>
+    [HttpPost(nameof(ResetPassword))]
+    public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string token)
     {
         if (passwordForm is null)
         {
@@ -251,7 +257,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UpdatePassword)} : " +
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(ResetPassword)} : " +
                 $"\"{e.Message}\"\n\"{e.Message}\"");
 
 #if DEBUG
