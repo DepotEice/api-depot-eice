@@ -96,7 +96,7 @@ public class AuthController : ControllerBase
     /// <param name="loginForm"></param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If the user credentials are correct and a JWT 
-    /// token was generated
+    /// tokenValue was generated
     /// <para />
     /// <see cref="StatusCodes.Status400BadRequest"/> If an error occured during authentication
     /// </returns>
@@ -290,14 +290,14 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Reset user's password by providing the token received by mail
+    /// Reset user's password by providing the tokenValue received by mail
     /// </summary>
     /// <param name="passwordForm">The Password registerForm</param>
-    /// <param name="token">The token provided by mail</param>
+    /// <param name="token">The tokenValue provided by mail</param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK" /> If the operation was successful
     /// <see cref="StatusCodes.Status400BadRequest"/>
-    /// <see cref="StatusCodes.Status404NotFound"/> If the token doesn't exist
+    /// <see cref="StatusCodes.Status404NotFound"/> If the tokenValue doesn't exist
     /// </returns>
     [HttpPost(nameof(ResetPassword))]
     public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string token)
@@ -362,7 +362,7 @@ public class AuthController : ControllerBase
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If the operation was successful
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no user having the given email or if the newly created
-    /// token couldn't be found
+    /// tokenValue couldn't be found
     /// <see cref="StatusCodes.Status400BadRequest"/>
     /// </returns>
     [HttpPost(nameof(RequestPassword))]
@@ -430,25 +430,25 @@ public class AuthController : ControllerBase
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="token"></param>
+    /// <param name="tokenId"></param>
+    /// <param name="tokenValue"></param>
     /// <returns></returns>
-    [HttpPost(nameof(Activate))]
-    public IActionResult Activate(string id, string token)
+    [HttpGet(nameof(Activate))]
+    public IActionResult Activate(string tokenId, string tokenValue)
     {
+        if (string.IsNullOrEmpty(tokenId) || string.IsNullOrWhiteSpace(tokenId))
+        {
+            return BadRequest("The token ID cannot be null or empty");
+        }
+
+        if (string.IsNullOrEmpty(tokenValue) || string.IsNullOrWhiteSpace(tokenValue))
+        {
+            return BadRequest("The token value cannot be null or empty");
+        }
+
         try
         {
-            if (string.IsNullOrEmpty(id) || string.IsNullOrWhiteSpace(id))
-            {
-                return BadRequest(nameof(id));
-            }
-
-            if (string.IsNullOrEmpty(token) || string.IsNullOrWhiteSpace(token))
-            {
-                return BadRequest(nameof(token));
-            }
-
-            UserTokenEntity? userToken = _userTokenRepository.GetByKey(id);
+            UserTokenEntity? userToken = _userTokenRepository.GetByKey(tokenId);
 
             if (userToken is null)
             {
@@ -470,7 +470,7 @@ public class AuthController : ControllerBase
                 return BadRequest("This token has already been used");
             }
 
-            if (!_userRepository.ActivateDeactivateUser(user.Id))
+            if (!_userRepository.UpdateActivationStatus(user.Id))
             {
                 return BadRequest("User activation failed!");
             }
@@ -479,7 +479,13 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Activate)}\" : " +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to active the user, please contact the administrator");
+#endif
         }
     }
 

@@ -18,7 +18,7 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <param name="isActive"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool ActivateDeactivateUser(string id, bool isActive = true)
+    public bool UpdateActivationStatus(string id, bool isActive = true)
     {
         if (string.IsNullOrEmpty(id))
             throw new ArgumentNullException(nameof(id));
