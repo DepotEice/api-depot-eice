@@ -31,6 +31,7 @@ public class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IUserTokenRepository _userTokenRepository;
+    private readonly IUserManager _userManager;
 
     /// <summary>
     /// Instanciate the AuthController. Each parameter being injected
@@ -44,7 +45,7 @@ public class AuthController : ControllerBase
     /// <param name="userTokenRepository"></param>
     public AuthController(ILogger<AuthController> logger, IMapper mapper, IConfiguration configuration,
         ITokenManager tokenManager, IUserRepository userRepository, IRoleRepository roleRepository,
-        IUserTokenRepository userTokenRepository)
+        IUserTokenRepository userTokenRepository, IUserManager userManager)
     {
         if (logger is null)
         {
@@ -81,6 +82,11 @@ public class AuthController : ControllerBase
             throw new ArgumentNullException(nameof(userTokenRepository));
         }
 
+        if (userManager is null)
+        {
+            throw new ArgumentNullException(nameof(userManager));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _configuration = configuration;
@@ -89,6 +95,7 @@ public class AuthController : ControllerBase
         _roleRepository = roleRepository;
         _userTokenRepository = userTokenRepository;
         _mapper = mapper;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -502,6 +509,9 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="jwtToken">The User's JWT Token</param>
     /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with the boolean result of the operation
+    /// <see cref="StatusCodes.Status400BadRequest"/>
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the current user is null or empty
     /// </returns>
     [HttpGet(nameof(Authorize))]
     public IActionResult Authorize(string jwtToken)
@@ -513,8 +523,15 @@ public class AuthController : ControllerBase
 
         try
         {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized();
+            }
+
             // TODO : Implement the logic
-            bool result = _tokenManager.ValidateJwtToken(jwtToken);
+            bool result = _tokenManager.ValidateJwtToken(currentUserId, jwtToken);
 
             return Ok(result);
         }
