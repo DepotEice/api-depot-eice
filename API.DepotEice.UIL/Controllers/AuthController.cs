@@ -514,13 +514,14 @@ public class AuthController : ControllerBase
         try
         {
             // TODO : Implement the logic
-            throw new NotImplementedException();
+            bool result = _tokenManager.ValidateJwtToken(jwtToken);
+
+            return Ok(result);
         }
         catch (Exception e)
         {
             _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Authorize)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
 #if DEBUG
             return BadRequest(e.Message);
 #else
