@@ -211,7 +211,7 @@ public class AuthController : ControllerBase
                     return BadRequest();
                 }
 
-                guestRoleFromRepo = _roleRepository.GetByName(RolesData.GUEST_ROLE):
+                guestRoleFromRepo = _roleRepository.GetByName(RolesData.GUEST_ROLE);
 
                 if (guestRoleFromRepo is null)
                 {
