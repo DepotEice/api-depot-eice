@@ -48,7 +48,7 @@ namespace API.DepotEice.UIL.Controllers
             };
             _configuration = configuration;
         }
-
+        // TODO : Delete the following 2 methods : (GetImage) and (SaveImage)
         [HttpGet("{fileName}")]
         public async Task<IActionResult> GetImage(string fileName)
         {
@@ -101,74 +101,6 @@ namespace API.DepotEice.UIL.Controllers
 
 
             return Ok();
-        }
-
-        [HttpGet(nameof(GetAwsImage))]
-        public async Task<IActionResult> GetAwsImage(string key)
-        {
-            string accessKey = _configuration["AWS:AWS_ACCESS_KEY"];
-            string secretKey = _configuration["AWS:AWS_SECRET_KEY"];
-
-
-            AmazonS3Config config = new AmazonS3Config
-            {
-                RegionEndpoint = Amazon.RegionEndpoint.EUWest3
-            };
-
-            using IAmazonS3 client = new AmazonS3Client(accessKey, secretKey, config);
-
-            GetObjectRequest getObjectRequest = new GetObjectRequest()
-            {
-                BucketName = "depot-eice",
-                Key = key
-            };
-
-            GetObjectResponse getObjectResponse = await client.GetObjectAsync(getObjectRequest);
-
-            byte[] bytes = new byte[getObjectResponse.ResponseStream.Length];
-
-            int lengthToRead = bytes.Length;
-            int offset = 0;
-            int result = 0;
-
-            while (result < lengthToRead)
-            {
-                result = await getObjectResponse.ResponseStream.ReadAsync(bytes, offset, lengthToRead);
-                offset += result;
-                lengthToRead -= result;
-            }
-
-            return File(bytes, getObjectResponse.Headers.ContentType);
-        }
-
-        [HttpPost(nameof(PostAwsImageAsync))]
-        public async Task<IActionResult> PostAwsImageAsync(IFormFile formFile)
-        {
-            string accessKey = _configuration["AWS:AWS_ACCESS_KEY"];
-            string secretKey = _configuration["AWS:AWS_SECRET_KEY"];
-
-
-            AmazonS3Config config = new AmazonS3Config
-            {
-                RegionEndpoint = Amazon.RegionEndpoint.EUWest3
-            };
-
-            using IAmazonS3 client = new AmazonS3Client(accessKey, secretKey, config);
-
-            using MemoryStream memoryStream = new MemoryStream();
-
-            formFile.CopyTo(memoryStream);
-
-            PutObjectRequest putObjectRequest = new PutObjectRequest()
-            {
-                BucketName = "depot-eice",
-                Key = formFile.FileName,
-                InputStream = memoryStream,
-            };
-
-            PutObjectResponse putObjectResponse = await client.PutObjectAsync(putObjectRequest);
-
-            return Ok(putObjectResponse.HttpStatusCode == HttpStatusCode.OK);
         }
     }
 }
