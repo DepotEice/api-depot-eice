@@ -7,6 +7,7 @@ using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers
@@ -106,76 +107,48 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         /// <summary>
-        /// Verify if the current user has the required role
+        /// Get all user's roles
         /// </summary>
-        /// <param name="roleName">The name of the role on which the verification is passed</param>
+        /// <param name="userId">The user ID</param>
         /// <returns>
-        /// BadRequest if the role name is null or empty or if an error occured during the request
-        /// Unauthorized if the current user's ID is null or empty
+        /// <see cref="StatusCodes.Status200OK"/> If the operation is successful
+        /// <see cref="StatusCodes.Status404NotFound"/> If the user doesn't exist
+        /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred
         /// </returns>
-        [HttpGet("HasRole/{roleName}")]
-        public IActionResult HasRole(string roleName)
-        {
-            if (string.IsNullOrEmpty(roleName))
-            {
-                return BadRequest("Please provide a valid roleName");
-            }
-
-            try
-            {
-                string? userId = _userManager.GetCurrentUserId;
-
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized();
-                }
-
-                var roles = _roleRepository.GetUserRoles(userId);
-
-                return Ok(roles.Any(r => r.Name.ToUpper().Equals(roleName.ToUpper())));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve the role.\"" +
-                    $"{ex.Message}\n{ex.StackTrace}");
-
-                return BadRequest(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Verify if a certain user has a role
-        /// </summary>
-        /// <param name="roleName">The name of the role on which the verification is done</param>
-        /// <param name="userId">The ID of the User on which the verification is done</param>
-        /// <returns>
-        /// Bad request if the user ID or the role name is null or empty or if an exception occured
-        /// </returns>
-        [HttpGet("HasRole/{roleName}/{userId}")]
-        public IActionResult HasRole(string roleName, string userId)
+        [HasRoleAuthorize(RolesEnum.DIRECTION, AndAbove = false)]
+        [HttpGet("UserRoles/{userId}")]
+        public IActionResult GetUserRoles(string userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
-                return BadRequest("Please provide a valid user id");
-            }
-
-            if (string.IsNullOrEmpty(roleName))
-            {
-                return BadRequest("Please provide a valid roleName");
+                return BadRequest("The provided user id is null or empty");
             }
 
             try
             {
-                var roles = _roleRepository.GetUserRoles(userId);
+                UserEntity? userFromRepo = _userRepository.GetByKey(userId);
 
-                return Ok(roles.Any(r => r.Name.ToUpper().Equals(roleName.ToUpper())));
+                if (userFromRepo is null)
+                {
+                    return NotFound($"There is no user with ID \"{userId}\"");
+                }
+
+                IEnumerable<RoleEntity> rolesFromRepo = _roleRepository.GetUserRoles(userId);
+
+                IEnumerable<RoleModel> userRoles = _mapper.Map<IEnumerable<RoleModel>>(rolesFromRepo);
+
+                return Ok(userRoles);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve the role.\"" +
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(GetUserRoles)}.\"" +
                     $"{ex.Message}\n{ex.StackTrace}");
-
+#if DEBUG
                 return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to retrieve user roles (/UserRoles), please contact " +
+                $"the administrator");
+#endif
             }
         }
 
