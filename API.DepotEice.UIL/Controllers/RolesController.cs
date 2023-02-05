@@ -1,11 +1,13 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers
 {
@@ -20,6 +22,7 @@ namespace API.DepotEice.UIL.Controllers
         private readonly IMapper _mapper;
         private readonly IRoleRepository _roleRepository;
         private readonly IUserManager _userManager;
+        private readonly IUserRepository _userRepository;
 
         /// <summary>
         /// Instanciate the Roles controller
@@ -28,9 +31,10 @@ namespace API.DepotEice.UIL.Controllers
         /// <param name="mapper"></param>
         /// <param name="roleRepository"></param>
         /// <param name="userManager"></param>
+        /// <param name="userRepository"></param>
         /// <exception cref="ArgumentNullException"></exception>
         public RolesController(ILogger<RolesController> logger, IMapper mapper, IRoleRepository roleRepository,
-            IUserManager userManager)
+            IUserManager userManager, IUserRepository userRepository)
         {
             if (logger is null)
             {
@@ -49,13 +53,19 @@ namespace API.DepotEice.UIL.Controllers
 
             if (userManager is null)
             {
-                throw new ArgumentNullException(nameof(IUserManager));
+                throw new ArgumentNullException(nameof(userManager));
+            }
+
+            if (userRepository is null)
+            {
+                throw new ArgumentNullException(nameof(userRepository));
             }
 
             _logger = logger;
             _mapper = mapper;
             _roleRepository = roleRepository;
             _userManager = userManager;
+            _userRepository = userRepository;
         }
 
         /// <summary>
@@ -141,6 +151,7 @@ namespace API.DepotEice.UIL.Controllers
         /// <see cref="StatusCodes.Status404NotFound"/> If the created role couldn't be found
         /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred during the proces
         /// </returns>
+        [HasRoleAuthorize(RolesEnum.DIRECTION, AndAbove = false)]
         [HttpPost]
         public IActionResult CreateRole(RoleForm role)
         {
@@ -186,6 +197,129 @@ namespace API.DepotEice.UIL.Controllers
             return BadRequest("An error occurred while trying to create a role, please contact the administrator");
 #endif
 
+            }
+        }
+
+        /// <summary>
+        /// Update the given role
+        /// </summary>
+        /// <param name="roleId">The ID of the role to update</param>
+        /// <param name="role">The role form</param>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the update is successful
+        /// <see cref="StatusCodes.Status404NotFound"/> If the no role with the given ID could be found
+        /// <see cref="StatusCodes.Status400BadRequest"/> If the operation failed
+        /// </returns>
+        [HasRoleAuthorize(RolesEnum.DIRECTION, AndAbove = false)]
+        [HttpPut("{roleId}")]
+        public IActionResult UpdateRole(string roleId, [FromBody] RoleForm role)
+        {
+            if (string.IsNullOrEmpty(roleId))
+            {
+                return BadRequest("The provided role ID is null or empty");
+            }
+
+            if (role is null)
+            {
+                return BadRequest("The role form is null");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                RoleEntity? roleFromRepo = _roleRepository.GetByKey(roleId);
+
+                if (roleFromRepo is null)
+                {
+                    return NotFound($"There is no role with ID \"{roleId}\"");
+                }
+
+                roleFromRepo = _mapper.Map<RoleEntity>(role);
+
+                if (!_roleRepository.Update(roleId, roleFromRepo))
+                {
+                    return BadRequest("The update failed");
+                }
+
+                roleFromRepo = _roleRepository.GetByKey(roleId);
+
+                RoleModel roleModel = _mapper.Map<RoleModel>(roleFromRepo);
+
+                return Ok(roleModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UpdateRole)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+                return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to update a role, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Assign a role to a user
+        /// </summary>
+        /// <param name="roleId">The role ID</param>
+        /// <param name="userId">The user ID</param>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the assignment is successful
+        /// <see cref="StatusCodes.Status404NotFound"/> If the role or the user could not be found
+        /// <see cref="StatusCodes.Status400BadRequest"/> If the operation was unsucessful
+        /// </returns>
+        [HasRoleAuthorize(RolesEnum.DIRECTION, AndAbove = false)]
+        [HttpPost("{roleId}/User/{userId}")]
+        public IActionResult AssignRole(string roleId, string userId)
+        {
+            if (string.IsNullOrEmpty(roleId))
+            {
+                return BadRequest("The role ID is null or empty");
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("The user ID is null or empty");
+            }
+
+            try
+            {
+                RoleEntity? roleFromRepo = _roleRepository.GetByKey(roleId);
+
+                if (roleFromRepo is null)
+                {
+                    return NotFound($"There is no role with the ID \"{roleId}\"");
+                }
+
+                UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+                if (userFromRepo is null)
+                {
+                    return NotFound($"There is no user with the ID \"{userId}\"");
+                }
+
+                if (!_roleRepository.AddUser(roleId, userId))
+                {
+                    return BadRequest("The role couldn't be assigned to the user");
+                }
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(AssignRole)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+                return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to assign a role to a user, please contact the " +
+                $"administrator");
+#endif
             }
         }
     }
