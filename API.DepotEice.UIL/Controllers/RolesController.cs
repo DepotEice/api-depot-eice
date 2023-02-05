@@ -143,6 +143,37 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         /// <summary>
+        /// Get all the available roles
+        /// </summary>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the operation is successful
+        /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred
+        /// </returns>
+        [HasRoleAuthorize(RolesEnum.DIRECTION, AndAbove = false)]
+        [HttpGet]
+        public IActionResult GetRoles()
+        {
+            try
+            {
+                IEnumerable<RoleEntity> rolesFromRepo = _roleRepository.GetAll();
+
+                IEnumerable<RoleModel> roles = _mapper.Map<IEnumerable<RoleModel>>(rolesFromRepo);
+
+                return Ok(roles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(GetRoles)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+                return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to get roles, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
         /// Create a new role
         /// </summary>
         /// <param name="role">The role form</param>
