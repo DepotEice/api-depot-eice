@@ -69,6 +69,43 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         /// <summary>
+        /// Get the authenticated user's roles
+        /// </summary>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the operation is successful
+        /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not authenticated
+        /// </returns>
+        [HttpGet("Me")]
+        public IActionResult Me()
+        {
+            try
+            {
+                string? userId = _userManager.GetCurrentUserId;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("The user must be authenticated");
+                }
+
+                IEnumerable<RoleEntity> rolesFromRepo = _roleRepository.GetUserRoles(userId);
+
+                IEnumerable<RoleModel> userRoles = _mapper.Map<IEnumerable<RoleModel>>(rolesFromRepo);
+
+                return Ok(userRoles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Me)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+                return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to user roles (/Me), please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
         /// Verify if the current user has the required role
         /// </summary>
         /// <param name="roleName">The name of the role on which the verification is passed</param>
