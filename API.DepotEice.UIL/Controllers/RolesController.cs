@@ -1,5 +1,8 @@
-﻿using API.DepotEice.DAL.IRepositories;
+﻿using API.DepotEice.DAL.Entities;
+using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Interfaces;
+using API.DepotEice.UIL.Models;
+using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -126,6 +129,63 @@ namespace API.DepotEice.UIL.Controllers
                     $"{ex.Message}\n{ex.StackTrace}");
 
                 return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Create a new role
+        /// </summary>
+        /// <param name="role">The role form</param>
+        /// <returns>
+        /// <see cref="StatusCodes.Status200OK"/> If the creation was successful
+        /// <see cref="StatusCodes.Status404NotFound"/> If the created role couldn't be found
+        /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred during the proces
+        /// </returns>
+        [HttpPost]
+        public IActionResult CreateRole(RoleForm role)
+        {
+            if (role is null)
+            {
+                return BadRequest($"The body content of the request is null");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                RoleEntity roleToCreate = _mapper.Map<RoleEntity>(role);
+
+                string createdRoleId = _roleRepository.Create(roleToCreate);
+
+                if (string.IsNullOrEmpty(createdRoleId))
+                {
+                    return BadRequest($"The role creation failed");
+                }
+
+                RoleEntity? createdRole = _roleRepository.GetByKey(createdRoleId);
+
+                if (createdRole is null)
+                {
+                    return NotFound($"The newly created role \"{role.Name}\" couldn't be found");
+                }
+
+                RoleModel roleModel = _mapper.Map<RoleModel>(createdRole);
+
+                return Ok(roleModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(CreateRole)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+                return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to create a role, please contact the administrator");
+#endif
+
             }
         }
     }
