@@ -18,7 +18,7 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <param name="isActive"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool ActivateDeactivateUser(string id, bool isActive = true)
+    public bool UpdateActivationStatus(string id, bool isActive = true)
     {
         if (string.IsNullOrEmpty(id))
             throw new ArgumentNullException(nameof(id));
@@ -171,7 +171,7 @@ public class UserRepository : RepositoryBase, IUserRepository
     /// <returns>The newly created ID of the user if it went well</returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="DatabaseScalarNullException"></exception>
-    public string Create(UserEntity entity, string password, string salt)
+    public string? Create(UserEntity entity, string password, string salt)
     {
         if (entity is null)
         {
@@ -186,10 +186,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         command.AddParameter("lastname", entity.LastName);
         command.AddParameter("birthdate", entity.BirthDate);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
-
-        if (string.IsNullOrEmpty(scalarResult))
-            throw new DatabaseScalarNullException(nameof(scalarResult));
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         return scalarResult;
     }
