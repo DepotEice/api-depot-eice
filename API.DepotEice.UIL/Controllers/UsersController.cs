@@ -1,6 +1,7 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.Data;
+using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
@@ -21,9 +22,11 @@ public class UsersController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
+    private readonly IUserManager _userManager;
 
     public UsersController(ILogger<UsersController> logger, IMapper mapper, IUserRepository userRepository,
-        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository, IConfiguration configuration)
+        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository, IConfiguration configuration,
+        IUserManager userManager)
     {
         if (logger is null)
         {
@@ -55,12 +58,62 @@ public class UsersController : ControllerBase
             throw new ArgumentNullException(nameof(configuration));
         }
 
+        if (userManager is null)
+        {
+            throw new ArgumentNullException(nameof(userManager));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _userRepository = userRepository;
         _userTokenRepository = userTokenRepository;
         _roleRepository = roleRepository;
         _configuration = configuration;
+        _userManager = userManager;
+    }
+
+    /// <summary>
+    /// Get information about the actual authentified user
+    /// </summary>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If everything went properly
+    /// <see cref="StatusCodes.Status400BadRequest"/>
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the caller is not authentified
+    /// <see cref="StatusCodes.Status404NotFound"/> If the user making doesn't exist
+    /// </returns>
+    [HttpGet(nameof(Me))]
+    public IActionResult Me()
+    {
+        try
+        {
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User must be authenticated!");
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"There is no user with this user ID \"{userId}\"");
+            }
+
+            UserModel user = _mapper.Map<UserModel>(userFromRepo);
+
+            return Ok(user);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Me)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's information (/Me), please contact the administrator");
+#endif
+        }
     }
 
     [HttpGet()]

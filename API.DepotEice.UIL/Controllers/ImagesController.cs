@@ -1,10 +1,14 @@
-﻿using API.DepotEice.UIL.AuthorizationAttributes;
+﻿using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Models;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Text;
 using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers
@@ -16,8 +20,10 @@ namespace API.DepotEice.UIL.Controllers
         private readonly ILogger _logger;
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
-        public ImagesController(ILogger<ImagesController> logger, IWebHostEnvironment hostEnvironment)
+        public ImagesController(ILogger<ImagesController> logger, IWebHostEnvironment hostEnvironment,
+            IConfiguration configuration)
         {
             if (logger is null)
             {
@@ -29,6 +35,10 @@ namespace API.DepotEice.UIL.Controllers
                 throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
+            if (configuration is null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
 
             _logger = logger;
             _hostEnvironment = hostEnvironment;
@@ -36,6 +46,7 @@ namespace API.DepotEice.UIL.Controllers
             {
                 BaseAddress = new Uri("http://freeimage.host/api/1/upload/")
             };
+            _configuration = configuration;
         }
 
         [HttpGet("{fileName}")]
@@ -90,6 +101,74 @@ namespace API.DepotEice.UIL.Controllers
 
 
             return Ok();
+        }
+
+        [HttpGet(nameof(GetAwsImage))]
+        public async Task<IActionResult> GetAwsImage(string key)
+        {
+            string accessKey = _configuration["AWS:AWS_ACCESS_KEY"];
+            string secretKey = _configuration["AWS:AWS_SECRET_KEY"];
+
+
+            AmazonS3Config config = new AmazonS3Config
+            {
+                RegionEndpoint = Amazon.RegionEndpoint.EUWest3
+            };
+
+            using IAmazonS3 client = new AmazonS3Client(accessKey, secretKey, config);
+
+            GetObjectRequest getObjectRequest = new GetObjectRequest()
+            {
+                BucketName = "depot-eice",
+                Key = key
+            };
+
+            GetObjectResponse getObjectResponse = await client.GetObjectAsync(getObjectRequest);
+
+            byte[] bytes = new byte[getObjectResponse.ResponseStream.Length];
+
+            int lengthToRead = bytes.Length;
+            int offset = 0;
+            int result = 0;
+
+            while (result < lengthToRead)
+            {
+                result = await getObjectResponse.ResponseStream.ReadAsync(bytes, offset, lengthToRead);
+                offset += result;
+                lengthToRead -= result;
+            }
+
+            return File(bytes, getObjectResponse.Headers.ContentType);
+        }
+
+        [HttpPost(nameof(PostAwsImageAsync))]
+        public async Task<IActionResult> PostAwsImageAsync(IFormFile formFile)
+        {
+            string accessKey = _configuration["AWS:AWS_ACCESS_KEY"];
+            string secretKey = _configuration["AWS:AWS_SECRET_KEY"];
+
+
+            AmazonS3Config config = new AmazonS3Config
+            {
+                RegionEndpoint = Amazon.RegionEndpoint.EUWest3
+            };
+
+            using IAmazonS3 client = new AmazonS3Client(accessKey, secretKey, config);
+
+            using MemoryStream memoryStream = new MemoryStream();
+
+            formFile.CopyTo(memoryStream);
+
+            PutObjectRequest putObjectRequest = new PutObjectRequest()
+            {
+                BucketName = "depot-eice",
+                Key = formFile.FileName,
+                InputStream = memoryStream,
+            };
+
+            PutObjectResponse putObjectResponse = await client.PutObjectAsync(putObjectRequest);
+
+            return Ok(putObjectResponse.HttpStatusCode == HttpStatusCode.OK);
         }
     }
 }
