@@ -2,6 +2,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using API.DepotEice.UIL.AuthorizationAttributes;
+using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
@@ -18,21 +19,14 @@ namespace API.DepotEice.UIL.Controllers
     public class ImagesController : ControllerBase
     {
         private readonly ILogger _logger;
-        private readonly IWebHostEnvironment _hostEnvironment;
-        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly IFileManager _fileManager;
 
-        public ImagesController(ILogger<ImagesController> logger, IWebHostEnvironment hostEnvironment,
-            IConfiguration configuration)
+        public ImagesController(ILogger<ImagesController> logger, IConfiguration configuration, IFileManager fileManager)
         {
             if (logger is null)
             {
                 throw new ArgumentNullException(nameof(logger));
-            }
-
-            if (hostEnvironment is null)
-            {
-                throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
             if (configuration is null)
@@ -40,34 +34,48 @@ namespace API.DepotEice.UIL.Controllers
                 throw new ArgumentNullException(nameof(configuration));
             }
 
+            if (fileManager is null)
+            {
+                throw new ArgumentNullException(nameof(fileManager));
+            }
+
             _logger = logger;
-            _hostEnvironment = hostEnvironment;
-            _httpClient = new HttpClient()
-            {
-                BaseAddress = new Uri("http://freeimage.host/api/1/upload/")
-            };
             _configuration = configuration;
+            _fileManager = fileManager;
         }
-        // TODO : Delete the following 2 methods : (GetImage) and (SaveImage)
+
         [HttpGet("{fileName}")]
-        public async Task<IActionResult> GetImage(string fileName)
+        public async Task<IActionResult> GetImageAsync(string fileName)
         {
-            Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
-
-            Cloudinary cloudinary = new Cloudinary(account);
-
-            GetResourceResult result = cloudinary.GetResource(fileName);
-
-            string extension = fileName.Split('.').Last();
-
-            using (var webClient = new WebClient())
+            if (string.IsNullOrEmpty(fileName))
             {
-                byte[] imageBytes = webClient.DownloadData(result.Url);
-                return File(imageBytes, $"image/{extension}");
+                return BadRequest($"The provided fileName is empty or null");
+            }
+
+            try
+            {
+                FileModel? fileModel = await _fileManager.GetObjectAsync(fileName);
+
+                if (fileModel is null)
+                {
+                    return NotFound($"Could not find any image with name : \"{fileName}\"");
+                }
+
+                return File(fileModel.Content, fileModel.ContentType);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetImageAsync)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to get an image, please contact the administrator");
+#endif
             }
         }
 
-        [HasRoleAuthorize(RolesEnum.DIRECTION)]
         [HttpPost]
         public async Task<IActionResult> SaveImage(IList<IFormFile> uploadFiles)
         {
@@ -76,10 +84,6 @@ namespace API.DepotEice.UIL.Controllers
                 return BadRequest($"{nameof(uploadFiles)} is null");
             }
 
-            Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
-
-            Cloudinary cloudinary = new Cloudinary(account);
-
             foreach (var file in uploadFiles)
             {
                 if (file.Length <= 0)
@@ -87,20 +91,44 @@ namespace API.DepotEice.UIL.Controllers
                     return BadRequest($"{nameof(file)} is empty");
                 }
 
-
-                Stream stream = file.OpenReadStream();
-
-                var uploadParams = new ImageUploadParams()
+                if (!await _fileManager.UploadObjectAsync(file, file.FileName))
                 {
-                    File = new FileDescription(file.FileName, stream),
-                    PublicId = file.FileName
-                };
-
-                var uploadResult = cloudinary.Upload(uploadParams);
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
+                        $"AWS");
+                }
             }
 
-
             return Ok();
+        }
+
+        [HttpDelete("{fileName}")]
+        public async Task<IActionResult> DeleteImageAsync(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return BadRequest($"The provided file name is either null or empty");
+            }
+
+            try
+            {
+                if (!await _fileManager.DeleteObjectAsync(fileName))
+                {
+                    return BadRequest($"Couldn't delete the file with name :\"{fileName}\"");
+                }
+
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteImageAsync)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to delete the image, please contact the administrator");
+#endif
+            }
         }
     }
 }
