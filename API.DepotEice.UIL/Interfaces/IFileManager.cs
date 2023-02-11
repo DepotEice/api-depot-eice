@@ -15,7 +15,7 @@ namespace API.DepotEice.UIL.Interfaces
         /// <returns><c>true</c> If the upload is successful. <c>false</c> Otherwise</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        Task<bool> UploadFileAsync(IFormFile file, string key);
+        Task<bool> UploadObjectAsync(IFormFile file, string key);
 
         /// <summary>
         /// Delete an object based on its key from AWS S3.

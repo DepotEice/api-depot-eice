@@ -91,7 +91,7 @@ namespace API.DepotEice.UIL.Controllers
                     return BadRequest($"{nameof(file)} is empty");
                 }
 
-                if (!await _fileManager.UploadFileAsync(file, file.FileName))
+                if (!await _fileManager.UploadObjectAsync(file, file.FileName))
                 {
                     _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
                         $"AWS");

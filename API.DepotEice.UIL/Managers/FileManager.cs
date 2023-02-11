@@ -225,7 +225,7 @@ namespace API.DepotEice.UIL.Managers
         /// <returns><c>true</c> If the upload is successful. <c>false</c> Otherwise</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<bool> UploadFileAsync(IFormFile file, string key)
+        public async Task<bool> UploadObjectAsync(IFormFile file, string key)
         {
             if (file is null)
             {
@@ -263,7 +263,7 @@ namespace API.DepotEice.UIL.Managers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UploadFileAsync)}\n" +
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(UploadObjectAsync)}\n" +
                     $"{e.Message}\n{e.StackTrace}");
 
                 return false;
