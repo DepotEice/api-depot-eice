@@ -24,7 +24,7 @@ namespace API.DepotEice.UIL.Interfaces
         /// <returns><c>true</c> If the operation went successfully. <c>false</c> Otherwise</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        Task<bool> DeleteFileAsync(string key);
+        Task<bool> DeleteObjectAsync(string key);
 
         /// <summary>
         /// Get an object based on its key from AWS S3

@@ -111,7 +111,7 @@ namespace API.DepotEice.UIL.Controllers
 
             try
             {
-                if (!await _fileManager.DeleteFileAsync(fileName))
+                if (!await _fileManager.DeleteObjectAsync(fileName))
                 {
                     return BadRequest($"Couldn't delete the file with name :\"{fileName}\"");
                 }

@@ -176,7 +176,7 @@ namespace API.DepotEice.UIL.Managers
         /// <returns><c>true</c> If the operation went successfully. <c>false</c> Otherwise</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<bool> DeleteFileAsync(string key)
+        public async Task<bool> DeleteObjectAsync(string key)
         {
             if (string.IsNullOrEmpty(key))
             {
@@ -210,7 +210,7 @@ namespace API.DepotEice.UIL.Managers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(DeleteFileAsync)}\n" +
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(DeleteObjectAsync)}\n" +
                     $"{e.Message}\n{e.StackTrace}");
 
                 return false;
