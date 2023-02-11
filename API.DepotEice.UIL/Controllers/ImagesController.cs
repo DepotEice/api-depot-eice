@@ -100,5 +100,35 @@ namespace API.DepotEice.UIL.Controllers
 
             return Ok();
         }
+
+        [HttpDelete("{fileName}")]
+        public async Task<IActionResult> DeleteImageAsync(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+            {
+                return BadRequest($"The provided file name is either null or empty");
+            }
+
+            try
+            {
+                if (!await _fileManager.DeleteFileAsync(fileName))
+                {
+                    return BadRequest($"Couldn't delete the file with name :\"{fileName}\"");
+                }
+
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteImageAsync)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to delete the image, please contact the administrator");
+#endif
+            }
+        }
     }
 }
