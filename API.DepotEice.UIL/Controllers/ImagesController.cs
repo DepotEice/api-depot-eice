@@ -54,7 +54,7 @@ namespace API.DepotEice.UIL.Controllers
 
             try
             {
-                FileModel? fileModel = await _fileManager.GetFileAsync(fileName);
+                FileModel? fileModel = await _fileManager.GetObjectAsync(fileName);
 
                 if (fileModel is null)
                 {

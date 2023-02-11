@@ -36,6 +36,6 @@ namespace API.DepotEice.UIL.Interfaces
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        Task<FileModel?> GetFileAsync(string key);
+        Task<FileModel?> GetObjectAsync(string key);
     }
 }

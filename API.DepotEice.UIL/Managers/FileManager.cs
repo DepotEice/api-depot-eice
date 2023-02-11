@@ -115,7 +115,7 @@ namespace API.DepotEice.UIL.Managers
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<FileModel?> GetFileAsync(string key)
+        public async Task<FileModel?> GetObjectAsync(string key)
         {
             if (string.IsNullOrEmpty(key))
             {
@@ -163,7 +163,7 @@ namespace API.DepotEice.UIL.Managers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(GetFileAsync)}.\n" +
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(GetObjectAsync)}.\n" +
                     $"{e.Message}\n{e.StackTrace}");
                 return null;
             }
