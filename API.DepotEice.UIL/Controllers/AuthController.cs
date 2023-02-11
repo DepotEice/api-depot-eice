@@ -43,6 +43,7 @@ public class AuthController : ControllerBase
     /// <param name="userRepository"></param>
     /// <param name="roleRepository"></param>
     /// <param name="userTokenRepository"></param>
+    /// <param name="userManager"></param>
     public AuthController(ILogger<AuthController> logger, IMapper mapper, IConfiguration configuration,
         ITokenManager tokenManager, IUserRepository userRepository, IRoleRepository roleRepository,
         IUserTokenRepository userTokenRepository, IUserManager userManager)
