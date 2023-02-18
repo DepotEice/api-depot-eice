@@ -5,6 +5,23 @@ namespace API.DepotEice.DAL.Mappers;
 
 internal static class Mapper
 {
+    public static AddressEntity DbToAddress(this IDataRecord record)
+    {
+        return new AddressEntity()
+        {
+            Id = (int)record["Id"],
+            Street = (string)record["Street"],
+            HouseNumber = (string)record["HouseNumber"],
+            Appartment = (string)record["Appartment"],
+            City = (string)record["City"],
+            State = (string)record["State"],
+            ZipCode = (string)record["ZipCode"],
+            Country = (string)record["Country"],
+            IsPrimary = (bool)record["IsPrimary"],
+            UserId = record["UserId"].ToString()
+        };
+    }
+    
     public static AppointmentEntity DbToAppointmentEntity(this IDataRecord record)
     {
         return new AppointmentEntity()
