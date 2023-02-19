@@ -76,6 +76,43 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
+    /// Get a user's addresses. Only allowed to the direction members
+    /// </summary>
+    /// <param name="userId">The ID of the user</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If everything went successfully
+    /// <see cref="StatusCodes.Status400BadRequest"/> If an error occurred during the process
+    /// </returns>
+    [HttpGet("User/{userId}")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    public IActionResult GetAddresses(string userId)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return BadRequest($"Please provide a correct value for the user id");
+        }
+
+        try
+        {
+            IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll();
+
+            IEnumerable<AddressModel> addresses = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
+
+            return Ok(addresses.Where(a => a.UserId.Equals(userId)));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetAddresses)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's addresses, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
     /// Get the address with the given ID
     /// </summary>
     /// <param name="id">The ID of the address to retrieve</param>
