@@ -12,6 +12,9 @@ using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
+/// <summary>
+/// The addresses controller
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class AddressesController : ControllerBase
@@ -21,6 +24,14 @@ public class AddressesController : ControllerBase
     private IAddressRepository _addressRepository;
     private IUserManager _userManager;
 
+    /// <summary>
+    /// Instanciate the Addresses controller
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="mapper"></param>
+    /// <param name="addressRepository"></param>
+    /// <param name="userManager"></param>
+    /// <exception cref="ArgumentNullException"></exception>
     public AddressesController(ILogger<AddressesController> logger, IMapper mapper,
         IAddressRepository addressRepository, IUserManager userManager)
     {
