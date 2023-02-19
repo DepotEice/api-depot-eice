@@ -132,16 +132,46 @@ public class AddressesController : ControllerBase
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
     /// </returns>
     [HttpGet("{id}")]
+    [Authorize]
     public IActionResult GetAddress(int id)
     {
-        AddressEntity? addressFromRepo = _addressRepository.GetByKey(id);
+        string? currentUserId = _userManager.GetCurrentUserId;
 
-        if (addressFromRepo is null)
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            return NotFound($"Could not find any address with id : \"{id}\"");
+            return Unauthorized($"The user requesting the address must be logged in!");
         }
 
-        return Ok(_mapper.Map<AddressModel>(addressFromRepo));
+        try
+        {
+            AddressEntity? addressFromRepo = _addressRepository.GetByKey(id);
+
+            if (addressFromRepo is null)
+            {
+                return NotFound($"Could not find any address with id : \"{id}\"");
+            }
+
+            if (!_userManager.IsDirection)
+            {
+                if (!addressFromRepo.UserId.Equals(currentUserId))
+                {
+                    return Unauthorized($"The currently logged in user is not allowed to retrieve another " +
+                        $"user's address");
+                }
+            }
+
+            return Ok(_mapper.Map<AddressModel>(addressFromRepo));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetAddress)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get a user's address, please contact the administrator");
+#endif
+        }
     }
 
     /// <summary>
