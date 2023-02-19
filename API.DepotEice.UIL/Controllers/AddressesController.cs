@@ -201,4 +201,64 @@ public class AddressesController : ControllerBase
 #endif
         }
     }
+
+    /// <summary>
+    /// Delete an address with the given ID
+    /// </summary>
+    /// <param name="id">The ID of the address to delete. Must be a positive number</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the delete went successfully
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the ID is a negative number or if the delete failed
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not logged in or if the user requesting the 
+    /// delete is trying to delete another user's address
+    /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
+    /// </returns>
+    [HttpDelete("{id}")]
+    public IActionResult DeleteAddress(int id)
+    {
+        if (id < 0)
+        {
+            return BadRequest($"The given ID is a negative value");
+        }
+
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized($"The user requesting the delete must be logged in");
+            }
+
+            AddressEntity? addressFromRepo = _addressRepository.GetByKey(id);
+
+            if (addressFromRepo is null)
+            {
+                return NotFound($"There is no address with the given ID \"{id}\"");
+            }
+
+            if (!addressFromRepo.UserId.Equals(currentUserId))
+            {
+                return Unauthorized($"The user requesting the delete cannot delete another user's address");
+            }
+
+            if (!_addressRepository.Delete(id))
+            {
+                return BadRequest($"An error occurred while trying to delete the address. If failed");
+            }
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteAddress)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to delete an address, please contact the administrator");
+#endif
+        }
+    }
 }
