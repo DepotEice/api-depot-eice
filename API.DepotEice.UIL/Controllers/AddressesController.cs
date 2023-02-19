@@ -47,6 +47,10 @@ public class AddressesController : ControllerBase
         _userManager = userManager;
     }
 
+    /// <summary>
+    /// Get all the address
+    /// </summary>
+    /// <returns></returns>
     [HttpGet]
     public IActionResult GetAddresses()
     {
@@ -55,6 +59,14 @@ public class AddressesController : ControllerBase
         return Ok(_mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo));
     }
 
+    /// <summary>
+    /// Get the address with the given ID
+    /// </summary>
+    /// <param name="id">The ID of the address to retrieve</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If everything went successfully
+    /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
+    /// </returns>
     [HttpGet("{id}")]
     public IActionResult GetAddress(int id)
     {
