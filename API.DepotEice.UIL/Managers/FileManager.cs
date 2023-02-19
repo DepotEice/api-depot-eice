@@ -96,7 +96,7 @@ namespace API.DepotEice.UIL.Managers
             string regionEndPoint = _configuration["AWS:AWS_REGION_ENDPOINT"] ??
                 throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in appsettings.json or secret.json");
 
-            if (!Enum.TryParse(typeof(Amazon.RegionEndpoint), regionEndPoint, out object? region)
+            if (!Enum.TryParse(typeof(Amazon.RegionEndpoint), regionEndPoint, out object? region))
             {
                 throw new ArgumentException($"Cannot parse {regionEndPoint} to Amazon.RegionEndpoint");
             }
