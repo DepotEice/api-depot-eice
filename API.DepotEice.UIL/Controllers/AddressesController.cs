@@ -123,7 +123,81 @@ public class AddressesController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to creqte an address, please contact the administrator");
+            return BadRequest("An error occurred while trying to create an address, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Update the address with the given ID with the new data in the form
+    /// </summary>
+    /// <param name="id">The ID of the address to update</param>
+    /// <param name="form">The new data to insert</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If everything went successfully.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the provided ID or form are invalid or if the address couldn't
+    /// be updated or if an error occurred while trying to performe the update.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not logged in or if the address id is not the 
+    /// currently logged in user's address
+    /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
+    /// </returns>
+    [HttpPut("{id}")]
+    public IActionResult UpdateAddress(int id, [FromBody] AddressForm form)
+    {
+        if (id < 0)
+        {
+            return BadRequest($"The provided id is a negative value");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized($"The user requesting the update must be logged in");
+            }
+
+            AddressEntity? addressFromRepo = _addressRepository.GetByKey(id);
+
+            if (addressFromRepo is null)
+            {
+                return NotFound($"There is no address with id \"{id}\"");
+            }
+
+            if (!addressFromRepo.UserId.Equals(currentUserId))
+            {
+                return Unauthorized($"You are not authorized to update another user's address");
+            }
+
+            AddressEntity addressToUpdate = _mapper.Map<AddressEntity>(form);
+
+            addressToUpdate.Id = id;
+            addressToUpdate.UserId = currentUserId;
+
+            if (!_addressRepository.Update(id, addressToUpdate))
+            {
+                return BadRequest($"The address \"{id}\" couldn't be updated");
+            }
+
+            addressFromRepo = _addressRepository.GetByKey(id);
+
+            return Ok(_mapper.Map<AddressModel>(addressFromRepo));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdateAddress)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update an address, please contact the administrator");
 #endif
         }
     }
