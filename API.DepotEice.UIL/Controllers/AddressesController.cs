@@ -129,6 +129,8 @@ public class AddressesController : ControllerBase
     /// <param name="id">The ID of the address to retrieve</param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If everything went successfully
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user try to retrieve an address that is not his and is not
+    /// in role DIRECTION
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
     /// </returns>
     [HttpGet("{id}")]
@@ -179,7 +181,8 @@ public class AddressesController : ControllerBase
     /// <param name="form">The address form to create</param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If the creation was successful
-    /// <see cref="StatusCodes.Status400BadRequest"/> If the form is invalid or if the address couldn't be created
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the form is invalid or if the address couldn't be created or
+    /// if the old primary address couldn't be set to false
     /// <see cref="StatusCodes.Status401Unauthorized"/> If the user creating the address is not logged in
     /// <see cref="StatusCodes.Status404NotFound"/> If the created address couldn't be retrieved
     /// </returns>
@@ -265,8 +268,9 @@ public class AddressesController : ControllerBase
     /// <param name="form">The new data to insert</param>
     /// <returns>
     /// <see cref="StatusCodes.Status200OK"/> If everything went successfully.
-    /// <see cref="StatusCodes.Status400BadRequest"/> If the provided ID or form are invalid or if the address couldn't
-    /// be updated or if an error occurred while trying to performe the update.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the provided ID or form are invalid or if another primary address
+    /// exist and it IsPrimary property couldn't be changed to false or if the address couldn't be updated or if an 
+    /// error occurred while trying to performe the update.
     /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not logged in or if the address id is not the 
     /// currently logged in user's address
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
@@ -365,7 +369,7 @@ public class AddressesController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> If the delete went successfully
     /// <see cref="StatusCodes.Status400BadRequest"/> If the ID is a negative number or if the delete failed
     /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not logged in or if the user requesting the 
-    /// delete is trying to delete another user's address
+    /// delete is trying to delete another user's address and is not direction role
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
     /// </returns>
     [HttpDelete("{id}")]
@@ -392,9 +396,13 @@ public class AddressesController : ControllerBase
                 return NotFound($"There is no address with the given ID \"{id}\"");
             }
 
-            if (!addressFromRepo.UserId.Equals(currentUserId))
+            if (!_userManager.IsDirection)
             {
-                return Unauthorized($"The user requesting the delete cannot delete another user's address");
+                if (!addressFromRepo.UserId.Equals(currentUserId))
+                {
+                    return Unauthorized($"The currently logged in user is not allowed to delete another user's " +
+                        $"address");
+                }
             }
 
             if (!_addressRepository.Delete(id))
