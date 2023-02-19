@@ -17,6 +17,7 @@ namespace API.DepotEice.UIL.Controllers;
 /// </summary>
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class AddressesController : ControllerBase
 {
     private ILogger _logger;
@@ -69,7 +70,6 @@ public class AddressesController : ControllerBase
     /// <see cref="StatusCodes.Status401Unauthorized"/> If the user requesting the retrieval is not logged in
     /// </returns>
     [HttpGet]
-    [Authorize]
     public IActionResult GetAddresses()
     {
         string? currentUserId = _userManager.GetCurrentUserId;
@@ -132,7 +132,6 @@ public class AddressesController : ControllerBase
     /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
     /// </returns>
     [HttpGet("{id}")]
-    [Authorize]
     public IActionResult GetAddress(int id)
     {
         string? currentUserId = _userManager.GetCurrentUserId;
