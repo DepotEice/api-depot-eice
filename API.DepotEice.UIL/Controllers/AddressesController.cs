@@ -311,6 +311,31 @@ public class AddressesController : ControllerBase
             addressToUpdate.Id = id;
             addressToUpdate.UserId = currentUserId;
 
+            if (addressToUpdate.IsPrimary)
+            {
+                AddressEntity? primaryAddressFromRepo = _addressRepository
+                    .GetAll()
+                    .Where(a => a.UserId.Equals(currentUserId) && a.IsPrimary && a.Id != id)
+                    .SingleOrDefault();
+
+                if (primaryAddressFromRepo is not null)
+                {
+                    primaryAddressFromRepo.IsPrimary = false;
+
+                    if (!_addressRepository.Update(primaryAddressFromRepo.Id, primaryAddressFromRepo))
+                    {
+                        _logger.LogError($"{DateTime.Now} - An error occurred while trying to set the \"IsPrimary\" " +
+                            $"property of the address \"{primaryAddressFromRepo.Id}\" to false");
+
+                        return BadRequest($"An error occurred while trying to create the address. The new address " +
+                            $"cannot be set to primary address");
+                    }
+
+                    _logger.LogInformation($"{DateTime.Now} - The old primary address has successfully been set " +
+                        $"to false");
+                }
+            }
+
             if (!_addressRepository.Update(id, addressToUpdate))
             {
                 return BadRequest($"The address \"{id}\" couldn't be updated");
