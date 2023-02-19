@@ -32,8 +32,8 @@ public class AddressesController : ControllerBase
     /// <param name="addressRepository"></param>
     /// <param name="userManager"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    public AddressesController(ILogger<AddressesController> logger, IMapper mapper,
-        IAddressRepository addressRepository, IUserManager userManager)
+    public AddressesController(ILogger<AddressesController> logger, IMapper mapper, IAddressRepository addressRepository,
+        IUserManager userManager)
     {
         if (logger is null)
         {
