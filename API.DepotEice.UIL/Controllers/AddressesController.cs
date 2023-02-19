@@ -1,11 +1,14 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -48,15 +51,28 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all the address
+    /// Get all user's addresses
     /// </summary>
-    /// <returns></returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If everything went successfully
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user requesting the retrieval is not logged in
+    /// </returns>
     [HttpGet]
+    [Authorize]
     public IActionResult GetAddresses()
     {
+        string? currentUserId = _userManager.GetCurrentUserId;
+
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            return Unauthorized($"The user requesting the retrieval must be logged in");
+        }
+
         IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll();
 
-        return Ok(_mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo));
+        IEnumerable<AddressModel> addresses = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
+
+        return Ok(addresses.Where(a => a.UserId.Equals(currentUserId)));
     }
 
     /// <summary>
