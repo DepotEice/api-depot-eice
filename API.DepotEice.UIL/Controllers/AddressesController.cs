@@ -234,7 +234,7 @@ public class AddressesController : ControllerBase
 
             int addressId = _addressRepository.Create(addressToCreate);
 
-            if (addressId < 0)
+            if (addressId <= 0)
             {
                 return BadRequest($"The address couldn't be created");
             }
