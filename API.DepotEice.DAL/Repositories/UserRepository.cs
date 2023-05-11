@@ -4,6 +4,7 @@ using API.DepotEice.DAL.Mappers;
 using API.DepotEice.Helpers.Exceptions;
 using DevHopTools.DataAccess;
 using DevHopTools.DataAccess.Interfaces;
+using System.Data;
 
 namespace API.DepotEice.DAL.Repositories;
 
@@ -158,7 +159,20 @@ public class UserRepository : RepositoryBase, IUserRepository
 
         Command command = new Command(query);
 
-        return _connection.ExecuteReader(command, user => user.DbToUser());
+        var idata = new List<IDataRecord>();
+
+        var users = _connection.ExecuteReader(command, user =>
+        {
+            idata.Add(user);
+            return user.DbToUser();
+        });
+
+
+        foreach (var id in idata)
+        {
+            var user = id.MapFromDB<UserEntity>();
+        }
+        return users;
     }
 
     /// <summary>
@@ -202,7 +216,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         throw new NotImplementedException();
     }
 
-    public UserEntity GetByKey(string key)
+    public UserEntity? GetByKey(string key)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
             throw new ArgumentNullException(nameof(key));
@@ -213,7 +227,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         command.AddParameter("id", key);
 
         return _connection
-            .ExecuteReader(command, user => user.DbToUser())
+            .ExecuteReader(command, user => user.MapFromDB<UserEntity>())
             .SingleOrDefault();
     }
 

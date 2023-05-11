@@ -121,6 +121,7 @@ public class UsersController : ControllerBase
     {
         try
         {
+            var users = _userRepository.GetAll();
             return Ok();
         }
         catch (Exception e)
