@@ -175,6 +175,7 @@ public class Program
         /*  Repositories  */
         /******************/
 
+        builder.Services.AddScoped<IAddressRepository, AddressRepository>();
         builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
         builder.Services.AddScoped<IArticleCommentRepository, ArticleCommentRepository>();
         builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
