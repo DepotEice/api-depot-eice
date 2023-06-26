@@ -62,7 +62,7 @@ internal static class Mapper
             Id = (int)record["Id"],
             Key = (string)record["Key"],
             Path = (string)record["Path"],
-            Size = (int)record["Size"],
+            Size = (long)record["Size"],
             Type = (string)record["Type"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = (DateTime)record["UpdatedAt"],
@@ -206,6 +206,7 @@ internal static class Mapper
         {
             Id = record["Id"].ToString() ??
                 throw new NullReferenceException($"The property Id is null"),
+            ProfilePictureId = (int)record["ProfilePictureId"],
             Email = record["Email"] is DBNull ? null : (string)record["Email"],
             NormalizedEmail = (record["NormalizedEmail"] is DBNull or null)
                 ? null

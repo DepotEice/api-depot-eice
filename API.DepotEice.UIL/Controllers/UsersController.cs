@@ -24,6 +24,8 @@ public class UsersController : ControllerBase
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IUserManager _userManager;
+    private readonly IFileManager _fileManager;
+    private readonly IFileRepository _fileRepository;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -35,6 +37,8 @@ public class UsersController : ControllerBase
     /// <param name="roleRepository">The role repository instance.</param>
     /// <param name="configuration">The configuration instance.</param>
     /// <param name="userManager">The user manager instance.</param>
+    /// <param name="fileManager">The file manager instance.</param>
+    /// <param name="fileRepository">The file repository instance.</param>
     public UsersController(
         ILogger<UsersController> logger,
         IMapper mapper,
@@ -42,8 +46,9 @@ public class UsersController : ControllerBase
         IUserTokenRepository userTokenRepository,
         IRoleRepository roleRepository,
         IConfiguration configuration,
-        IUserManager userManager
-    )
+        IUserManager userManager,
+        IFileManager fileManager,
+        IFileRepository fileRepository)
     {
         if (logger is null)
         {
@@ -80,6 +85,16 @@ public class UsersController : ControllerBase
             throw new ArgumentNullException(nameof(userManager));
         }
 
+        if (fileManager is null)
+        {
+            throw new ArgumentNullException(nameof(fileManager));
+        }
+
+        if (fileRepository is null)
+        {
+            throw new ArgumentNullException(nameof(fileRepository));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _userRepository = userRepository;
@@ -87,6 +102,8 @@ public class UsersController : ControllerBase
         _roleRepository = roleRepository;
         _configuration = configuration;
         _userManager = userManager;
+        _fileManager = fileManager;
+        _fileRepository = fileRepository;
     }
 
     /// <summary>
@@ -211,8 +228,18 @@ public class UsersController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// Updates a user with the specified ID.
+    /// </summary>
+    /// <param name="id">The ID of the user to update.</param>
+    /// <param name="form">The updated user information.</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the user was successfully updated.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the ID or body is invalid.
+    /// <see cref="StatusCodes.Status404NotFound"/> If the user with the specified ID does not exist.
+    /// </returns>
     [HttpPut("{id}")]
-    public IActionResult Put(string id, [FromBody] UserForm form)
+    public async Task<IActionResult> Put(string id, [FromBody] UserForm form)
     {
         if (string.IsNullOrEmpty(id))
         {
@@ -231,6 +258,21 @@ public class UsersController : ControllerBase
 
         try
         {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            if (!currentUserId.Equals(id))
+            {
+                if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                {
+                    return Unauthorized("You are not authorized to modify other user's information");
+                }
+            }
+
             UserEntity? userFromRepo = _userRepository.GetByKey(id);
 
             if (userFromRepo is null)
@@ -240,14 +282,57 @@ public class UsersController : ControllerBase
 
             _mapper.Map(form, userFromRepo);
 
-            // Save image in AWS and get the URL
-
-            _userRepository.Update(userFromRepo);
-            if (!_userRepository.Save())
+            if (form.ProfilePicture is not null)
             {
-                return BadRequest($"An error occurred while trying to update user with ID \"{id}\"");
+                if (!await _fileManager.UploadObjectAsync(form.ProfilePicture, $"profile-picture-{id}"))
+                {
+                    _logger.LogError("{dt} - Uploading the file for user \"{id}\" in AWS failed",
+                        DateTime.Now,
+                        id);
+
+                    return BadRequest(
+                    "An error occurred while trying to upload the profile picture, please contact the administrator"
+                    );
+                }
+
+                FileEntity fileEntity = new FileEntity()
+                {
+                    Key = $"profile-picture-{id}",
+                    Type = form.ProfilePicture.ContentType,
+                    Size = form.ProfilePicture.Length
+                };
+
+                int createdFileId = _fileRepository.Create(fileEntity);
+
+                if (createdFileId == 0)
+                {
+                    _logger.LogError("{dt} - The file for user \"{id}\" was not saved in the database",
+                        DateTime.Now,
+                        id);
+
+                    return BadRequest(
+                        "An error occurred while trying to save the profile picture, please contact the administrator"
+                    );
+                }
+
+                userFromRepo.ProfilePictureId = createdFileId;
             }
-            return Ok();
+
+            if (!_userRepository.Update(id, userFromRepo))
+            {
+                _logger.LogError("{dt} - Updating user \"{id}\" failed",
+                    DateTime.Now,
+                    id);
+
+                return BadRequest(
+                    "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            userFromRepo = _userRepository.GetByKey(id);
+
+            UserModel user = _mapper.Map<UserModel>(userFromRepo);
+
+            return Ok(user);
         }
         catch (Exception e)
         {

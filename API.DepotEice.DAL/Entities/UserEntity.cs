@@ -11,9 +11,9 @@ public class UserEntity
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// Represent <c>Users</c> table's <c>UserName</c> column
+    /// Represent <c>Users</c> table's <c>ProfilePictureId</c> column
     /// </summary>
-    public string ProfilePictureUrl { get; set; } = string.Empty;
+    public int ProfilePictureId { get; set; }
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>Email</c> column

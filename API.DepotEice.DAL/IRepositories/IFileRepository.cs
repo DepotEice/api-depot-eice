@@ -9,6 +9,6 @@ namespace API.DepotEice.DAL.IRepositories
 {
     public interface IFileRepository : IRepositoryBase<int, FileEntity>
     {
-
+        FileEntity? GetByKey(string key);
     }
 }

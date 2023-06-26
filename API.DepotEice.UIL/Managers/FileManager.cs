@@ -254,7 +254,7 @@ namespace API.DepotEice.UIL.Managers
                 {
                     BucketName = _bucketName,
                     Key = key,
-                    InputStream = memoryStream,
+                    InputStream = memoryStream
                 };
 
                 PutObjectResponse putObjectResponse = await client.PutObjectAsync(putObjectRequest);
