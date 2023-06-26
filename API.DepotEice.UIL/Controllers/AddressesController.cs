@@ -63,28 +63,36 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all user's addresses
+    /// Get all addresses belonging to the currently authenticated user.
     /// </summary>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK"/> If everything went successfully
-    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user requesting the retrieval is not logged in
+    /// <see cref="StatusCodes.Status200OK"/> if the operation is successful and returns the addresses.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> if the user requesting the retrieval is not logged in.
     /// </returns>
     [HttpGet]
     public IActionResult GetAddresses()
     {
+        // Get the ID of the currently authenticated user
         string? currentUserId = _userManager.GetCurrentUserId;
 
+        // Check if the user is logged in
         if (string.IsNullOrEmpty(currentUserId))
         {
             return Unauthorized($"The user requesting the retrieval must be logged in");
         }
 
+        // Retrieve all addresses from the repository
         IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll();
 
+        // Map the addresses to the corresponding model
         IEnumerable<AddressModel> addresses = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
 
-        return Ok(addresses.Where(a => a.UserId.Equals(currentUserId)));
+        // Filter the addresses to only include those belonging to the current user
+        var userAddresses = addresses.Where(a => a.UserId.Equals(currentUserId));
+
+        return Ok(userAddresses);
     }
+
 
     /// <summary>
     /// Get a user's addresses. Only allowed to the direction members
