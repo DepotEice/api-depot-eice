@@ -20,10 +20,10 @@ namespace API.DepotEice.UIL.Controllers;
 [Authorize]
 public class AddressesController : ControllerBase
 {
-    private ILogger _logger;
-    private IMapper _mapper;
-    private IAddressRepository _addressRepository;
-    private IUserManager _userManager;
+    private readonly ILogger _logger;
+    private readonly IMapper _mapper;
+    private readonly IAddressRepository _addressRepository;
+    private readonly IUserManager _userManager;
 
     /// <summary>
     /// Instanciate the Addresses controller
