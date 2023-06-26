@@ -10,8 +10,6 @@ using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Controllers;
 
-// TODO : Implements methods
-
 /// <summary>
 /// User controller
 /// </summary>
