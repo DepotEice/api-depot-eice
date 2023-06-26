@@ -12,6 +12,9 @@ namespace API.DepotEice.UIL.Controllers;
 
 // TODO : Implements methods
 
+/// <summary>
+/// User controller
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class UsersController : ControllerBase
@@ -24,9 +27,25 @@ public class UsersController : ControllerBase
     private readonly IRoleRepository _roleRepository;
     private readonly IUserManager _userManager;
 
-    public UsersController(ILogger<UsersController> logger, IMapper mapper, IUserRepository userRepository,
-        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository, IConfiguration configuration,
-        IUserManager userManager)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsersController"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="mapper">The AutoMapper instance.</param>
+    /// <param name="userRepository">The user repository instance.</param>
+    /// <param name="userTokenRepository">The user token repository instance.</param>
+    /// <param name="roleRepository">The role repository instance.</param>
+    /// <param name="configuration">The configuration instance.</param>
+    /// <param name="userManager">The user manager instance.</param>
+    public UsersController(
+        ILogger<UsersController> logger,
+        IMapper mapper,
+        IUserRepository userRepository,
+        IUserTokenRepository userTokenRepository,
+        IRoleRepository roleRepository,
+        IConfiguration configuration,
+        IUserManager userManager
+    )
     {
         if (logger is null)
         {
@@ -73,13 +92,13 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Get information about the actual authentified user
+    /// Get information about the currently authenticated user.
     /// </summary>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK"/> If everything went properly
-    /// <see cref="StatusCodes.Status400BadRequest"/>
-    /// <see cref="StatusCodes.Status401Unauthorized"/> If the caller is not authentified
-    /// <see cref="StatusCodes.Status404NotFound"/> If the user making doesn't exist
+    /// <see cref="StatusCodes.Status200OK"/> if the operation is successful.
+    /// <see cref="StatusCodes.Status400BadRequest"/> if there is a bad request.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> if the caller is not authenticated.
+    /// <see cref="StatusCodes.Status404NotFound"/> if the requested user does not exist.
     /// </returns>
     [HttpGet(nameof(Me))]
     public IActionResult Me()
@@ -106,16 +125,27 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Me)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\"n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(Me),
+                e.Message,
+                e.StackTrace
+            );
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to get user's information (/Me), please contact the administrator");
+            return BadRequest(
+                "An error occurred while trying to get user's information (/Me), please contact the administrator"
+            );
 #endif
         }
     }
 
+    /// <summary>
+    /// Get all users.
+    /// </summary>
+    /// <returns><see cref="StatusCodes.Status200OK"/> if the operation is successful.</returns>
     [HttpGet()]
     public IActionResult Get()
     {
@@ -168,8 +198,10 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve users from " +
-                $"repository and return the data.\n{e.Message}\n{e.StackTrace}");
+            _logger.LogError(
+                $"{DateTime.Now} - An exception was thrown when trying to retrieve users from "
+                    + $"repository and return the data.\n{e.Message}\n{e.StackTrace}"
+            );
         }
 
         return Ok();
@@ -234,10 +266,16 @@ public class UsersController : ControllerBase
 
             if (!userId.Equals(passwordForm.UserId))
             {
-                return Unauthorized("The password you are trying to reset is not associated to your account!");
+                return Unauthorized(
+                    "The password you are trying to reset is not associated to your account!"
+                );
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, GetSalt());
+            bool result = _userRepository.UpdatePassword(
+                passwordForm.UserId,
+                passwordForm.Password,
+                GetSalt()
+            );
 
             if (!result)
             {
@@ -248,13 +286,17 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : " +
-                $"\"{e.Message}\"\n\"{e.Message}\"");
+            _logger.LogError(
+                $"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : "
+                    + $"\"{e.Message}\"\n\"{e.Message}\""
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+            return BadRequest(
+                "An error occurred while trying to update the password, please contact the administrator"
+            );
 #endif
         }
     }
@@ -264,9 +306,10 @@ public class UsersController : ControllerBase
 #if DEBUG
         return _configuration.GetValue<string>("AppSettings:Secret");
 #else
-        return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
-            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
-                $"\"PASSWORD_SALT\"");
+        return Environment.GetEnvironmentVariable("PASSWORD_SALT")
+            ?? throw new NullReferenceException(
+                $"{DateTime.Now} - There is no environment variable named " + $"\"PASSWORD_SALT\""
+            );
 #endif
     }
 }
