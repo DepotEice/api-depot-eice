@@ -55,6 +55,21 @@ internal static class Mapper
         return (T)instance;
     }
 
+    public static FileEntity DbToFile(this IDataRecord record)
+    {
+        return new FileEntity()
+        {
+            Id = (int)record["Id"],
+            Key = (string)record["Key"],
+            Path = (string)record["Path"],
+            Size = (int)record["Size"],
+            Type = (string)record["Type"],
+            CreatedAt = (DateTime)record["CreatedAt"],
+            UpdatedAt = (DateTime)record["UpdatedAt"],
+            DeletedAt = (DateTime)record["DeletedAt"]
+        };
+    }
+
     public static AddressEntity DbToAddress(this IDataRecord record)
     {
         return new AddressEntity()

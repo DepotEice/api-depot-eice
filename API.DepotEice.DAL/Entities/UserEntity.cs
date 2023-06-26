@@ -11,6 +11,11 @@ public class UserEntity
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
+    /// Represent <c>Users</c> table's <c>UserName</c> column
+    /// </summary>
+    public string ProfilePictureUrl { get; set; } = string.Empty;
+
+    /// <summary>
     /// Represent <c>Users</c> table's <c>Email</c> column
     /// </summary>
     public string? Email { get; set; } = string.Empty;

@@ -214,7 +214,58 @@ public class UsersController : ControllerBase
     [HttpPut("{id}")]
     public IActionResult Put(string id, [FromBody] UserForm form)
     {
-        return Ok();
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest($"User ID required");
+        }
+
+        if (form is null)
+        {
+            return BadRequest($"The body cannot be null!");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            UserEntity? userFromRepo = _userRepository.GetByKey(id);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            _mapper.Map(form, userFromRepo);
+
+            // Save image in AWS and get the URL
+
+            _userRepository.Update(userFromRepo);
+            if (!_userRepository.Save())
+            {
+                return BadRequest($"An error occurred while trying to update user with ID \"{id}\"");
+            }
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("{dt} - An exception was thrown during \"{fun}\":\"n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(Put),
+                e.Message,
+                e.StackTrace
+            );
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest(
+                "An error occurred while trying to update user's information, please contact the administrator"
+            );
+#endif
+        }
     }
 
     [HttpDelete("{id}")]
