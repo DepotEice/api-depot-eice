@@ -227,7 +227,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         command.AddParameter("id", key);
 
         return _connection
-            .ExecuteReader(command, user => user.MapFromDB<UserEntity>())
+            .ExecuteReader(command, user => Mapper.DbToUser(user))
             .SingleOrDefault();
     }
 

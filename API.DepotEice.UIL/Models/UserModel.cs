@@ -33,6 +33,11 @@
         public string LastName { get; set; } = string.Empty;
 
         /// <summary>
+        /// User gender
+        /// </summary>
+        public string Gender { get; set; } = string.Empty;
+
+        /// <summary>
         /// User birth date
         /// </summary>
         public DateTime BirthDate { get; set; }
