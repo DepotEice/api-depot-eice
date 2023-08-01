@@ -57,12 +57,8 @@ namespace API.DepotEice.UIL.Managers
             string regionEndPoint = _configuration["AWS:AWS_REGION_ENDPOINT"] ??
                 throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in appsettings.json or secret.json");
 
-            if (!Enum.TryParse(typeof(Amazon.RegionEndpoint), regionEndPoint, out object? region))
-            {
-                throw new ArgumentException($"Cannot parse {regionEndPoint} to Amazon.RegionEndpoint");
-            }
-
-            _region = (Amazon.RegionEndpoint?)region ?? throw new ArgumentNullException(nameof(region));
+            // TODO: Vérifier si la manière de récupérer la région est correcte
+            _region = Amazon.RegionEndpoint.GetBySystemName(regionEndPoint);
         }
 
 #else
@@ -254,7 +250,8 @@ namespace API.DepotEice.UIL.Managers
                 {
                     BucketName = _bucketName,
                     Key = key,
-                    InputStream = memoryStream
+                    InputStream = memoryStream,
+                    ContentType = file.ContentType
                 };
 
                 PutObjectResponse putObjectResponse = await client.PutObjectAsync(putObjectRequest);

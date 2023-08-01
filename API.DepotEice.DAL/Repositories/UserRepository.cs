@@ -234,17 +234,25 @@ public class UserRepository : RepositoryBase, IUserRepository
     public bool Update(string key, UserEntity entity)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrWhiteSpace(key))
+        {
             throw new ArgumentNullException(nameof(key));
+        }
 
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
-        Command command = new Command("spUsers_UpdateInformations", true);
+        Command command = new Command("spUsers_Update", true);
 
         command.AddParameter("id", entity.Id);
         command.AddParameter("firstName", entity.FirstName);
         command.AddParameter("lastName", entity.LastName);
         command.AddParameter("birthDate", entity.BirthDate);
+        command.AddParameter("mobileNumber", entity.MobileNumber);
+        command.AddParameter("phoneNumber", entity.PhoneNumber);
+        command.AddParameter("gender", entity.Gender);
+
 
         return _connection.ExecuteNonQuery(command) > 0;
     }

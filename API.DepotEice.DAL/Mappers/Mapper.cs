@@ -206,7 +206,9 @@ internal static class Mapper
         {
             Id = record["Id"].ToString() ??
                 throw new NullReferenceException($"The property Id is null"),
-            ProfilePictureId = (int)record["ProfilePictureId"],
+            ProfilePictureId = record["ProfilePictureId"] is DBNull
+                ? null
+                : (int)record["ProfilePictureId"],
             Email = record["Email"] is DBNull ? null : (string)record["Email"],
             NormalizedEmail = (record["NormalizedEmail"] is DBNull or null)
                 ? null
@@ -216,6 +218,7 @@ internal static class Mapper
             NormalizedSchoolEmail = record["NormalizedSchoolEmail"]?.ToString() ?? null,
             FirstName = record["FirstName"] is DBNull ? null : (string)record["FirstName"],
             LastName = record["LastName"] is DBNull ? null : (string)record["LastName"],
+            Gender = record["Gender"] is DBNull ? null : (string)record["Gender"],
             BirthDate = record["BirthDate"] is DBNull ? null : (DateTime)record["BirthDate"],
             MobileNumber = record["MobileNumber"].ToString() ?? null,
             PhoneNumber = record["PhoneNumber"]?.ToString() ?? null,

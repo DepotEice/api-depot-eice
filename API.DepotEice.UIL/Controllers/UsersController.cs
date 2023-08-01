@@ -5,6 +5,7 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -48,7 +49,8 @@ public class UsersController : ControllerBase
         IConfiguration configuration,
         IUserManager userManager,
         IFileManager fileManager,
-        IFileRepository fileRepository)
+        IFileRepository fileRepository
+    )
     {
         if (logger is null)
         {
@@ -150,9 +152,7 @@ public class UsersController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest(
-                "An error occurred while trying to get user's information (/Me), please contact the administrator"
-            );
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
 #endif
         }
     }
@@ -237,15 +237,11 @@ public class UsersController : ControllerBase
     /// <see cref="StatusCodes.Status200OK"/> If the user was successfully updated.
     /// <see cref="StatusCodes.Status400BadRequest"/> If the ID or body is invalid.
     /// <see cref="StatusCodes.Status404NotFound"/> If the user with the specified ID does not exist.
+    /// <see cref="StatusCodes.Status500InternalServerError"/> if there is an error during the upload or database operations.
     /// </returns>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Put(string id, [FromBody] UserForm form)
+    [HttpPut]
+    public async Task<IActionResult> Put([FromBody] UserForm form, [FromQuery] string? id)
     {
-        if (string.IsNullOrEmpty(id))
-        {
-            return BadRequest($"User ID required");
-        }
-
         if (form is null)
         {
             return BadRequest($"The body cannot be null!");
@@ -265,12 +261,19 @@ public class UsersController : ControllerBase
                 return Unauthorized("You must be authenticated to perform this action");
             }
 
-            if (!currentUserId.Equals(id))
+            if (!string.IsNullOrEmpty(id))
             {
-                if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                if (!currentUserId.Equals(id))
                 {
-                    return Unauthorized("You are not authorized to modify other user's information");
+                    if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                    {
+                        return Unauthorized("You are not authorized to modify other user's information");
+                    }
                 }
+            }
+            else
+            {
+                id = currentUserId;
             }
 
             UserEntity? userFromRepo = _userRepository.GetByKey(id);
@@ -282,50 +285,13 @@ public class UsersController : ControllerBase
 
             _mapper.Map(form, userFromRepo);
 
-            if (form.ProfilePicture is not null)
-            {
-                if (!await _fileManager.UploadObjectAsync(form.ProfilePicture, $"profile-picture-{id}"))
-                {
-                    _logger.LogError("{dt} - Uploading the file for user \"{id}\" in AWS failed",
-                        DateTime.Now,
-                        id);
 
-                    return BadRequest(
-                    "An error occurred while trying to upload the profile picture, please contact the administrator"
-                    );
-                }
-
-                FileEntity fileEntity = new FileEntity()
-                {
-                    Key = $"profile-picture-{id}",
-                    Type = form.ProfilePicture.ContentType,
-                    Size = form.ProfilePicture.Length
-                };
-
-                int createdFileId = _fileRepository.Create(fileEntity);
-
-                if (createdFileId == 0)
-                {
-                    _logger.LogError("{dt} - The file for user \"{id}\" was not saved in the database",
-                        DateTime.Now,
-                        id);
-
-                    return BadRequest(
-                        "An error occurred while trying to save the profile picture, please contact the administrator"
-                    );
-                }
-
-                userFromRepo.ProfilePictureId = createdFileId;
-            }
 
             if (!_userRepository.Update(id, userFromRepo))
             {
-                _logger.LogError("{dt} - Updating user \"{id}\" failed",
-                    DateTime.Now,
-                    id);
+                _logger.LogError("{dt} - Updating user \"{id}\" failed", DateTime.Now, id);
 
-                return BadRequest(
-                    "An error occurred while trying to update user's information, please contact the administrator");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
             }
 
             userFromRepo = _userRepository.GetByKey(id);
@@ -336,19 +302,143 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError("{dt} - An exception was thrown during \"{fun}\":\"n{msg}\"\n{stack}",
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}",
                 DateTime.Now,
                 nameof(Put),
                 e.Message,
-                e.StackTrace
-            );
+                e.StackTrace);
 
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest(
-                "An error occurred while trying to update user's information, please contact the administrator"
-            );
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "An error occurred while trying to update user's information, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Endpoint to upload a profile picture for a user.
+    /// </summary>
+    /// <param name="file">The profile picture file to upload.</param>
+    /// <param name="userId">The ID of the user to associate the profile picture with (optional).</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> if the profile picture upload is successful.
+    /// <see cref="StatusCodes.Status400BadRequest"/> if the file is null or missing.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> if the user is not authenticated or not authorized to perform the action.
+    /// <see cref="StatusCodes.Status404NotFound"/> if the requested user does not exist.
+    /// <see cref="StatusCodes.Status500InternalServerError"/> if there is an error during the upload or database operations.
+    /// </returns>
+    [HttpPost(nameof(UploadProfilePicture))]
+    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile file, [FromQuery] string? userId)
+    {
+        try
+        {
+            if (file is null)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                if (!currentUserId.Equals(userId))
+                {
+                    if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                    {
+                        return Unauthorized("You are not authorized to modify other user's information");
+                    }
+                }
+            }
+            else
+            {
+                userId = currentUserId;
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            string fileName = Path.GetRandomFileName().Split('.')[0];
+
+
+            if (!await _fileManager.UploadObjectAsync(file, fileName))
+            {
+                _logger.LogError(
+                    "{dt} - Uploading the file for user \"{id}\" in AWS failed",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            FileEntity fileEntity = new FileEntity()
+            {
+                Key = fileName,
+                Type = file.ContentType,
+                Size = file.Length
+            };
+
+            int createdFileId = _fileRepository.Create(fileEntity);
+
+            if (createdFileId == 0)
+            {
+                _logger.LogError(
+                    "{dt} - The file for user \"{id}\" was not saved in the database",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            userFromRepo.ProfilePictureId = createdFileId;
+
+            if (!_userRepository.Update(userId, userFromRepo))
+            {
+                _logger.LogError("{dt} - Updating user \"{id}\" failed",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(UploadProfilePicture),
+                e.Message,
+                e.StackTrace);
+
+#if DEBUG
+            return BadRequest(e.Message);
+
+#else
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "An error occurred while trying to update user's profile picture, please contact the administrator");
 #endif
         }
     }
@@ -381,7 +471,7 @@ public class UsersController : ControllerBase
     {
         if (passwordForm is null)
         {
-            return BadRequest("The body cannot be null!");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
         }
 
         if (!ModelState.IsValid)
@@ -413,7 +503,7 @@ public class UsersController : ControllerBase
 
             if (!result)
             {
-                return BadRequest("Password update failed!");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
             }
 
             return Ok();
@@ -428,9 +518,7 @@ public class UsersController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest(
-                "An error occurred while trying to update the password, please contact the administrator"
-            );
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
 #endif
         }
     }

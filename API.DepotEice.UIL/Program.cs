@@ -187,9 +187,11 @@ public class Program
         builder.Services.AddScoped<IScheduleFileRepository, ScheduleFileRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+        builder.Services.AddScoped<IFileRepository, FileRepository>();
 
         builder.Services.AddTransient<IDateTimeManager, DateTimeManager>();
         builder.Services.AddTransient<IUserManager, UserManager>();
+        builder.Services.AddTransient<IFileManager, FileManager>();
 
         var app = builder.Build();
 

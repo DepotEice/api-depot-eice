@@ -13,7 +13,7 @@ public class UserEntity
     /// <summary>
     /// Represent <c>Users</c> table's <c>ProfilePictureId</c> column
     /// </summary>
-    public int ProfilePictureId { get; set; }
+    public int? ProfilePictureId { get; set; }
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>Email</c> column
@@ -49,6 +49,8 @@ public class UserEntity
     /// Represent <c>Users</c> table's <c>LastName</c> column
     /// </summary>
     public string? LastName { get; set; } = string.Empty;
+
+    public string? Gender { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>BirthDate</c> column
