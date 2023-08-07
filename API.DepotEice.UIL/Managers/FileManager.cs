@@ -86,7 +86,7 @@ namespace API.DepotEice.UIL.Managers
                 throw new ArgumentNullException($"Cannot find AWS_SECRET_KEY in the environment variables");
 
             string regionEndPoint = Environment.GetEnvironmentVariable("AWS:AWS_REGION_ENDPOINT") ??
-                throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in appsettings.json or secret.json");
+                throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in the environment variables");
 
             _region = Amazon.RegionEndpoint.GetBySystemName(regionEndPoint);
         }
