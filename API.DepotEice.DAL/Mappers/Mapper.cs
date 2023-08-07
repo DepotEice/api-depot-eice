@@ -1,10 +1,92 @@
 ﻿using API.DepotEice.DAL.Entities;
 using System.Data;
+using System.Reflection;
 
 namespace API.DepotEice.DAL.Mappers;
 
 internal static class Mapper
 {
+    /// <summary>
+    /// Map a <see cref="IDataRecord"/> data object to the designated type <typeparamref name="T"/>
+    /// </summary>
+    /// <typeparam name="T">The type of the object to convert to</typeparam>
+    /// <param name="record">The IDataRecord coming from the database</param>
+    /// <returns>
+    /// A new instance of the <typeparamref name="T"/> with all the properties retrieved from the database
+    /// </returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="NullReferenceException"></exception>
+    public static T MapFromDB<T>(this IDataRecord record)
+    {
+        if (record is null)
+        {
+            throw new ArgumentNullException(nameof(record));
+        }
+
+        Type type = typeof(T);
+
+        object? instance = Activator.CreateInstance(type);
+
+        if (instance is null)
+        {
+            throw new NullReferenceException($"Activating an instance of ${type} returned a null object");
+        }
+
+        var objProps = type.GetProperties();
+
+        foreach (PropertyInfo propInfo in objProps)
+        {
+            object? recordProperty = record[propInfo.Name];
+
+            if (recordProperty is DBNull)
+            {
+                propInfo.SetValue(instance, null);
+            }
+            else if (recordProperty?.GetType() == typeof(Guid))
+            {
+                propInfo.SetValue(instance, recordProperty.ToString());
+            }
+            else
+            {
+                propInfo.SetValue(instance, recordProperty);
+            }
+        }
+
+        return (T)instance;
+    }
+
+    public static FileEntity DbToFile(this IDataRecord record)
+    {
+        return new FileEntity()
+        {
+            Id = (int)record["Id"],
+            Key = (string)record["Key"],
+            Path = (string)record["Path"],
+            Size = (long)record["Size"],
+            Type = (string)record["Type"],
+            CreatedAt = (DateTime)record["CreatedAt"],
+            UpdatedAt = (DateTime)record["UpdatedAt"],
+            DeletedAt = (DateTime)record["DeletedAt"]
+        };
+    }
+
+    public static AddressEntity DbToAddress(this IDataRecord record)
+    {
+        return new AddressEntity()
+        {
+            Id = (int)record["Id"],
+            Street = (string)record["Street"],
+            HouseNumber = (string)record["HouseNumber"],
+            Appartment = (string)record["Appartment"],
+            City = (string)record["City"],
+            State = (string)record["State"],
+            ZipCode = (string)record["ZipCode"],
+            Country = (string)record["Country"],
+            IsPrimary = (bool)record["IsPrimary"],
+            UserId = record["UserId"].ToString()
+        };
+    }
+
     public static AppointmentEntity DbToAppointmentEntity(this IDataRecord record)
     {
         return new AppointmentEntity()
@@ -115,17 +197,35 @@ internal static class Mapper
 
     public static UserEntity DbToUser(this IDataRecord record)
     {
+        if (record is null)
+        {
+            throw new ArgumentNullException(nameof(record));
+        }
+
         return new UserEntity()
         {
-            Id = record["Id"].ToString(),
+            Id = record["Id"].ToString() ??
+                throw new NullReferenceException($"The property Id is null"),
+            ProfilePictureId = record["ProfilePictureId"] is DBNull
+                ? null
+                : (int)record["ProfilePictureId"],
             Email = record["Email"] is DBNull ? null : (string)record["Email"],
-            NormalizedEmail = (record["NormalizedEmail"] is DBNull) ? null : (string)record["NormalizedEmail"],
+            NormalizedEmail = (record["NormalizedEmail"] is DBNull or null)
+                ? null
+                : (string)record["NormalizedEmail"],
             EmailConfirmed = (bool)record["EmailConfirmed"],
+            SchoolEmail = (record["SchoolEmail"] is DBNull) ? null : (string)record["SchoolEmail"],
+            NormalizedSchoolEmail = record["NormalizedSchoolEmail"]?.ToString() ?? null,
             FirstName = record["FirstName"] is DBNull ? null : (string)record["FirstName"],
             LastName = record["LastName"] is DBNull ? null : (string)record["LastName"],
+            Gender = record["Gender"] is DBNull ? null : (string)record["Gender"],
             BirthDate = record["BirthDate"] is DBNull ? null : (DateTime)record["BirthDate"],
-            ConcurrencyStamp = record["ConcurrencyStamp"] is DBNull ? null : record["ConcurrencyStamp"].ToString(),
-            SecurityStamp = record["SecurityStamp"] is DBNull ? null : record["SecurityStamp"].ToString(),
+            MobileNumber = record["MobileNumber"].ToString() ?? null,
+            PhoneNumber = record["PhoneNumber"]?.ToString() ?? null,
+            ConcurrencyStamp = record["ConcurrencyStamp"]?.ToString() ??
+                throw new NullReferenceException($"The concurrency stamp property is null!"),
+            SecurityStamp = record["SecurityStamp"]?.ToString() ??
+                throw new NullReferenceException($"The property Id is null"),
             IsActive = (bool)record["IsActive"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = record["UpdatedAt"] is DBNull ? null : (DateTime)record["UpdatedAt"],

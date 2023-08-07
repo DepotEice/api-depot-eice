@@ -57,12 +57,7 @@ namespace API.DepotEice.UIL.Managers
             string regionEndPoint = _configuration["AWS:AWS_REGION_ENDPOINT"] ??
                 throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in appsettings.json or secret.json");
 
-            if (!Enum.TryParse(typeof(Amazon.RegionEndpoint), regionEndPoint, out object? region))
-            {
-                throw new ArgumentException($"Cannot parse {regionEndPoint} to Amazon.RegionEndpoint");
-            }
-
-            _region = (Amazon.RegionEndpoint?)region ?? throw new ArgumentNullException(nameof(region));
+            _region = Amazon.RegionEndpoint.GetBySystemName(regionEndPoint);
         }
 
 #else
@@ -90,18 +85,10 @@ namespace API.DepotEice.UIL.Managers
             _secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_KEY") ??
                 throw new ArgumentNullException($"Cannot find AWS_SECRET_KEY in the environment variables");
 
-            string regionEndPoint = Environment.GetEnvironmentVariable("AWS_REGION_ENDPOINT") ??
+            string regionEndPoint = Environment.GetEnvironmentVariable("AWS:AWS_REGION_ENDPOINT") ??
                 throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in the environment variables");
 
-            string regionEndPoint = _configuration["AWS:AWS_REGION_ENDPOINT"] ??
-                throw new ArgumentNullException($"Cannot find AWS_REGION_ENDPOINT in appsettings.json or secret.json");
-
-            if (!Enum.TryParse(typeof(Amazon.RegionEndpoint), regionEndPoint, out object? region)
-            {
-                throw new ArgumentException($"Cannot parse {regionEndPoint} to Amazon.RegionEndpoint");
-            }
-
-            _region = (Amazon.RegionEndpoint?)region ?? throw new ArgumentNullException(nameof(region));
+            _region = Amazon.RegionEndpoint.GetBySystemName(regionEndPoint);
         }
 #endif
 
@@ -255,6 +242,7 @@ namespace API.DepotEice.UIL.Managers
                     BucketName = _bucketName,
                     Key = key,
                     InputStream = memoryStream,
+                    ContentType = file.ContentType
                 };
 
                 PutObjectResponse putObjectResponse = await client.PutObjectAsync(putObjectRequest);

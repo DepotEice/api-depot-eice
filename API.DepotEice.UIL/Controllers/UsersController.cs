@@ -5,13 +5,15 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace API.DepotEice.UIL.Controllers;
 
-// TODO : Implements methods
-
+/// <summary>
+/// User controller
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class UsersController : ControllerBase
@@ -23,10 +25,32 @@ public class UsersController : ControllerBase
     private readonly IUserTokenRepository _userTokenRepository;
     private readonly IRoleRepository _roleRepository;
     private readonly IUserManager _userManager;
+    private readonly IFileManager _fileManager;
+    private readonly IFileRepository _fileRepository;
 
-    public UsersController(ILogger<UsersController> logger, IMapper mapper, IUserRepository userRepository,
-        IUserTokenRepository userTokenRepository, IRoleRepository roleRepository, IConfiguration configuration,
-        IUserManager userManager)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsersController"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="mapper">The AutoMapper instance.</param>
+    /// <param name="userRepository">The user repository instance.</param>
+    /// <param name="userTokenRepository">The user token repository instance.</param>
+    /// <param name="roleRepository">The role repository instance.</param>
+    /// <param name="configuration">The configuration instance.</param>
+    /// <param name="userManager">The user manager instance.</param>
+    /// <param name="fileManager">The file manager instance.</param>
+    /// <param name="fileRepository">The file repository instance.</param>
+    public UsersController(
+        ILogger<UsersController> logger,
+        IMapper mapper,
+        IUserRepository userRepository,
+        IUserTokenRepository userTokenRepository,
+        IRoleRepository roleRepository,
+        IConfiguration configuration,
+        IUserManager userManager,
+        IFileManager fileManager,
+        IFileRepository fileRepository
+    )
     {
         if (logger is null)
         {
@@ -63,6 +87,16 @@ public class UsersController : ControllerBase
             throw new ArgumentNullException(nameof(userManager));
         }
 
+        if (fileManager is null)
+        {
+            throw new ArgumentNullException(nameof(fileManager));
+        }
+
+        if (fileRepository is null)
+        {
+            throw new ArgumentNullException(nameof(fileRepository));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _userRepository = userRepository;
@@ -70,16 +104,18 @@ public class UsersController : ControllerBase
         _roleRepository = roleRepository;
         _configuration = configuration;
         _userManager = userManager;
+        _fileManager = fileManager;
+        _fileRepository = fileRepository;
     }
 
     /// <summary>
-    /// Get information about the actual authentified user
+    /// Get information about the currently authenticated user.
     /// </summary>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK"/> If everything went properly
-    /// <see cref="StatusCodes.Status400BadRequest"/>
-    /// <see cref="StatusCodes.Status401Unauthorized"/> If the caller is not authentified
-    /// <see cref="StatusCodes.Status404NotFound"/> If the user making doesn't exist
+    /// <see cref="StatusCodes.Status200OK"/> if the operation is successful.
+    /// <see cref="StatusCodes.Status400BadRequest"/> if there is a bad request.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> if the caller is not authenticated.
+    /// <see cref="StatusCodes.Status404NotFound"/> if the requested user does not exist.
     /// </returns>
     [HttpGet(nameof(Me))]
     public IActionResult Me()
@@ -106,21 +142,31 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Me)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\"n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(Me),
+                e.Message,
+                e.StackTrace
+            );
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to get user's information (/Me), please contact the administrator");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
 #endif
         }
     }
 
+    /// <summary>
+    /// Get all users.
+    /// </summary>
+    /// <returns><see cref="StatusCodes.Status200OK"/> if the operation is successful.</returns>
     [HttpGet()]
     public IActionResult Get()
     {
         try
         {
+            var users = _userRepository.GetAll();
             return Ok();
         }
         catch (Exception e)
@@ -167,8 +213,10 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to retrieve users from " +
-                $"repository and return the data.\n{e.Message}\n{e.StackTrace}");
+            _logger.LogError(
+                $"{DateTime.Now} - An exception was thrown when trying to retrieve users from "
+                    + $"repository and return the data.\n{e.Message}\n{e.StackTrace}"
+            );
         }
 
         return Ok();
@@ -180,10 +228,219 @@ public class UsersController : ControllerBase
         return Ok();
     }
 
-    [HttpPut("{id}")]
-    public IActionResult Put(string id, [FromBody] UserForm form)
+    /// <summary>
+    /// Updates a user with the specified ID.
+    /// </summary>
+    /// <param name="id">The ID of the user to update.</param>
+    /// <param name="form">The updated user information.</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the user was successfully updated.
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the ID or body is invalid.
+    /// <see cref="StatusCodes.Status404NotFound"/> If the user with the specified ID does not exist.
+    /// <see cref="StatusCodes.Status500InternalServerError"/> if there is an error during the upload or database operations.
+    /// </returns>
+    [HttpPut]
+    public async Task<IActionResult> Put([FromBody] UserForm form, [FromQuery] string? id)
     {
-        return Ok();
+        if (form is null)
+        {
+            return BadRequest($"The body cannot be null!");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            if (!string.IsNullOrEmpty(id))
+            {
+                if (!currentUserId.Equals(id))
+                {
+                    if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                    {
+                        return Unauthorized("You are not authorized to modify other user's information");
+                    }
+                }
+            }
+            else
+            {
+                id = currentUserId;
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(id);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            _mapper.Map(form, userFromRepo);
+
+
+
+            if (!_userRepository.Update(id, userFromRepo))
+            {
+                _logger.LogError("{dt} - Updating user \"{id}\" failed", DateTime.Now, id);
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            userFromRepo = _userRepository.GetByKey(id);
+
+            UserModel user = _mapper.Map<UserModel>(userFromRepo);
+
+            return Ok(user);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(Put),
+                e.Message,
+                e.StackTrace);
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "An error occurred while trying to update user's information, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Endpoint to upload a profile picture for a user.
+    /// </summary>
+    /// <param name="file">The profile picture file to upload.</param>
+    /// <param name="userId">The ID of the user to associate the profile picture with (optional).</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> if the profile picture upload is successful.
+    /// <see cref="StatusCodes.Status400BadRequest"/> if the file is null or missing.
+    /// <see cref="StatusCodes.Status401Unauthorized"/> if the user is not authenticated or not authorized to perform the action.
+    /// <see cref="StatusCodes.Status404NotFound"/> if the requested user does not exist.
+    /// <see cref="StatusCodes.Status500InternalServerError"/> if there is an error during the upload or database operations.
+    /// </returns>
+    [HttpPost(nameof(UploadProfilePicture))]
+    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile file, [FromQuery] string? userId)
+    {
+        try
+        {
+            if (file is null)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                if (!currentUserId.Equals(userId))
+                {
+                    if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                    {
+                        return Unauthorized("You are not authorized to modify other user's information");
+                    }
+                }
+            }
+            else
+            {
+                userId = currentUserId;
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            string fileName = Path.GetRandomFileName().Split('.')[0];
+
+
+            if (!await _fileManager.UploadObjectAsync(file, fileName))
+            {
+                _logger.LogError(
+                    "{dt} - Uploading the file for user \"{id}\" in AWS failed",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            FileEntity fileEntity = new FileEntity()
+            {
+                Key = fileName,
+                Type = file.ContentType,
+                Size = file.Length
+            };
+
+            int createdFileId = _fileRepository.Create(fileEntity);
+
+            if (createdFileId == 0)
+            {
+                _logger.LogError(
+                    "{dt} - The file for user \"{id}\" was not saved in the database",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+            userFromRepo.ProfilePictureId = createdFileId;
+
+            if (!_userRepository.Update(userId, userFromRepo))
+            {
+                _logger.LogError("{dt} - Updating user \"{id}\" failed",
+                    DateTime.Now,
+                    userId
+                );
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            }
+
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}",
+                DateTime.Now,
+                nameof(UploadProfilePicture),
+                e.Message,
+                e.StackTrace);
+
+#if DEBUG
+            return BadRequest(e.Message);
+
+#else
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                "An error occurred while trying to update user's profile picture, please contact the administrator");
+#endif
+        }
     }
 
     [HttpDelete("{id}")]
@@ -214,7 +471,7 @@ public class UsersController : ControllerBase
     {
         if (passwordForm is null)
         {
-            return BadRequest("The body cannot be null!");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
         }
 
         if (!ModelState.IsValid)
@@ -233,27 +490,35 @@ public class UsersController : ControllerBase
 
             if (!userId.Equals(passwordForm.UserId))
             {
-                return Unauthorized("The password you are trying to reset is not associated to your account!");
+                return Unauthorized(
+                    "The password you are trying to reset is not associated to your account!"
+                );
             }
 
-            bool result = _userRepository.UpdatePassword(passwordForm.UserId, passwordForm.Password, GetSalt());
+            bool result = _userRepository.UpdatePassword(
+                passwordForm.UserId,
+                passwordForm.Password,
+                GetSalt()
+            );
 
             if (!result)
             {
-                return BadRequest("Password update failed!");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
             }
 
             return Ok();
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : " +
-                $"\"{e.Message}\"\n\"{e.Message}\"");
+            _logger.LogError(
+                $"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : "
+                    + $"\"{e.Message}\"\n\"{e.Message}\""
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
 #endif
         }
     }
@@ -263,9 +528,10 @@ public class UsersController : ControllerBase
 #if DEBUG
         return _configuration.GetValue<string>("AppSettings:Secret");
 #else
-        return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
-            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
-                $"\"PASSWORD_SALT\"");
+        return Environment.GetEnvironmentVariable("PASSWORD_SALT")
+            ?? throw new NullReferenceException(
+                $"{DateTime.Now} - There is no environment variable named " + $"\"PASSWORD_SALT\""
+            );
 #endif
     }
 }

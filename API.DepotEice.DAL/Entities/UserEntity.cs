@@ -11,14 +11,29 @@ public class UserEntity
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
+    /// Represent <c>Users</c> table's <c>ProfilePictureId</c> column
+    /// </summary>
+    public int? ProfilePictureId { get; set; }
+
+    /// <summary>
     /// Represent <c>Users</c> table's <c>Email</c> column
     /// </summary>
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>NormalizedEmail</c> column
     /// </summary>
-    public string NormalizedEmail { get; set; } = string.Empty;
+    public string? NormalizedEmail { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Email address provided by the establishment
+    /// </summary>
+    public string? SchoolEmail { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Normalized version of the property <see cref="SchoolEmail"/>
+    /// </summary>
+    public string? NormalizedSchoolEmail { get; set; } = string.Empty;
 
     /// <summary>
     /// Represents the boolean value true or false for email address activation.
@@ -28,17 +43,29 @@ public class UserEntity
     /// <summary>
     /// Represent <c>Users</c> table's <c>FirstName</c> column
     /// </summary>
-    public string FirstName { get; set; } = string.Empty;
+    public string? FirstName { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>LastName</c> column
     /// </summary>
-    public string LastName { get; set; } = string.Empty;
+    public string? LastName { get; set; } = string.Empty;
+
+    public string? Gender { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>BirthDate</c> column
     /// </summary>
     public DateTime? BirthDate { get; set; }
+
+    /// <summary>
+    /// The mobile (GSM) number of the user
+    /// </summary>
+    public string? MobileNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The phone (fix) number of the user
+    /// </summary>
+    public string? PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>
     /// Represent <c>Users</c> table's <c>ConcurrencyStamp</c> column
