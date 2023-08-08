@@ -208,6 +208,11 @@ public class AddressesController : ControllerBase
 
             string? currentUserId = _userManager.GetCurrentUserId;
 
+            bool primaryAddressExists = _addressRepository
+                .GetAll()
+                .Where(a => a.UserId.Equals(currentUserId) && a.IsPrimary)
+                .Any();
+
             if (string.IsNullOrEmpty(currentUserId))
             {
                 return Unauthorized($"You must be logged in to create an address");
@@ -215,29 +220,13 @@ public class AddressesController : ControllerBase
 
             addressToCreate.UserId = currentUserId;
 
-            if (addressToCreate.IsPrimary)
+            if (!primaryAddressExists)
             {
-                AddressEntity? primaryAddressFromRepo = _addressRepository
-                    .GetAll()
-                    .Where(a => a.UserId.Equals(currentUserId) && a.IsPrimary)
-                    .SingleOrDefault();
-
-                if (primaryAddressFromRepo is not null)
-                {
-                    primaryAddressFromRepo.IsPrimary = false;
-
-                    if (!_addressRepository.Update(primaryAddressFromRepo.Id, primaryAddressFromRepo))
-                    {
-                        _logger.LogError($"{DateTime.Now} - An error occurred while trying to set the \"IsPrimary\" " +
-                            $"property of the address \"{primaryAddressFromRepo.Id}\" to false");
-
-                        return BadRequest($"An error occurred while trying to create the address. The new address " +
-                            $"cannot be set to primary address");
-                    }
-
-                    _logger.LogInformation($"{DateTime.Now} - The old primary address has successfully been set " +
-                        $"to false");
-                }
+                addressToCreate.IsPrimary = true;
+            }
+            else
+            {
+                addressToCreate.IsPrimary = false;
             }
 
             int addressId = _addressRepository.Create(addressToCreate);

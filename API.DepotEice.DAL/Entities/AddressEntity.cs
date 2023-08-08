@@ -11,9 +11,9 @@ namespace API.DepotEice.DAL.Entities
         public int Id { get; set; }
         public string Street { get; set; } = string.Empty;
         public string HouseNumber { get; set; } = string.Empty;
-        public string Appartment { get; set; } = string.Empty;
+        public string? Appartment { get; set; }
         public string City { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
+        public string? State { get; set; }
         public string ZipCode { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public bool IsPrimary { get; set; }

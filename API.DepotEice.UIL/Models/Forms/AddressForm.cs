@@ -26,7 +26,7 @@ namespace API.DepotEice.UIL.Models.Forms
         /// characters
         /// </summary>
         [MaxLength(15, ErrorMessage = "The appartment number is too long. It should maximum be 15 characters.")]
-        public string Appartment { get; set; } = string.Empty;
+        public string? Appartment { get; set; } = string.Empty;
 
         /// <summary>
         /// The city name. Must be maximum 100 characters
@@ -39,7 +39,7 @@ namespace API.DepotEice.UIL.Models.Forms
         /// The state name. This value is not required. If provided, must be maximum 100 characters
         /// </summary>
         [MaxLength(100, ErrorMessage = "The state name is too long. It should maximum be 100 characters")]
-        public string State { get; set; } = string.Empty;
+        public string? State { get; set; } = string.Empty;
 
         /// <summary>
         /// The postal code (zip code) of the city. Must be maximum 15 characters
