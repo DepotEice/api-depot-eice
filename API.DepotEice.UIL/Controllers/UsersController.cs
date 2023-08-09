@@ -464,14 +464,14 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Update user's password
     /// </summary>
-    /// <param name="passwordForm"></param>
+    /// <param name="passwordUpdateForm"></param>
     /// <returns></returns>
     [HttpPost(nameof(UpdatePassword))]
-    public IActionResult UpdatePassword([FromBody] PasswordForm passwordForm)
+    public IActionResult UpdatePassword([FromBody] PasswordUpdateForm passwordUpdateForm)
     {
-        if (passwordForm is null)
+        if (passwordUpdateForm is null)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            return BadRequest("The password update form is null");
         }
 
         if (!ModelState.IsValid)
@@ -481,44 +481,55 @@ public class UsersController : ControllerBase
 
         try
         {
-            string? userId = User.Claims.SingleOrDefault(c => c.Type.Equals(ClaimTypes.Sid))?.Value;
+            string? currentUserId = _userManager.GetCurrentUserId;
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized("User is not authenticated!");
+                return Unauthorized("User is not authenticated");
             }
 
-            if (!userId.Equals(passwordForm.UserId))
+            UserEntity? userFromRepo = _userRepository.GetByKey(currentUserId);
+
+            if (userFromRepo is null)
             {
-                return Unauthorized(
-                    "The password you are trying to reset is not associated to your account!"
-                );
+                return NotFound("The requested user does not exist");
             }
 
-            bool result = _userRepository.UpdatePassword(
-                passwordForm.UserId,
-                passwordForm.Password,
-                GetSalt()
-            );
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return Forbid("The user is not active");
+            }
+
+            if (string.IsNullOrEmpty(userFromRepo.Email))
+            {
+                return BadRequest("The user does not have an email address");
+            }
+
+            UserEntity? loggedInUserFromRepo = _userRepository.LogIn(userFromRepo.Email, passwordUpdateForm.CurrentPassword, GetSalt());
+
+            if (loggedInUserFromRepo is null)
+            {
+                return BadRequest("The current password is incorrect");
+            }
+
+            bool result = _userRepository.UpdatePassword(currentUserId, passwordUpdateForm.NewPassword, GetSalt());
 
             if (!result)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+                return BadRequest("The password could not be updated");
             }
 
             return Ok();
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                $"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" : "
-                    + $"\"{e.Message}\"\n\"{e.Message}\""
-            );
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdatePassword)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            return BadRequest("An error occurred while trying to update the password, please contact the administrator");
 #endif
         }
     }
