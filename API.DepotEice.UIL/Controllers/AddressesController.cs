@@ -259,6 +259,90 @@ public class AddressesController : ControllerBase
     }
 
     /// <summary>
+    /// Set the address with the given ID as primary for the currently logged in user
+    /// </summary>
+    /// <param name="id">The ID of the address</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> If the address was successfully set as primary or if the address was already
+    /// <see cref="StatusCodes.Status400BadRequest"/> If the id is 0 or less, if the update failed or if an exception was thrown
+    /// <see cref="StatusCodes.Status401Unauthorized"/> If the user is not logged in or if the user is trying to set another
+    /// user's address as primary
+    /// <see cref="StatusCodes.Status404NotFound"/> If there is no address with the given ID
+    /// </returns>
+    [HttpPost("SetPrimary/{id}")]
+    public IActionResult SetPrimary(int id)
+    {
+        if (id <= 0)
+        {
+            return BadRequest($"The provided address id is invalid, please provide a correct value");
+        }
+
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized($"You must be logged in to set an address as primary");
+            }
+
+            AddressEntity? addressEntity = _addressRepository.GetByKey(id);
+
+            if (addressEntity is null)
+            {
+                return NotFound($"Could not find any address with id : \"{id}\"");
+            }
+
+            if (!addressEntity.UserId.Equals(currentUserId))
+            {
+                return Unauthorized($"The currently logged in user is not allowed to set another user's address as primary");
+            }
+
+            if (addressEntity.IsPrimary)
+            {
+                return Ok($"The address with id : \"{id}\" is already the primary address");
+            }
+
+            var addressesFromRepo = _addressRepository.GetAll().Where(a => a.UserId.Equals(currentUserId));
+
+            foreach (var addressFromRepo in addressesFromRepo)
+            {
+                if(addressFromRepo.Id != id)
+                {
+                    addressFromRepo.IsPrimary = false;
+                    bool updateAddressFromRepoResult = _addressRepository.Update(addressFromRepo.Id, addressFromRepo);
+                    if (!updateAddressFromRepoResult)
+                    {
+                        return BadRequest($"The address with id : \"{addressFromRepo.Id}\" couldn't be set as not primary");
+                    }
+                }
+            }
+
+            addressEntity.IsPrimary = true;
+
+            bool updateSuccess = _addressRepository.Update(id, addressEntity);
+
+            if (!updateSuccess)
+            {
+                return BadRequest($"The address with id : \"{id}\" couldn't be set as primary");
+            }
+
+            return Ok($"The address with id : \"{id}\" was successfully set as primary");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(SetPrimary)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to set the primary address, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
     /// Update the address with the given ID with the new data in the form
     /// </summary>
     /// <param name="id">The ID of the address to update</param>
