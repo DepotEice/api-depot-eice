@@ -500,12 +500,12 @@ public class UsersController : ControllerBase
                 return Forbid("The user is not active");
             }
 
-            if (string.IsNullOrEmpty(userFromRepo.Email))
+            if (string.IsNullOrEmpty(userFromRepo.NormalizedEmail))
             {
                 return BadRequest("The user does not have an email address");
             }
 
-            UserEntity? loggedInUserFromRepo = _userRepository.LogIn(userFromRepo.Email, passwordUpdateForm.CurrentPassword, GetSalt());
+            UserEntity? loggedInUserFromRepo = _userRepository.LogIn(userFromRepo.NormalizedEmail, passwordUpdateForm.CurrentPassword, GetSalt());
 
             if (loggedInUserFromRepo is null)
             {
@@ -537,12 +537,11 @@ public class UsersController : ControllerBase
     private string GetSalt()
     {
 #if DEBUG
-        return _configuration.GetValue<string>("AppSettings:Secret");
+        return _configuration.GetValue<string>("AppSettings:Salt");
 #else
-        return Environment.GetEnvironmentVariable("PASSWORD_SALT")
-            ?? throw new NullReferenceException(
-                $"{DateTime.Now} - There is no environment variable named " + $"\"PASSWORD_SALT\""
-            );
+        return Environment.GetEnvironmentVariable("PASSWORD_SALT") ??
+            throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named " +
+                $"\"PASSWORD_SALT\"");
 #endif
     }
 }
