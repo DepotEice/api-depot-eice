@@ -8,6 +8,11 @@
         public string Id { get; set; } = string.Empty;
 
         /// <summary>
+        /// The ID of the profile picture file 
+        /// </summary>
+        public int? ProfilePictureId { get; set; }
+
+        /// <summary>
         /// User main email address
         /// </summary>
         public string Email { get; set; } = string.Empty;

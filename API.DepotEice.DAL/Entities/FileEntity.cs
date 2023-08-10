@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace API.DepotEice.DAL.Entities
 {
+    // TODO: Add the creator of the file and the last editor of the file
+    // TODO: Add "permission" on the file by referencing a role or something like that
     public class FileEntity
     {
         public int Id { get; set; }
