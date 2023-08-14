@@ -113,7 +113,7 @@ namespace API.DepotEice.UIL.Managers
             {
                 AmazonS3Config config = new AmazonS3Config
                 {
-                    RegionEndpoint = _region as Amazon.RegionEndpoint
+                    RegionEndpoint = Amazon.RegionEndpoint.EUWest3
                 };
 
                 using IAmazonS3 client = new AmazonS3Client(_accessKey, _secretKey, config);
@@ -174,7 +174,7 @@ namespace API.DepotEice.UIL.Managers
             {
                 AmazonS3Config config = new()
                 {
-                    RegionEndpoint = _region as Amazon.RegionEndpoint
+                    RegionEndpoint = Amazon.RegionEndpoint.EUWest3
                 };
 
                 using IAmazonS3 client = new AmazonS3Client(_accessKey, _secretKey, config);
@@ -193,7 +193,7 @@ namespace API.DepotEice.UIL.Managers
                     return false;
                 }
 
-                return deleteObjectResponse.HttpStatusCode == HttpStatusCode.OK;
+                return deleteObjectResponse.HttpStatusCode == HttpStatusCode.NoContent;
             }
             catch (Exception e)
             {
@@ -228,7 +228,7 @@ namespace API.DepotEice.UIL.Managers
             {
                 AmazonS3Config config = new()
                 {
-                    RegionEndpoint = _region as Amazon.RegionEndpoint
+                    RegionEndpoint = Amazon.RegionEndpoint.EUWest3
                 };
 
                 using IAmazonS3 client = new AmazonS3Client(_accessKey, _secretKey, config);

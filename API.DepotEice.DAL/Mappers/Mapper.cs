@@ -65,8 +65,8 @@ internal static class Mapper
             Size = (long)record["Size"],
             Type = (string)record["Type"],
             CreatedAt = (DateTime)record["CreatedAt"],
-            UpdatedAt = (DateTime)record["UpdatedAt"],
-            DeletedAt = (DateTime)record["DeletedAt"]
+            UpdatedAt = record["UpdatedAt"] is DBNull ? null : (DateTime)record["UpdatedAt"],
+            DeletedAt = record["DeletedAt"] is DBNull ? null : (DateTime)record["DeletedAt"]
         };
     }
 
