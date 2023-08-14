@@ -159,20 +159,7 @@ public class UserRepository : RepositoryBase, IUserRepository
 
         Command command = new Command(query);
 
-        var idata = new List<IDataRecord>();
-
-        var users = _connection.ExecuteReader(command, user =>
-        {
-            idata.Add(user);
-            return user.DbToUser();
-        });
-
-
-        foreach (var id in idata)
-        {
-            var user = id.MapFromDB<UserEntity>();
-        }
-        return users;
+        return _connection.ExecuteReader(command, user => Mapper.DbToUser(user));
     }
 
     /// <summary>
@@ -246,6 +233,7 @@ public class UserRepository : RepositoryBase, IUserRepository
         Command command = new Command("spUsers_Update", true);
 
         command.AddParameter("id", entity.Id);
+        command.AddParameter("profilePictureId", entity.ProfilePictureId);
         command.AddParameter("firstName", entity.FirstName);
         command.AddParameter("lastName", entity.LastName);
         command.AddParameter("birthDate", entity.BirthDate);

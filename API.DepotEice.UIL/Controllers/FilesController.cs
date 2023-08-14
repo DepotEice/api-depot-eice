@@ -75,6 +75,28 @@ namespace API.DepotEice.UIL.Controllers
             _mapper = mapper;
         }
 
+        [HttpGet]
+        public IActionResult GetFiles()
+        {
+            try
+            {
+                var filesFromRepo = _fileRepository.GetAll();
+
+                return Ok(filesFromRepo);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFiles)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to get files, please contact the administrator");
+#endif
+            }
+        }
+
         /// <summary>
         /// Get the default profile picture file
         /// </summary>
@@ -129,7 +151,7 @@ namespace API.DepotEice.UIL.Controllers
         /// <see cref="FileContentResult"/> The file if it exists.
         /// </returns>
         [HttpGet("ById/{id}")]
-        public async Task<IActionResult> GetFileAsync(int id)
+        public async Task<IActionResult> GetFileByIdAsync(int id)
         {
             if (id <= 0)
             {
@@ -162,7 +184,7 @@ namespace API.DepotEice.UIL.Controllers
             catch (Exception e)
             {
                 _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFileAsync)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+                    $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 
 #if DEBUG
                 return BadRequest(e.Message);

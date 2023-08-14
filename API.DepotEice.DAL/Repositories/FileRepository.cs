@@ -93,7 +93,7 @@ namespace API.DepotEice.DAL.Repositories
 
         public FileEntity? GetByKey(string key)
         {
-            string query = "SELECT * FROM Files WHERE key = @Key";
+            string query = "SELECT * FROM Files WHERE Key = @Key";
 
             Command command = new Command(query, false);
 

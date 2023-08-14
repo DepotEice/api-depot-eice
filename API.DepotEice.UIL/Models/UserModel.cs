@@ -10,7 +10,7 @@
         /// <summary>
         /// The ID of the profile picture file 
         /// </summary>
-        public int? ProfilePictureId { get; set; }
+        public string ProfilePictureUrl { get; set; } = string.Empty;
 
         /// <summary>
         /// User main email address

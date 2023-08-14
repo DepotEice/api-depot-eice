@@ -109,6 +109,196 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// Update the profile picture of the user
+    /// </summary>
+    /// <param name="files">The form file</param>
+    /// <param name="id">The id of the user</param>
+    /// <returns></returns>
+    [HttpPost("UpdateProfilePicture")]
+    public async Task<IActionResult> UpdateProfilePictureAsync([FromForm] IEnumerable<IFormFile> files, [FromQuery] string? id)
+    {
+        try
+        {
+            // Check if the list of files contains more than one file
+            if (Request.Form.Files.Count != 1)
+            {
+                return BadRequest("You can only upload one file at a time");
+            }
+
+            // Set the user ID
+            string? userId = string.Empty;
+
+            // Check if the user ID is provided
+            if (!string.IsNullOrEmpty(id))
+            {
+                // Check if the user is in the direction role
+                if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                {
+                    return Unauthorized("The user is not authorized to create a profile picture for another user");
+                }
+            }
+            // If the user ID is not provided, check if the user is authenticated
+            else
+            {
+                userId = _userManager.GetCurrentUserId;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("The user is not authenticated");
+                }
+            }
+
+            // Get the user from the database
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            // Check if the user exists, if not return a 404 error
+            if (userFromRepo is null)
+            {
+                return NotFound($"There is no user with this user ID \"{id}\"");
+            }
+
+            // Check if the user has a profile picture ID
+            if (userFromRepo.ProfilePictureId.HasValue && userFromRepo.ProfilePictureId.Value >= 0)
+            {
+                // Get the existing file from the database
+                FileEntity? existingFileFromRepo = _fileRepository.GetByKey(userFromRepo.ProfilePictureId.Value);
+
+                // Check if the file exists
+                if (existingFileFromRepo is not null)
+                {
+                    // Delete the file from the file manager (AWS)
+                    if (!await _fileManager.DeleteObjectAsync(existingFileFromRepo.Key))
+                    {
+                        return BadRequest("The deletion of the existing file failed");
+                    }
+
+                    // Delete the file from the database
+                    if (!_fileRepository.Delete(existingFileFromRepo.Id))
+                    {
+                        return BadRequest($"The deletion of the existing file failed in the database for the " +
+                            $"file with the ID \"{existingFileFromRepo.Id}\"");
+                    }
+                }
+                // If the file does not exist in the database but the user has a profile picture ID, log a warning
+                else
+                {
+                    _logger.LogWarning("The user has a profile picture ID but the file does not exist in the database");
+                }
+            }
+
+            // Get the file from the list of files
+            IFormFile? file = Request.Form.Files.SingleOrDefault();
+
+            // Check if the file is null
+            if (file is null)
+            {
+                return BadRequest("The file is not defined");
+            }
+
+            // Check if the file is empty
+            if (file.Length == 0)
+            {
+                return BadRequest("The file is empty");
+            }
+
+            // Check if the file is too big
+            if (file.Length > 2097152)
+            {
+                return BadRequest("The file is too big");
+            }
+
+            if (!file.ContentType.Contains("image/"))
+            {
+                return BadRequest("The file is not an image");
+            }
+
+            string? fileExtension = file.ContentType.Split("/").LastOrDefault();
+
+            if(string.IsNullOrEmpty(fileExtension))
+            {
+                return BadRequest("The file has no extension");
+            }
+
+            // Check if the file is a valid image
+            if (!fileExtension.Equals("png", StringComparison.OrdinalIgnoreCase) &&
+                !fileExtension.Equals("jpg", StringComparison.OrdinalIgnoreCase) &&
+                !fileExtension.Equals("jpeg", StringComparison.OrdinalIgnoreCase) &&
+                !fileExtension.Equals("gif", StringComparison.OrdinalIgnoreCase) &&
+                !fileExtension.Equals("svg", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("The file is not a valid image");
+            }
+
+            // Create the file name
+            string? fileName = $"{userId}-profile-picture-{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.{fileExtension}";
+
+            // Upload the file to the file manager (AWS)
+            if (!await _fileManager.UploadObjectAsync(file, fileName))
+            {
+                return BadRequest("The upload of the file failed");
+            }
+
+            FileModel? fileFromAWS = await _fileManager.GetObjectAsync(fileName);
+
+            // Check if the file was uploaded to the file manager (AWS), if not return a 400 error
+            if (fileFromAWS is null)
+            {
+                return BadRequest("An error occurred while trying to save the profile picture");
+            }
+
+            // Create the file entity
+            FileEntity? fileEntity = new()
+            {
+                Key = fileName,
+                Size = file.Length,
+                Type = file.ContentType,
+                CreatedAt = DateTime.Now,
+            };
+
+            // Save the file to the database
+            int newFileId = _fileRepository.Create(fileEntity);
+
+            // Check if the file was saved to the database, if not return a 400 error
+            if (newFileId <= 0)
+            {
+                return BadRequest("An error occurred while trying to save the profile picture");
+            }
+
+            // Get the file from the database
+            FileEntity? fileFromRepo = _fileRepository.GetByKey(newFileId);
+
+            // Check if the file exists, if not return a 404 error
+            if (fileFromRepo is null)
+            {
+                return NotFound("An error occurred while trying to save the profile picture");
+            }
+
+            // Update the user with the new profile picture ID
+            userFromRepo.ProfilePictureId = newFileId;
+
+            // Save the user to the database, if not return a 400 error
+            if (!_userRepository.Update(userId, userFromRepo))
+            {
+                return BadRequest("The file could not be saved to the user");
+            }
+
+            // Return 200 OK with the file
+            return File(fileFromAWS.Content, fileFromAWS.ContentType);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UpdateProfilePictureAsync)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to change the profile picture, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
     /// Get information about the currently authenticated user.
     /// </summary>
     /// <returns>
@@ -142,17 +332,77 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                "{dt} - An exception was thrown during \"{fun}\":\"n{msg}\"\n{stack}",
-                DateTime.Now,
-                nameof(Me),
-                e.Message,
-                e.StackTrace
-            );
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Me)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while trying to update user's information, please contact the administrator");
+            return BadRequest("An error occurred while trying to get user's info, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Get the profile picture of the user with the given ID. If no ID is given, the profile picture of the currently 
+    /// authenticated user is returned.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet("ProfilePicture")]
+    public async Task<IActionResult> GetProfilePicture([FromQuery] string? id)
+    {
+        try
+        {
+            string? userId = string.IsNullOrEmpty(id) ? _userManager.GetCurrentUserId : id;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User must be authenticated!");
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"There is no user with this user ID \"{userId}\"");
+            }
+
+            int? userProfilePictureId = userFromRepo.ProfilePictureId;
+
+            FileModel? fileFromAws = null;
+
+            if (!userProfilePictureId.HasValue)
+            {
+                fileFromAws = await _fileManager.GetObjectAsync(Utils.DefaultProfilePicture);
+            }
+            else
+            {
+                FileEntity? fileFromRepo = _fileRepository.GetByKey(userProfilePictureId.Value);
+
+                if (fileFromRepo is null)
+                {
+                    return NotFound($"There is no file with this file ID \"{userProfilePictureId.Value}\"");
+                }
+
+                fileFromAws = await _fileManager.GetObjectAsync(fileFromRepo.Key);
+            }
+
+            if (fileFromAws is null)
+            {
+                return NotFound($"There is no file for \"{Utils.DefaultProfilePicture}\"");
+            }
+
+            return File(fileFromAws.Content, fileFromAws.ContentType, fileFromAws.FileName);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetProfilePicture)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's profile picture, please contact the administrator");
 #endif
         }
     }
@@ -166,12 +416,22 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var users = _userRepository.GetAll();
-            return Ok();
+            IEnumerable<UserEntity> users = _userRepository.GetAll();
+
+            IEnumerable<UserModel> usersToReturn = _mapper.Map<IEnumerable<UserModel>>(users);
+
+            return Ok(usersToReturn);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's, please contact the administrator");
+#endif
         }
     }
 
