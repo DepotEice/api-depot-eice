@@ -134,9 +134,13 @@ public class AuthController : ControllerBase
                     "administration");
             }
 
-            // TODO : Adapt the following code because it is really strange
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("This account has been deleted, please contact the administration");
+            }
 
             LoggedInUserModel? user = userFromRepo.Map<LoggedInUserModel>();
+
             user.Roles = _roleRepository.GetUserRoles(user.Id).Select(x => x.Map<RoleModel>());
 
             TokenModel token = new()
