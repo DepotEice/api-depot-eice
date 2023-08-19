@@ -6,6 +6,7 @@ using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
 using Mailjet.Client.Resources;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -214,7 +215,7 @@ public class UsersController : ControllerBase
 
             string? fileExtension = file.ContentType.Split("/").LastOrDefault();
 
-            if(string.IsNullOrEmpty(fileExtension))
+            if (string.IsNullOrEmpty(fileExtension))
             {
                 return BadRequest("The file has no extension");
             }
@@ -307,6 +308,7 @@ public class UsersController : ControllerBase
     /// <see cref="StatusCodes.Status401Unauthorized"/> if the caller is not authenticated.
     /// <see cref="StatusCodes.Status404NotFound"/> if the requested user does not exist.
     /// </returns>
+    [Authorize]
     [HttpGet(nameof(Me))]
     public IActionResult Me()
     {
@@ -703,10 +705,68 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
-    public IActionResult Delete(string id)
+    /// <summary>
+    /// Endpoint to delete the user account, either the current user or the one specified in the query parameter.
+    /// </summary>
+    /// <param name="id">The id of the user to delete (optional)</param>
+    /// <returns></returns>
+    [Authorize]
+    [HttpDelete]
+    public IActionResult Delete(string? id = null)
     {
-        return Ok();
+        try
+        {
+            string? userId = id;
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                {
+                    return Unauthorized("You are not authorized to delete other user's account");
+                }
+            }
+            else
+            {
+                userId = _userManager.GetCurrentUserId;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The user account is already deleted");
+            }
+
+            var deleteResult = _userRepository.Delete(userId);
+
+            if (!deleteResult)
+            {
+                return BadRequest("The user account could not be deleted");
+            }
+
+            return Ok("The user account was successfully deleted");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}", DateTime.Now,
+                nameof(UploadProfilePicture), e.Message, e.StackTrace);
+
+#if DEBUG
+            return BadRequest(e.Message);
+
+#else
+            return BadRequest("An error occurred while trying to delete the user account, please contact the administrator");
+#endif
+        }
     }
 
     [HttpGet("{uId}/Appointments")]
