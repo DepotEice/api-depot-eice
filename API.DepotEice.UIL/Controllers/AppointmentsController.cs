@@ -11,6 +11,9 @@ using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
+/// <summary>
+/// Appointment controller
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class AppointmentsController : ControllerBase
@@ -22,6 +25,16 @@ public class AppointmentsController : ControllerBase
     private readonly IOpeningHoursRepository _openingHoursRepository;
     private readonly IDateTimeManager _dateTimeManager;
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="mapper"></param>
+    /// <param name="appointmentRepository"></param>
+    /// <param name="userManager"></param>
+    /// <param name="openingHoursRepository"></param>
+    /// <param name="dateTimeManager"></param>
+    /// <exception cref="ArgumentNullException"></exception>
     public AppointmentsController(ILogger<AppointmentsController> logger, IMapper mapper,
         IAppointmentRepository appointmentRepository, IUserManager userManager,
         IOpeningHoursRepository openingHoursRepository, IDateTimeManager dateTimeManager)
@@ -330,7 +343,7 @@ public class AppointmentsController : ControllerBase
                 return BadRequest("The delete failed");
             }
 
-            return Ok("The appointment was successfully deleted");
+            return Ok(result);
         }
         catch (Exception ex)
         {
