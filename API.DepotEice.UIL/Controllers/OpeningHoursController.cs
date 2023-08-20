@@ -10,6 +10,9 @@ using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
+/// <summary>
+/// Opening hours controller
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 public class OpeningHoursController : ControllerBase
@@ -19,6 +22,14 @@ public class OpeningHoursController : ControllerBase
     private readonly IOpeningHoursRepository _openingHoursRepository;
     private readonly IDateTimeManager _dateTimeManager;
 
+    /// <summary>
+    /// Constructor
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="mapper"></param>
+    /// <param name="openingHoursRepository"></param>
+    /// <param name="dateTimeManager"></param>
+    /// <exception cref="ArgumentNullException"></exception>
     public OpeningHoursController(ILogger<OpeningHoursController> logger, IMapper mapper,
         IOpeningHoursRepository openingHoursRepository, IDateTimeManager dateTimeManager)
     {
@@ -49,17 +60,40 @@ public class OpeningHoursController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves the opening hours of the educational institution.
+    /// Get the opening hours, you can filter by day, month and year
     /// </summary>
-    /// <returns>OpeningHour items</returns>
+    /// <param name="day">The day of the month</param>
+    /// <param name="month">The month</param>
+    /// <param name="year">The year</param>
+    /// <returns></returns>
     [HttpGet]
-    public IActionResult Get()
+    public IActionResult Get(int? day = null, int? month = null, int? year = null)
     {
         var openingHours = _mapper.Map<IEnumerable<OpeningHoursModel>>(_openingHoursRepository.GetAll());
+
+        if (day.HasValue)
+        {
+            openingHours = openingHours.Where(oh => oh.OpenAt.Day == day.Value);
+        }
+
+        if (month.HasValue)
+        {
+            openingHours = openingHours.Where(oh => oh.OpenAt.Month == month.Value);
+        }
+
+        if (year.HasValue)
+        {
+            openingHours = openingHours.Where(oh => oh.OpenAt.Year == year.Value);
+        }
 
         return Ok(openingHours);
     }
 
+    /// <summary>
+    /// Retrieves the opening hour by id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public IActionResult Get(int id)
     {
@@ -68,13 +102,18 @@ public class OpeningHoursController : ControllerBase
         return Ok(openingHour);
     }
 
-    //[HasRoleAuthorize(RolesEnum.DIRECTION)]
+    /// <summary>
+    /// Creates a new opening hour
+    /// </summary>
+    /// <param name="openingHours"></param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpPost]
     public IActionResult Post([FromBody] OpeningHoursForm openingHours)
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest();
+            return BadRequest(ModelState);
         }
 
         try
@@ -103,6 +142,12 @@ public class OpeningHoursController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Updates an opening hour
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="openingHours"></param>
+    /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpPut("{id}")]
     public IActionResult Put(int id, [FromBody] OpeningHoursForm openingHours)
@@ -145,7 +190,12 @@ public class OpeningHoursController : ControllerBase
         }
     }
 
-    //[HasRoleAuthorize(RolesEnum.DIRECTION)]
+    /// <summary>
+    /// Deletes an opening hour
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {

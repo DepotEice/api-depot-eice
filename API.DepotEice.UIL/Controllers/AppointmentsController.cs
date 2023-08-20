@@ -64,65 +64,125 @@ public class AppointmentsController : ControllerBase
         _dateTimeManager = dateTimeManager;
     }
 
+    /// <summary>
+    /// Get all the appointments, if the user is not in the direction role, the user id will be empty for all appointments
+    /// except the ones that belong to the user
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.GUEST, true)]
     [HttpGet]
-    public IActionResult Get()
+    public IActionResult Get(DateTime? date)
     {
-        if (User.Claims.Any(c => c.Value.Equals(DIRECTION_ROLE)))
+        try
         {
-            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository.GetAll());
-            return Ok(appointments);
-        }
-        else
-        {
-            string? userId = _userManager.GetCurrentUserId;
+            string? currentUserId = _userManager.GetCurrentUserId;
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized();
+                return Unauthorized("You must be authenticated to perform this action");
             }
 
-            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(_appointmentRepository
-                .GetAll()
-                .Where(a => a.UserId.Equals(userId)));
+            var appointmentsFromRepo = _appointmentRepository.GetAll();
+
+            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(appointmentsFromRepo);
+
+            if (!_userManager.IsInRole(DIRECTION_ROLE))
+            {
+                foreach (var appointment in appointments)
+                {
+                    if (!appointment.UserId.Equals(currentUserId))
+                    {
+                        appointment.UserId = string.Empty;
+                    }
+                }
+            }
+
+            if (date.HasValue)
+            {
+                appointments = appointments.Where(a =>
+                    a.StartAt.Year == date.Value.Year &&
+                    a.StartAt.Month == date.Value.Month &&
+                    a.StartAt.Day == date.Value.Day);
+            }
 
             return Ok(appointments);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Get)}.\"" +
+                    $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to get appointments, please contact the administrator");
+#endif
         }
     }
 
+    /// <summary>
+    /// Get a specific appointment by id
+    /// </summary>
+    /// <param name="id">the id of the appointment</param>
+    /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.GUEST)]
     [HttpGet("{id}")]
     public IActionResult Get(int id)
     {
-        if (id <= 0)
+        try
         {
-            return BadRequest();
+            if (id <= 0)
+            {
+                return BadRequest();
+            }
+
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            var appointmentFromRepo = _appointmentRepository.GetByKey(id);
+
+            if (appointmentFromRepo is null)
+            {
+                return NotFound($"No appointment with ID {id} found");
+            }
+
+            var appointment = _mapper.Map<AppointmentModel>(appointmentFromRepo);
+
+            if (!appointment.UserId.Equals(userId) && !_userManager.IsInRole(DIRECTION_ROLE))
+            {
+                return Unauthorized("You are not allowed to retrieve another user's appointment");
+            }
+
+            return Ok(appointment);
         }
-
-        string? userId = _userManager.GetCurrentUserId;
-
-        if (string.IsNullOrEmpty(userId))
+        catch (Exception ex)
         {
-            return NotFound();
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Get)}.\"" +
+                   $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest($"An error occurred while trying to get an appointment by its id \"{id}\", please contact the administrator");
+#endif
         }
-
-        var appointments = _mapper.Map<AppointmentModel>(_appointmentRepository.GetByKey(id));
-
-        if (appointments.UserId != userId && !_userManager.IsInRole(DIRECTION_ROLE))
-        {
-            return Unauthorized();
-        }
-
-        return Ok(appointments);
     }
 
+    /// <summary>
+    /// Create an appointment
+    /// </summary>
+    /// <param name="appointment"></param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.GUEST)]
     [HttpPost]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Post([FromBody] AppointmentForm appointment)
     {
-        // TODO :  Check if the appointment is between opening hours and don't overlap any other appointment
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -132,10 +192,10 @@ public class AppointmentsController : ControllerBase
         {
             if (!_dateTimeManager.DateTimeIsAvailable(appointment))
             {
-                return BadRequest();
+                return BadRequest("The date and time you choose is not available");
             }
 
-            if (!_appointmentRepository.GetAll().Any(a => a.StartAt == appointment.StartAt))
+            if (_appointmentRepository.GetAll().Any(a => a.StartAt == appointment.StartAt))
             {
                 return BadRequest("Hours not available");
             }
@@ -160,80 +220,127 @@ public class AppointmentsController : ControllerBase
 
             var appointmentFromRepo = _appointmentRepository.GetByKey(id);
 
-            return Ok(_mapper.Map<AppointmentModel>(appointmentFromRepo));
+            var appointmentToReturn = _mapper.Map<AppointmentModel>(appointmentFromRepo);
+
+            return Ok(appointmentToReturn);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return BadRequest(e);
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Post)}.\"" +
+                   $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to create an appointment, please contact the administrator");
+#endif
         }
     }
 
+    /// <summary>
+    /// Update an appointment
+    /// </summary>
+    /// <param name="id">The id of the appointment</param>
+    /// <param name="appointment">The appointment form</param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.GUEST)]
     [HttpPut("{id}")]
     public IActionResult Put(int id, [FromBody] AppointmentForm appointment)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The ID must be greater than 0");
+        }
+
         if (!ModelState.IsValid)
         {
-            return BadRequest();
+            return BadRequest(ModelState);
         }
 
         try
         {
             if (!_dateTimeManager.DateTimeIsAvailable(appointment))
             {
-                return BadRequest();
+                return BadRequest("The selected date and time is not available");
             }
 
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return BadRequest();
+                return BadRequest("You must be authenticated to perform this action");
             }
 
-            var appointmentFromRepo = _appointmentRepository.GetByKey(id);
+            AppointmentEntity? appointmentFromRepo = _appointmentRepository.GetByKey(id);
 
             if (appointmentFromRepo is null)
             {
-                return NotFound();
+                return NotFound("The appointment you are trying to update doesn't exist");
             }
-
-            appointmentFromRepo.UserId = userId;
 
             _mapper.Map(appointment, appointmentFromRepo);
 
-            var result = _appointmentRepository.Update(id, appointmentFromRepo);
+            bool result = _appointmentRepository.Update(id, appointmentFromRepo);
 
             if (!result)
             {
-                return BadRequest();
+                return BadRequest("The update of the appointment failed");
             }
 
-            return NoContent();
+            return Ok(appointmentFromRepo);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return BadRequest(e);
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Put)}.\"" +
+                   $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest($"An error occurred while trying to update the appointment with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 
-    [HasRoleAuthorize(RolesEnum.DIRECTION, false)]
+    /// <summary>
+    /// Delete an appointment from the database
+    /// </summary>
+    /// <param name="id">The id of the appointment to delete</param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The ID must be greater than 0");
+        }
+
         try
         {
-            var result = _appointmentRepository.Delete(id);
+            AppointmentEntity? appointmentFromRepo = _appointmentRepository.GetByKey(id);
+
+            if (appointmentFromRepo is null)
+            {
+                return NotFound("The appointment you are trying to delete doesn't exist");
+            }
+
+            bool result = _appointmentRepository.Delete(id);
 
             if (!result)
             {
-                return BadRequest();
+                return BadRequest("The delete failed");
             }
 
-            return NoContent();
+            return Ok("The appointment was successfully deleted");
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return BadRequest(e);
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Delete)}.\"" +
+                   $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest($"An error occurred while trying to delete the appointment with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 

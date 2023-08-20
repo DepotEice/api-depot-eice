@@ -5,12 +5,22 @@ using DevHopTools.Mappers;
 
 namespace API.DepotEice.UIL.Managers
 {
+    /// <summary>
+    /// Date time manager class
+    /// </summary>
     public class DateTimeManager : IDateTimeManager
     {
         private readonly ILogger _logger;
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IOpeningHoursRepository _openingHoursRepository;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="appointmentRepository"></param>
+        /// <param name="openingHoursRepository"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public DateTimeManager(ILogger<DateTimeManager> logger, IAppointmentRepository appointmentRepository,
             IOpeningHoursRepository openingHoursRepository)
         {
@@ -34,6 +44,14 @@ namespace API.DepotEice.UIL.Managers
             _openingHoursRepository = openingHoursRepository;
         }
 
+        /// <summary>
+        /// Verify if the date and time is available for an appointment
+        /// </summary>
+        /// <param name="appointment"></param>
+        /// <returns>
+        /// <c>true</c> If the datetime is available, <c>false</c> otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool DateTimeIsAvailable(AppointmentForm appointment)
         {
             if (appointment is null)
@@ -49,13 +67,18 @@ namespace API.DepotEice.UIL.Managers
                 return false;
             }
 
-            if (!_openingHoursRepository.GetAll().Any(oh => oh.OpenAt < startDate && oh.CloseAt > endDate))
+            var openingHoursFromRepo = _openingHoursRepository.GetAll();
+
+            if (!openingHoursFromRepo.Any(oh => oh.OpenAt <= startDate && oh.CloseAt >= endDate))
             {
                 return false;
             }
 
-            if (_appointmentRepository.GetAll().Any(oh => (startDate > oh.StartAt && startDate < oh.EndAt) ||
-                (endDate > oh.StartAt && endDate < oh.EndAt)))
+            var appointmentFromRepo = _appointmentRepository.GetAll();
+
+            bool appointmentExist = appointmentFromRepo.Any(a => a.StartAt == startDate && a.EndAt == endDate);
+
+            if (appointmentExist)
             {
                 return false;
             }
@@ -63,6 +86,15 @@ namespace API.DepotEice.UIL.Managers
             return true;
         }
 
+        /// <summary>
+        /// Verify if the opening hours is available
+        /// </summary>
+        /// <param name="openingHours">the opening hours form</param>
+        /// <param name="id">the id of the opening hours in the database</param>
+        /// <returns>
+        /// <c>true</c> If the opening hours is available, <c>false</c> otherwise.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public bool OpeningHoursAvailable(OpeningHoursForm openingHours, int id = 0)
         {
             if (openingHours is null)
@@ -73,7 +105,7 @@ namespace API.DepotEice.UIL.Managers
             return !_openingHoursRepository.GetAll().Any(oh =>
                 openingHours.OpenAt >= oh.OpenAt &&
                 openingHours.CloseAt <= oh.CloseAt &&
-                (id != 0 ? oh.Id != id : true));
+                oh.Id != id);
         }
     }
 }
