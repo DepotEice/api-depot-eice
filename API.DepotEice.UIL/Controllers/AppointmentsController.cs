@@ -2,10 +2,12 @@
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Interfaces;
+using API.DepotEice.UIL.Managers;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
-using Microsoft.AspNetCore.Mvc;using static API.DepotEice.UIL.Data.RolesData;
+using Microsoft.AspNetCore.Mvc;
+using static API.DepotEice.UIL.Data.RolesData;
 using static API.DepotEice.UIL.Data.Utils;
 
 namespace API.DepotEice.UIL.Controllers;
@@ -23,6 +25,7 @@ public class AppointmentsController : ControllerBase
     private readonly IUserManager _userManager;
     private readonly IOpeningHoursRepository _openingHoursRepository;
     private readonly IDateTimeManager _dateTimeManager;
+    private readonly IUserRepository _userRepository;
 
     /// <summary>
     /// Constructor
@@ -33,10 +36,11 @@ public class AppointmentsController : ControllerBase
     /// <param name="userManager"></param>
     /// <param name="openingHoursRepository"></param>
     /// <param name="dateTimeManager"></param>
+    /// <param name="userRepository"></param>
     /// <exception cref="ArgumentNullException"></exception>
     public AppointmentsController(ILogger<AppointmentsController> logger, IMapper mapper,
         IAppointmentRepository appointmentRepository, IUserManager userManager,
-        IOpeningHoursRepository openingHoursRepository, IDateTimeManager dateTimeManager)
+        IOpeningHoursRepository openingHoursRepository, IDateTimeManager dateTimeManager, IUserRepository userRepository)
     {
         if (logger is null)
         {
@@ -68,12 +72,18 @@ public class AppointmentsController : ControllerBase
             throw new ArgumentNullException(nameof(dateTimeManager));
         }
 
+        if (userRepository is null)
+        {
+            throw new ArgumentNullException(nameof(userRepository));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _appointmentRepository = appointmentRepository;
         _userManager = userManager;
         _openingHoursRepository = openingHoursRepository;
         _dateTimeManager = dateTimeManager;
+        _userRepository = userRepository;
     }
 
     /// <summary>
@@ -343,7 +353,7 @@ public class AppointmentsController : ControllerBase
     /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
         if (id <= 0)
         {
@@ -359,14 +369,41 @@ public class AppointmentsController : ControllerBase
                 return NotFound("The appointment you are trying to delete doesn't exist");
             }
 
-            bool result = _appointmentRepository.Delete(id);
+            bool deleteResult = _appointmentRepository.Delete(id);
 
-            if (!result)
+            if (!deleteResult)
             {
                 return BadRequest("The delete failed");
             }
 
-            return Ok(result);
+            UserEntity? userFromRepo = _userRepository.GetByKey(appointmentFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                return BadRequest("The user doesn't exist");
+            }
+
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The user is deleted");
+            }
+
+            string? userName = $"{userFromRepo.LastName} {userFromRepo.FirstName}";
+            string? email = userFromRepo.Email;
+
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(email))
+            {
+                return BadRequest("The user doesn't have a name or an email");
+            }
+
+            var emailResult = await MailManager.SendAppointmentDeletedMail(userName, appointmentFromRepo.StartAt, email);
+
+            if (!emailResult)
+            {
+                _logger.LogError($"{DateTime.Now} - Sending email returned false");
+            }
+
+            return Ok(deleteResult && emailResult);
         }
         catch (Exception ex)
         {
@@ -380,45 +417,74 @@ public class AppointmentsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Accept an appointment
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
-    [HttpGet($"{nameof(Accept)}/{{id}}")]
-    public IActionResult Accept(int id)
+    [HttpPut($"{{id}}/{nameof(Accept)}")]
+    public async Task<IActionResult> Accept(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The provided id is incorrect");
+        }
+
         try
         {
-            var result = _appointmentRepository.AppointmentDecision(id, true);
+            AppointmentEntity? appointmentFromRepo = _appointmentRepository.GetByKey(id);
 
-            if (!result)
+            if (appointmentFromRepo is null)
             {
-                return BadRequest();
+                return NotFound("The appointment you are trying to accept doesn't exist");
             }
 
-            return Ok();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e);
-        }
-    }
+            bool activationResult = _appointmentRepository.AppointmentDecision(id, true);
 
-    [HasRoleAuthorize(RolesEnum.DIRECTION)]
-    [HttpGet($"{nameof(Cancel)}/{{id}}")]
-    public IActionResult Cancel(int id)
-    {
-        try
-        {
-            var result = _appointmentRepository.AppointmentDecision(id, false);
-
-            if (!result)
+            if (!activationResult)
             {
-                return BadRequest();
+                return BadRequest("Accepting the appointment failed");
             }
 
-            return Ok();
+            UserEntity? userFromRepo = _userRepository.GetByKey(appointmentFromRepo.UserId);
+
+            if (userFromRepo is null)
+            {
+                return BadRequest("The user doesn't exist");
+            }
+
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The user is deleted");
+            }
+
+            string? userName = $"{userFromRepo.LastName} {userFromRepo.FirstName}";
+            string? email = userFromRepo.Email;
+
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(email))
+            {
+                return BadRequest("The user doesn't have a name or an email");
+            }
+
+            var emailResult = await MailManager.SendAppointmentConfirmedEmail(userName, id, email);
+
+            if (!emailResult)
+            {
+                _logger.LogError($"{DateTime.Now} - Sending confirmation email returned false");
+            }
+
+            return Ok(activationResult && emailResult);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return BadRequest(e);
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(Accept)}.\"" +
+                   $"{ex.Message}\n{ex.StackTrace}");
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest($"An error occurred while trying to accept the appointment with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 }
