@@ -5,9 +5,8 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using System.Reflection.Metadata.Ecma335;
-using static API.DepotEice.UIL.Data.RolesData;
+using Microsoft.AspNetCore.Mvc;using static API.DepotEice.UIL.Data.RolesData;
+using static API.DepotEice.UIL.Data.Utils;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -81,11 +80,12 @@ public class AppointmentsController : ControllerBase
     /// Get all the appointments, if the user is not in the direction role, the user id will be empty for all appointments
     /// except the ones that belong to the user
     /// </summary>
-    /// <param name="date"></param>
+    /// <param name="date">The date and time</param>
+    /// <param name="range">The range to select when selecting a date</param>
     /// <returns></returns>
     [HasRoleAuthorize(RolesEnum.GUEST, true)]
     [HttpGet]
-    public IActionResult Get(DateTime? date)
+    public IActionResult Get(DateTime? date, DateRange range = DateRange.Day)
     {
         try
         {
@@ -113,10 +113,33 @@ public class AppointmentsController : ControllerBase
 
             if (date.HasValue)
             {
-                appointments = appointments.Where(a =>
-                    a.StartAt.Year == date.Value.Year &&
-                    a.StartAt.Month == date.Value.Month &&
-                    a.StartAt.Day == date.Value.Day);
+
+                switch (range)
+                {
+                    case DateRange.Day:
+                        appointments = appointments.Where(a =>
+                            a.StartAt.Year == date.Value.Year &&
+                            a.StartAt.Month == date.Value.Month &&
+                            a.StartAt.Day == date.Value.Day);
+                        break;
+                    case DateRange.Week:
+                        appointments = appointments.Where(a =>
+                            a.StartAt.Year == date.Value.Year &&
+                            a.StartAt.Month == date.Value.Month &&
+                            (a.StartAt.Day < date.Value.AddDays(7).Day && a.StartAt.Day > date.Value.AddDays(-7).Day));
+                        break;
+                    case DateRange.Month:
+                        appointments = appointments.Where(a =>
+                            a.StartAt.Year == date.Value.Year &&
+                            a.StartAt.Month == date.Value.Month);
+                        break;
+                    case DateRange.Year:
+                        appointments = appointments.Where(a => a.StartAt.Year == date.Value.Year);
+                        break;
+                    default:
+                        _logger.LogError("The date range is not valid");
+                        break;
+                }
             }
 
             return Ok(appointments);
