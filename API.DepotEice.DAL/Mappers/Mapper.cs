@@ -119,6 +119,7 @@ internal static class Mapper
         return new ArticleEntity()
         {
             Id = (int)record["Id"],
+            MainImageId = (int)record["MainImageId"],
             Title = (string)record["Title"],
             Body = (string)record["Body"],
             CreatedAt = (DateTime)record["CreatedAt"],

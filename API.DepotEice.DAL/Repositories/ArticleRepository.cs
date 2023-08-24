@@ -44,15 +44,18 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
 
         Command command = new Command("spArticleCreate", true);
 
+        command.AddParameter("mainImageId", entity.MainImageId);
         command.AddParameter("title", entity.Title);
         command.AddParameter("body", entity.Body);
         command.AddParameter("pinned", entity.IsPinned);
         command.AddParameter("userId", entity.UserId);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
+        }
 
         return int.Parse(scalarResult);
     }
@@ -85,6 +88,8 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
         string query = "UPDATE [dbo].[Articles] SET [Title] = @title, [Body] = @body WHERE [Id] = @id";
 
         Command command = new Command(query);
+
+        command.AddParameter("mainImageId", entity.MainImageId);
         command.AddParameter("id", key);
         command.AddParameter("title", entity.Title);
         command.AddParameter("body", entity.Body);
@@ -115,22 +120,12 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
             throw new ArgumentOutOfRangeException(nameof(key));
         }
 
-        string query = "UPDATE [dbo].[Articles] SET [DeletedAt] = NULL WHERE [Id] = @id";
+        string query = "UPDATE [dbo].[Articles] SET [DeletedAt] = NULL, [UpdatedAt] = GETDATE() WHERE [Id] = @id";
 
         Command command = new Command(query);
 
         command.AddParameter("id", key);
 
         return _connection.ExecuteNonQuery(command) > 0;
-    }
-
-    public bool ArticleExist(int id)
-    {
-        if (id <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(id));
-        }
-
-        return GetByKey(id) is not null;
     }
 }
