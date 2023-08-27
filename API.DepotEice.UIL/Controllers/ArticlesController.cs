@@ -88,7 +88,7 @@ public class ArticlesController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult Get(int? skip = null, int? top = null)
+    public IActionResult Get(bool? onlyPinned = null, int? skip = null, int? top = null, bool? descending = null)
     {
         try
         {
@@ -99,6 +99,11 @@ public class ArticlesController : ControllerBase
                 return NotFound();
             }
 
+            if (onlyPinned is not null && onlyPinned.Value)
+            {
+                articlesFromRepo = articlesFromRepo.Where(a => a.IsPinned == true);
+            }
+
             if (skip.HasValue)
             {
                 articlesFromRepo = articlesFromRepo.Skip(skip.Value);
@@ -107,6 +112,22 @@ public class ArticlesController : ControllerBase
             if (top.HasValue)
             {
                 articlesFromRepo = articlesFromRepo.Take(top.Value);
+            }
+
+            if (descending.HasValue)
+            {
+                if (descending.Value)
+                {
+                    articlesFromRepo = articlesFromRepo
+                        .OrderByDescending(a => a.UpdatedAt)
+                        .ThenByDescending(a => a.CreatedAt);
+                }
+                else
+                {
+                    articlesFromRepo = articlesFromRepo
+                        .OrderBy(a => a.UpdatedAt)
+                        .ThenBy(a => a.UpdatedAt);
+                }
             }
 
             IEnumerable<ArticleModel> articles = _mapper.Map<IEnumerable<ArticleModel>>(articlesFromRepo);
