@@ -10,6 +10,7 @@ using API.DepotEice.UIL.Models;
 using AutoMapper;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -30,6 +31,7 @@ namespace API.DepotEice.UIL.Controllers
         private readonly IFileManager _fileManager;
         private readonly IFileRepository _fileRepository;
         private readonly IMapper _mapper;
+        private readonly IUserManager _userManager;
 
         /// <summary>
         /// Constructor
@@ -39,9 +41,10 @@ namespace API.DepotEice.UIL.Controllers
         /// <param name="fileManager"></param>
         /// <param name="fileRepository"></param>
         /// <param name="mapper"></param>
+        /// <param name="userManager"></param>
         /// <exception cref="ArgumentNullException"></exception>
         public FilesController(ILogger<FilesController> logger, IConfiguration configuration, IFileManager fileManager,
-            IFileRepository fileRepository, IMapper mapper)
+            IFileRepository fileRepository, IMapper mapper, IUserManager userManager)
         {
             if (logger is null)
             {
@@ -68,11 +71,17 @@ namespace API.DepotEice.UIL.Controllers
                 throw new ArgumentNullException(nameof(mapper));
             }
 
+            if (userManager is null)
+            {
+                throw new ArgumentNullException(nameof(userManager));
+            }
+
             _logger = logger;
             _configuration = configuration;
             _fileManager = fileManager;
             _fileRepository = fileRepository;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
         [HttpGet]
@@ -252,6 +261,7 @@ namespace API.DepotEice.UIL.Controllers
         /// Save a file to the database and to AWS S3 bucket
         /// </summary>
         /// <param name="uploadFiles">The files to upload</param>
+        /// <param name="file">A file</param>
         /// <returns>
         /// <see cref="StatusCodes.Status400BadRequest"/> If the provided file is null or empty or if the file couldn't be uploaded to AWS
         /// or if the file couldn't be saved to the database
@@ -261,77 +271,172 @@ namespace API.DepotEice.UIL.Controllers
         /// <see cref="List{FileEntity}"/> The list of the saved files
         /// </returns>
         [HttpPost]
-        public async Task<IActionResult> SaveFileAsync(IList<IFormFile> uploadFiles)
+        public async Task<IActionResult> SaveFilesAsync([FromForm] IEnumerable<IFormFile>? uploadFiles)
         {
             if (uploadFiles is null)
             {
                 return BadRequest($"{nameof(uploadFiles)} is null");
             }
 
-            if (uploadFiles.Count <= 0)
-            {
-                return BadRequest($"{nameof(uploadFiles)} is empty");
-            }
-
             try
             {
-                List<FileEntity> files = new List<FileEntity>();
+                string? userId = _userManager.GetCurrentUserId;
 
-                foreach (var file in uploadFiles)
+                if (string.IsNullOrEmpty(userId))
                 {
-                    if (file.Length <= 0)
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+
+                List<int> createdFileIds = new();
+
+                foreach (var uploadFile in uploadFiles)
+                {
+                    if (uploadFile is null)
                     {
-                        return BadRequest($"{nameof(file)} is empty");
+                        return BadRequest($"{nameof(uploadFile)} is null");
                     }
 
-                    if (!await _fileManager.UploadObjectAsync(file, file.FileName))
+                    if (uploadFile.Length <= 0)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
+                        return BadRequest($"{nameof(uploadFile)} is empty");
+                    }
+
+                    if (!await _fileManager.UploadObjectAsync(uploadFile, uploadFile.FileName))
+                    {
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be uploaded to " +
                             $"AWS");
 
-                        return BadRequest($"The file \"{file.FileName}\" was not uploaded to AWS");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not uploaded to AWS");
                     }
 
-                    _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully uploaded " +
+                    _logger.LogInformation($"{DateTime.Now} - The file \"{uploadFile.FileName}\" was successfully uploaded " +
                         $"to AWS");
 
-                    FileEntity fileEntity = _mapper.Map<FileEntity>(file);
+                    FileEntity fileEntity = _mapper.Map<FileEntity>(uploadFile);
 
                     int createdFileId = _fileRepository.Create(fileEntity);
 
                     if (createdFileId <= 0)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be saved to " +
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be saved to " +
                             $"the database");
-                        return BadRequest($"The file \"{file.FileName}\" was not saved to the database");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not saved to the database");
                     }
 
-                    _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully saved " +
+                    _logger.LogInformation($"{DateTime.Now} - The file \"{uploadFile.FileName}\" was successfully saved " +
                         $"to the database");
 
                     FileEntity? _fileFromRepo = _fileRepository.GetByKey(createdFileId);
 
                     if (_fileFromRepo is null)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be retrieved " +
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be retrieved " +
                                                        $"from the database");
-                        return BadRequest($"The file \"{file.FileName}\" was not retrieved from the database");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not retrieved from the database");
                     }
 
-                    files.Add(_fileFromRepo);
+                    createdFileIds.Add(createdFileId);
                 }
 
-                return Ok(files);
+                return Ok(createdFileIds);
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(SaveFileAsync)}\" :\n" +
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(SaveFilesAsync)}\" :\n" +
                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
 
 #if DEBUG
                 return BadRequest(e.Message);
 #else
                 return BadRequest("An error occurred while trying to save a file, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Upload a file for the Radzen HTML editor
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns>Object containing the url</returns>
+        [HttpPost("Article")]
+        public async Task<IActionResult> UploadFileHTMLEditorAsync([FromForm] IFormFile file)
+        {
+            try
+            {
+                if (file is null)
+                {
+                    return BadRequest($"{nameof(file)} is null");
+                }
+
+                if (file.Length <= 0)
+                {
+                    return BadRequest($"{nameof(file)} is empty");
+                }
+
+                string? userId = _userManager.GetCurrentUserId;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+
+                string fileName = $"{userId}-{new Random().Next(0, 10000)}-{file.FileName}";
+
+                if (!await _fileManager.UploadObjectAsync(file, fileName))
+                {
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
+                        $"AWS");
+
+                    return BadRequest($"The file \"{file.FileName}\" was not uploaded to AWS");
+                }
+
+                _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully uploaded " +
+                    $"to AWS");
+
+                FileEntity fileEntity = _mapper.Map<FileEntity>(file);
+
+                int createdFileId = _fileRepository.Create(fileEntity);
+
+                if (createdFileId <= 0)
+                {
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be saved to " +
+                        $"the database");
+
+                    return BadRequest($"The file \"{file.FileName}\" was not saved to the database");
+                }
+
+                _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully saved " +
+                    $"to the database");
+
+                FileEntity? _fileFromRepo = _fileRepository.GetByKey(createdFileId);
+
+                if (_fileFromRepo is null)
+                {
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be retrieved " +
+                        $"from the database");
+
+                    return BadRequest($"The file \"{file.FileName}\" was not retrieved from the database");
+                }
+
+
+                var fileModel = await _fileManager.GetObjectAsync(fileName);
+
+                if (fileModel is null)
+                {
+                    return NotFound("The file was not found");
+                }
+
+                return Ok(new { Url = $"https://localhost:7205/api/Files/ById/{createdFileId}" });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UploadFileHTMLEditorAsync)}\" :\n" +
+                    $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to upload a file for the text editor, please contact the administrator");
 #endif
             }
         }
