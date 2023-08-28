@@ -123,6 +123,7 @@ public class AppointmentsController : ControllerBase
 
             if (date.HasValue)
             {
+                DateTime givenDate = date.Value;
 
                 switch (range)
                 {
@@ -133,15 +134,18 @@ public class AppointmentsController : ControllerBase
                             a.StartAt.Day == date.Value.Day);
                         break;
                     case DateRange.Week:
-                        appointments = appointments.Where(a =>
-                            a.StartAt.Year == date.Value.Year &&
-                            a.StartAt.Month == date.Value.Month &&
-                            (a.StartAt.Day < date.Value.AddDays(7).Day && a.StartAt.Day > date.Value.AddDays(-7).Day));
+                        DateTime startOfWeek = givenDate.AddDays(-(int)givenDate.DayOfWeek);
+                        DateTime endOfWeek = startOfWeek.AddDays(6);
+
+                        appointments = appointments.Where(a => a.StartAt >= startOfWeek && a.StartAt <= endOfWeek);
                         break;
                     case DateRange.Month:
+
+                        DateTime endOfMonth = givenDate.AddDays(35);
+
                         appointments = appointments.Where(a =>
                             a.StartAt.Year == date.Value.Year &&
-                            a.StartAt.Month == date.Value.Month);
+                            a.StartAt.Month >= givenDate.Month && a.StartAt.Month <= endOfMonth.Month);
                         break;
                     case DateRange.Year:
                         appointments = appointments.Where(a => a.StartAt.Year == date.Value.Year);
