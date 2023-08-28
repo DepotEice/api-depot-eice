@@ -72,25 +72,38 @@ public class AddressesController : ControllerBase
     [HttpGet]
     public IActionResult GetAddresses()
     {
-        // Get the ID of the currently authenticated user
-        string? currentUserId = _userManager.GetCurrentUserId;
-
-        // Check if the user is logged in
-        if (string.IsNullOrEmpty(currentUserId))
+        try
         {
-            return Unauthorized($"The user requesting the retrieval must be logged in");
+            // Get the ID of the currently authenticated user
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            // Check if the user is logged in
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized($"The user requesting the retrieval must be logged in");
+            }
+
+            // Retrieve all addresses from the repository
+            IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll();
+
+            // Map the addresses to the corresponding model
+            IEnumerable<AddressModel> addresses = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
+
+            // Filter the addresses to only include those belonging to the current user
+            var userAddresses = addresses.Where(a => a.UserId.Equals(currentUserId));
+
+            return Ok(userAddresses);
         }
-
-        // Retrieve all addresses from the repository
-        IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll();
-
-        // Map the addresses to the corresponding model
-        IEnumerable<AddressModel> addresses = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
-
-        // Filter the addresses to only include those belonging to the current user
-        var userAddresses = addresses.Where(a => a.UserId.Equals(currentUserId));
-
-        return Ok(userAddresses);
+        catch (Exception e)
+        {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetAddresses)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+#endif
+        }
     }
 
 
