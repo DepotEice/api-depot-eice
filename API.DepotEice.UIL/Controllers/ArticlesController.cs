@@ -296,18 +296,43 @@ public class ArticlesController : ControllerBase
 
             entity.UserId = userId;
 
-            bool result = _articleRepository.Update(id, entity);
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+            bool result = false;
+
+            if (articleFromRepo is null)
+            {
+                id = _articleRepository.Create(entity);
+
+                if (id <= 0)
+                {
+                    return BadRequest("The article creation failed");
+                }
+
+                result = id > 0;
+            }
+            else
+            {
+                result = _articleRepository.Update(id, entity);
+            }
 
             if (!result)
             {
                 return BadRequest("The update of the article failed");
             }
 
-            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(entity.Id);
+            articleFromRepo = _articleRepository.GetByKey(entity.Id);
 
             if (articleFromRepo is null)
             {
                 return NotFound("The updated article cannot be found");
+            }
+
+            bool pinResult = _articleRepository.ArticlePinDecision(id, form.Pinned);
+
+            if (!pinResult)
+            {
+                return BadRequest("The pin decision of the article failed");
             }
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);

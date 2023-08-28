@@ -14,9 +14,11 @@ public class ArticleRepository : RepositoryBase, IArticleRepository
     public bool ArticlePinDecision(int id, bool isPinned = true)
     {
         if (id <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(id));
+        }
 
-        string query = "UPDATE [dbo].[Articles] SET [Pinned] = @isPinned WHERE [Id] = @id";
+        string query = "UPDATE [dbo].[Articles] SET [IsPinned] = @isPinned WHERE [Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", id);
