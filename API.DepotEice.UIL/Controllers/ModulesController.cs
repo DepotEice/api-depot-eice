@@ -561,11 +561,36 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete a schedule by its ID from a module by its ID
+    /// </summary>
+    /// <param name="mId">The id of the module</param>
+    /// <param name="sId">The id of the schedule</param>
+    /// <returns></returns>
     [HttpDelete("{mId}/Schedules/{sId}")]
     public IActionResult DeleteSchedule(int mId, int sId)
     {
+        if (mId <= 0 || sId <= 0)
+        {
+            return BadRequest("The Module ID and Schedule ID must be greater than 0");
+        }
+
         try
         {
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no Module with ID \"{mId}\"");
+            }
+
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"There is no Schedule with ID \"{sId}\"");
+            }
+
             bool result = _scheduleRepository.Delete(sId);
 
             if (!result)
@@ -574,11 +599,22 @@ public class ModulesController : ControllerBase
                     $"\"{mId}\" Failed");
             }
 
-            return Ok();
+            return Ok(result);
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(DeleteSchedule),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+#endif
         }
     }
 
@@ -734,7 +770,18 @@ public class ModulesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(DeleteScheduleFiles),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+#endif
         }
     }
 
