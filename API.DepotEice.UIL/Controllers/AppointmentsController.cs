@@ -135,7 +135,7 @@ public class AppointmentsController : ControllerBase
                         break;
                     case DateRange.Week:
                         DateTime startOfWeek = givenDate.AddDays(-(int)givenDate.DayOfWeek);
-                        DateTime endOfWeek = startOfWeek.AddDays(6);
+                        DateTime endOfWeek = startOfWeek.AddDays(7);
 
                         appointments = appointments.Where(a => a.StartAt >= startOfWeek && a.StartAt <= endOfWeek);
                         break;

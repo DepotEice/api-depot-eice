@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
@@ -10,7 +11,10 @@ using CloudinaryDotNet.Actions;
 using DevHopTools.Mappers;
 using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Security.Cryptography;
+using static API.DepotEice.UIL.Data.RolesData;
+using static API.DepotEice.UIL.Data.Utils;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -81,22 +85,30 @@ public class ModulesController : ControllerBase
         _userManager = userManager;
     }
 
+    /// <summary>
+    /// Get all the modules
+    /// </summary>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="ModuleModel"/>
+    /// </returns>
     [HttpGet]
-    public IActionResult Get()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ModuleModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult GetModules()
     {
         try
         {
             IEnumerable<ModuleEntity> modulesFromRepo = _moduleRepository.GetAll();
 
-            var modules = _mapper.Map<IEnumerable<ModuleModel>>(modulesFromRepo);
+            IEnumerable<ModuleModel> modules = _mapper.Map<IEnumerable<ModuleModel>>(modulesFromRepo);
 
-            foreach (var module in modules)
+            foreach (ModuleModel module in modules)
             {
-                var usersFromRepo = _moduleRepository.GetModuleUsers(module.Id);
+                IEnumerable<UserEntity> usersFromRepo = _moduleRepository.GetModuleUsers(module.Id);
 
-                foreach (var user in usersFromRepo)
+                foreach (UserEntity user in usersFromRepo)
                 {
-                    var roles = _roleRepository.GetUserRoles(user.Id);
+                    IEnumerable<RoleEntity> roles = _roleRepository.GetUserRoles(user.Id);
 
                     if (roles.Any(r => r.Name.Equals(RolesData.TEACHER_ROLE)))
                     {
@@ -110,16 +122,39 @@ public class ModulesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetModules),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get modules, please contact the administrator");
+#endif
         }
     }
 
+    /// <summary>
+    /// Get the module with the specified ID
+    /// </summary>
+    /// <param name="id">
+    /// The id of the module
+    /// </param>
+    /// <returns>
+    /// <see cref="ModuleModel"/>
+    /// </returns>
     [HttpGet("{id}")]
-    public IActionResult Get(int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ModuleModel))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetModule(int id)
     {
         try
         {
-            var moduleFromRepo = _moduleRepository.GetByKey(id);
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(id);
 
             if (moduleFromRepo is null)
             {
@@ -128,9 +163,9 @@ public class ModulesController : ControllerBase
 
             ModuleModel module = _mapper.Map<ModuleModel>(moduleFromRepo);
 
-            var moduleUsers = _moduleRepository.GetModuleUsers(id, RolesData.TEACHER_ROLE);
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(id, RolesData.TEACHER_ROLE);
 
-            var teacher = moduleUsers.SingleOrDefault();
+            UserEntity? teacher = moduleUsers.SingleOrDefault();
 
             if (teacher is not null)
             {
@@ -141,7 +176,18 @@ public class ModulesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetModule),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get the module, please contact the administrator");
+#endif
         }
     }
 
@@ -394,70 +440,222 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get the schedules. If the user is admin, retrieve all the schedules from the database, otherwise retrieve only
+    /// the schedules of the currently logged in user.
+    /// </summary>
+    /// <param name="selectedDate">
+    /// The date selected by the user. If null, all the schedules are loaded
+    /// </param>
+    /// <param name="range">
+    /// The range of the schedules to load. If not specified and if <paramref name="selectedDate"/> is not null, the
+    /// range is set to Day which is 0
+    /// </param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+    /// </returns>
     [HttpGet("Schedules")]
-    public IActionResult GetSchedules()
+    [HasRoleAuthorize(RolesEnum.STUDENT)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ScheduleModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
+    public IActionResult GetSchedules(DateTime? selectedDate = null, DateRange range = DateRange.Day)
     {
         try
         {
-            IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetAll();
+            bool isDirection = _userManager.IsInRole(DIRECTION_ROLE);
 
-            IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+            IEnumerable<ScheduleModel> schedules;
+
+            if (isDirection)
+            {
+                IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetAll();
+
+                schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+            }
+            else
+            {
+                string? userId = _userManager.GetCurrentUserId;
+
+                if (userId is null)
+                {
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+
+                IEnumerable<ModuleEntity> modulesFromRepo = _moduleRepository.GetUserModules(userId);
+
+                List<ScheduleEntity> userSchedules = new();
+
+                foreach (ModuleEntity module in modulesFromRepo)
+                {
+                    IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(module.Id);
+
+                    userSchedules.AddRange(schedulesFromRepo);
+                }
+
+                schedules = _mapper.Map<IEnumerable<ScheduleModel>>(userSchedules);
+            }
+
+            if (selectedDate.HasValue)
+            {
+                DateTime givenDate = selectedDate.Value;
+
+                switch (range)
+                {
+                    case DateRange.Day:
+                        schedules = schedules
+                            .Where(a =>
+                                a.StartAt.Year == selectedDate.Value.Year &&
+                                a.StartAt.Month == selectedDate.Value.Month &&
+                                a.StartAt.Day == selectedDate.Value.Day)
+                            .ToList();
+                        break;
+                    case DateRange.Week:
+                        DateTime startOfWeek = givenDate.AddDays(-(int)givenDate.DayOfWeek);
+                        DateTime endOfWeek = startOfWeek.AddDays(7);
+
+                        schedules = schedules
+                            .Where(a => a.StartAt >= startOfWeek && a.StartAt <= endOfWeek)
+                            .ToList();
+                        break;
+                    case DateRange.Month:
+
+                        DateTime endOfMonth = givenDate.AddDays(35);
+
+                        schedules = schedules
+                            .Where(a =>
+                                a.StartAt.Year == selectedDate.Value.Year &&
+                                a.StartAt.Month >= givenDate.Month && a.StartAt.Month <= endOfMonth.Month)
+                            .ToList();
+                        break;
+                    case DateRange.Year:
+                        schedules = schedules
+                            .Where(a => a.StartAt.Year == selectedDate.Value.Year)
+                            .ToList();
+                        break;
+                    default:
+                        _logger.LogError("The date range is not valid");
+                        break;
+                }
+            }
 
             return Ok(schedules);
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedules)}\n" +
-                $"{e.Message}\n{e.StackTrace}");
-
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetSchedules),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get the schedules, please contact the administrator");
+#endif
         }
     }
 
+    /// <summary>
+    /// Get the schedules for a module
+    /// </summary>
+    /// <param name="mId">
+    /// The id of the module
+    /// </param>
+    /// <param name="selectedDate">
+    /// The date for which the schedules are requested
+    /// </param>
+    /// <param name="range">
+    /// The date range for which the schedules are requested
+    /// </param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
+    /// </returns>
     [HttpGet("{mId}/Schedules")]
-    public IActionResult GetSchedules(int mId)
+    [HasRoleAuthorize(RolesEnum.STUDENT, andAbove: true)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ScheduleModel>))]
+    public IActionResult GetSchedules(int mId, DateTime? selectedDate = null, DateRange range = DateRange.Day)
     {
+        if (mId <= 0)
+        {
+            return BadRequest($"Invalid module id {mId}");
+        }
+
         try
         {
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized("You must be authenticated to perform this action");
             }
 
-            bool isDirection = _roleRepository.GetUserRoles(userId).Any(r => r.Name.Equals(RolesData.DIRECTION_ROLE));
+            IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(mId);
 
-            if (isDirection)
+            var schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo).ToList();
+
+            if (selectedDate.HasValue)
             {
-                IEnumerable<ScheduleEntity> schedulesFromRepo = _scheduleRepository.GetModuleSchedules(mId);
+                DateTime givenDate = selectedDate.Value;
 
-                IEnumerable<ScheduleModel> schedules = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
+                switch (range)
+                {
+                    case DateRange.Day:
+                        schedules = schedules
+                            .Where(a =>
+                                a.StartAt.Year == selectedDate.Value.Year &&
+                                a.StartAt.Month == selectedDate.Value.Month &&
+                                a.StartAt.Day == selectedDate.Value.Day)
+                            .ToList();
+                        break;
+                    case DateRange.Week:
+                        DateTime startOfWeek = givenDate.AddDays(-(int)givenDate.DayOfWeek);
+                        DateTime endOfWeek = startOfWeek.AddDays(7);
 
-                return Ok(schedules);
+                        schedules = schedules
+                            .Where(a => a.StartAt >= startOfWeek && a.StartAt <= endOfWeek)
+                            .ToList();
+                        break;
+                    case DateRange.Month:
+
+                        DateTime endOfMonth = givenDate.AddDays(35);
+
+                        schedules = schedules
+                            .Where(a =>
+                                a.StartAt.Year == selectedDate.Value.Year &&
+                                a.StartAt.Month >= givenDate.Month && a.StartAt.Month <= endOfMonth.Month)
+                            .ToList();
+                        break;
+                    case DateRange.Year:
+                        schedules = schedules
+                            .Where(a => a.StartAt.Year == selectedDate.Value.Year)
+                            .ToList();
+                        break;
+                    default:
+                        _logger.LogError("The date range is not valid");
+                        break;
+                }
             }
 
-            var userModules = _moduleRepository.GetUserModules(userId);
-
-            List<ScheduleModel> schedulesList = new();
-
-            foreach (var module in userModules)
-            {
-                var schedulesFromRepo = _scheduleRepository.GetModuleSchedules(module.Id);
-
-                IEnumerable<ScheduleModel> schedulesMapped = _mapper.Map<IEnumerable<ScheduleModel>>(schedulesFromRepo);
-
-                schedulesList.AddRange(schedulesMapped);
-            }
-
-            return Ok(schedulesList);
+            return Ok(schedules);
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown when trying to call {nameof(GetSchedules)} " +
-                $"with Module ID {mId}\n{e.Message}\n{e.StackTrace}");
-
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetSchedules),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get module's schedules, please contact the administrator");
+#endif
         }
     }
 
@@ -785,16 +983,60 @@ public class ModulesController : ControllerBase
         }
     }
 
-    [HttpGet("{mId}/Teachers/")]
-    public IActionResult GetTeachers(int mId)
+    /// <summary>
+    /// Get the teacher of the module
+    /// </summary>
+    /// <param name="mId">The id of the module from which we want to retrieve the teacher</param>
+    /// <returns>
+    /// <see cref="UserModel"/> The teacher of the module
+    /// </returns>
+    [HttpGet("{mId}/Teacher/")]
+    public IActionResult GetTeacher(int mId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest("Invalid module id");
+        }
+
         try
         {
-            return Ok();
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no module with ID {mId}");
+            }
+
+            IEnumerable<UserEntity> usersFromRepo = _moduleRepository.GetModuleUsers(mId);
+
+            foreach (UserEntity user in usersFromRepo)
+            {
+                bool isTeacher = _roleRepository.GetUserRoles(user.Id).Any(x => x.Name.Equals(RolesData.TEACHER_ROLE));
+
+                if (isTeacher)
+                {
+                    UserModel userModel = _mapper.Map<UserModel>(user);
+
+                    return Ok(userModel);
+                }
+            }
+
+            return NotFound($"The teacher of the module {mId} could not be found");
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetTeacher),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get the teacher, please contact the administrator");
+#endif
         }
     }
 
