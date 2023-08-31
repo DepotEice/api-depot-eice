@@ -719,9 +719,39 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update a module's schedule
+    /// </summary>
+    /// <param name="mId">
+    /// The id of the module to which the schedule belongs
+    /// </param>
+    /// <param name="sId">
+    /// The id of the schedule
+    /// </param>
+    /// <param name="form">
+    /// The form containing the new schedule data
+    /// </param>
+    /// <returns>
+    /// The newly created schedule
+    /// </returns>
     [HttpPut("{mId}/Schedules/{sId}")]
+    [HasRoleAuthorize(RolesEnum.TEACHER, andAbove: false)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ScheduleModel))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult PutSchedule(int mId, int sId, [FromBody] ScheduleForm form)
     {
+        if (mId <= 0)
+        {
+            return BadRequest($"Invalid module id {mId}");
+        }
+
+        if (sId <= 0)
+        {
+            return BadRequest($"Invalid schedule id {sId}");
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -729,7 +759,36 @@ public class ModulesController : ControllerBase
 
         try
         {
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (userId is null)
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no Module with ID \"{mId}\"");
+            }
+
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(mId);
+
+            if (!moduleUsers.Any(u => u.Id.Equals(userId)))
+            {
+                return Unauthorized("You are not allowed to perform this action");
+            }
+
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"There is no Schedule with ID \"{sId}\"");
+            }
+
             ScheduleEntity scheduleToUpdate = _mapper.Map<ScheduleEntity>(form);
+
             scheduleToUpdate.ModuleId = mId;
 
             bool result = _scheduleRepository.Update(sId, scheduleToUpdate);
@@ -739,11 +798,11 @@ public class ModulesController : ControllerBase
                 return BadRequest($"The update of the Schedule with ID \"{sId}\" failed");
             }
 
-            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+            scheduleFromRepo = _scheduleRepository.GetByKey(sId);
 
             if (scheduleFromRepo is null)
             {
-                return NotFound($"The Schedule with ID \"{sId}\" could not be found");
+                return NotFound($"The updated schedule with ID \"{sId}\" could not be found");
             }
 
             ScheduleModel schedule = _mapper.Map<ScheduleModel>(scheduleFromRepo);
@@ -752,10 +811,18 @@ public class ModulesController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"An exception was thrown when trying to call {nameof(PutSchedule)} width Module " +
-                $"ID \"{mId}\" and Schedule ID \"{sId}\"\n{e.Message}\n{e.StackTrace}");
-
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(PutSchedule),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update a schedule, please contact the administrator");
+#endif
         }
     }
 

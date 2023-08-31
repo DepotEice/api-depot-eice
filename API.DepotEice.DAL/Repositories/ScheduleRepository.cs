@@ -56,7 +56,9 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
     public int Create(ScheduleEntity entity)
     {
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
         Command command = new Command("spSchedules_Create", true);
         command.AddParameter("title", entity.Title);
@@ -65,17 +67,19 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
         command.AddParameter("endsAt", entity.EndAt);
         command.AddParameter("moduleId", entity.ModuleId);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
+        }
 
         return int.Parse(scalarResult);
     }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public ScheduleEntity GetByKey(int key)
+    public ScheduleEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));
@@ -96,19 +100,32 @@ public class ScheduleRepository : RepositoryBase, IScheduleRepository
     public bool Update(int key, ScheduleEntity entity)
     {
         if (key <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(key));
+        }
 
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
-        string query = "UPDATE [dbo].[Schedules] SET [Title] = @title, [Details] = @details, [StartsAt] = @startsAt, [EndsAt] = @endsAt WHERE [Id] = @id";
+        string query =
+            @"UPDATE 
+                [dbo].[Schedules] 
+            SET 
+                [Title] = @title,
+                [Details] = @details,
+                [StartAt] = @startAt,
+                [EndAt] = @endAt 
+            WHERE 
+                [Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", key);
         command.AddParameter("title", entity.Title);
         command.AddParameter("details", entity.Details);
-        command.AddParameter("startsAt", entity.StartAt);
-        command.AddParameter("endsAt", entity.EndAt);
+        command.AddParameter("startAt", entity.StartAt);
+        command.AddParameter("endAt", entity.EndAt);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
