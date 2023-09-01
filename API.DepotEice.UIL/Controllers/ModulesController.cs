@@ -893,49 +893,102 @@ public class ModulesController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+            return BadRequest("An error occurred while trying to delete a schedule, please contact the administrator");
 #endif
         }
     }
 
-    [HttpGet("Schedules/{sId}/Files")]
-    public IActionResult GetScheduleFiles(int sId)
+    /// <summary>
+    /// Get all the files of a schedule
+    /// </summary>
+    /// <param name="mId">
+    /// The id of the module to which the schedule belongs
+    /// </param>
+    /// <param name="sId">
+    /// The id of the schedule to which the files belong
+    /// </param>
+    /// <returns>
+    /// List of files of the schedule
+    /// </returns>
+    [HttpGet("{mId}/Schedules/{sId}/Files")]
+    [HasRoleAuthorize(RolesEnum.STUDENT)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ScheduleFileModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetScheduleFiles(int mId, int sId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest($"Invalid module id {mId}");
+        }
+
+        if (sId <= 0)
+        {
+            return BadRequest($"Invalid schedule id {sId}");
+        }
+
         try
         {
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no Module with ID \"{mId}\"");
+            }
+
+            ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
+
+            if (scheduleFromRepo is null)
+            {
+                return NotFound($"There is no Schedule with ID \"{sId}\"");
+            }
+
             IEnumerable<ScheduleFileEntity> scheduleFilesFromRepo = _scheduleFileRepository.GetScheduleFiles(sId);
 
             List<ScheduleFileModel> scheduleFiles = new();
 
-            foreach (var scheduleFile in scheduleFilesFromRepo)
+            foreach (ScheduleFileEntity scheduleFile in scheduleFilesFromRepo)
             {
-#if DEBUG
-                ScheduleFileModel scheduleFileModel = _mapper.Map<ScheduleFileModel>(scheduleFile);
+                FileEntity? fileFromRepo = _fileRepository.GetByKey(scheduleFile.FileId);
 
-                if (!System.IO.File.Exists(scheduleFileModel.FilePath))
+                if (fileFromRepo is null)
                 {
-                    return NotFound("The file doesn't exist in the file system");
+                    _logger.LogError(
+                        "{date} - The file with ID \"{fileId}\" could not be found",
+                        DateTime.Now,
+                        scheduleFile.FileId
+                    );
+
+                    continue;
                 }
 
-                string fileName = Path.GetFileName(scheduleFileModel.FilePath);
-                string fileExtension = Path.GetExtension(scheduleFileModel.FilePath);
-
-                scheduleFileModel.FileName = fileName;
-                scheduleFileModel.FileExtension = fileExtension;
+                ScheduleFileModel scheduleFileModel = new ScheduleFileModel()
+                {
+                    Id = scheduleFile.Id,
+                    FileName = fileFromRepo.Key,
+                    FileId = fileFromRepo.Id,
+                    ScheduleId = sId
+                };
 
                 scheduleFiles.Add(scheduleFileModel);
-#else
-                Account account = new Account("dhea8umqv", "872675634599566", "RZlkP5LQs1WLXmueNw8iMlh8z_E");
-
-                Cloudinary cloudinary = new Cloudinary(account);
-#endif
             }
 
             return Ok(scheduleFiles);
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetScheduleFiles),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get schedule files, please contact the administrator");
+#endif
         }
     }
 
@@ -1061,16 +1114,65 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Delete a file from a schedule
+    /// </summary>
+    /// <param name="mId">
+    /// The id of the module to which the schedule belongs
+    /// </param>
+    /// <param name="sId">
+    /// The id of the schedule to which the file belongs
+    /// </param>
+    /// <param name="fId">
+    /// The id of the file to delete
+    /// </param>
+    /// <returns>
+    /// true If the file was deleted successfully. false Otherwise
+    /// </returns>
     [HttpDelete("{mId}/Schedules/{sId}/Files/{fId}")]
-    public IActionResult DeleteScheduleFiles(int mId, int sId, int fId)
+    [HasRoleAuthorize(RolesEnum.TEACHER, andAbove: false)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteScheduleFiles(int mId, int sId, int fId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest($"Invalid module id {mId}");
+        }
+
+        if (sId <= 0)
+        {
+            return BadRequest($"Invalid schedule id {sId}");
+        }
+
+        if (fId <= 0)
+        {
+            return BadRequest($"Invalid file id {fId}");
+        }
+
         try
         {
-            var moduleFromRepo = _moduleRepository.GetByKey(mId);
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
 
             if (moduleFromRepo is null)
             {
                 return NotFound($"No module with ID \"{mId}\" was found");
+            }
+
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (userId is null)
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(mId);
+
+            if (!moduleUsers.Any(u => u.Id.Equals(userId)))
+            {
+                return Unauthorized("You are not allowed to perform this action");
             }
 
             ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
@@ -1087,29 +1189,35 @@ public class ModulesController : ControllerBase
                 return NotFound($"No Schedule File with ID \"{fId}\" was found");
             }
 
-            ScheduleFileModel scheduleFile = _mapper.Map<ScheduleFileModel>(scheduleFileFromRepo);
+            FileEntity? fileFromRepo = _fileRepository.GetByKey(scheduleFileFromRepo.FileId);
 
-            int fileId = scheduleFileFromRepo.FileId;
+            if (fileFromRepo is null)
+            {
+                return NotFound($"No File with ID \"{scheduleFileFromRepo.FileId}\" was found");
+            }
 
-            //FileInfo fileInfo = new FileInfo(filePath);
+            bool awsResult = await _fileManager.DeleteObjectAsync(fileFromRepo.Key);
 
-            //try
-            //{
-            //    bool result = _scheduleFileRepository.Delete(fId);
+            if (!awsResult)
+            {
+                return BadRequest($"The file {fileFromRepo.Key} could not be deleted");
+            }
 
-            //    if (!result)
-            //    {
-            //        return BadRequest($"The deletion of the file with ID \"{scheduleFile.Id}\" failed");
-            //    }
+            bool fileResult = _fileRepository.Delete(fileFromRepo.Id);
 
-            //    fileInfo.Delete();
-            //}
-            //catch (Exception e)
-            //{
-            //    return BadRequest(e.Message);
-            //}
+            if (!fileResult)
+            {
+                return BadRequest($"The deletion of the file with ID \"{fileFromRepo.Id}\" failed");
+            }
 
-            return Ok();
+            bool scheduleFileResult = _scheduleFileRepository.Delete(fId);
+
+            if (!scheduleFileResult)
+            {
+                return BadRequest($"The deletion of the file with ID \"{scheduleFileFromRepo.Id}\" failed");
+            }
+
+            return Ok(awsResult && fileResult && scheduleFileResult);
         }
         catch (Exception e)
         {
