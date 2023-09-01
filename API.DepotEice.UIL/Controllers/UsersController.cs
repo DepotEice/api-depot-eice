@@ -640,7 +640,6 @@ public class UsersController : ControllerBase
 
             string fileName = Path.GetRandomFileName().Split('.')[0];
 
-
             if (!await _fileManager.UploadObjectAsync(file, fileName))
             {
                 _logger.LogError(

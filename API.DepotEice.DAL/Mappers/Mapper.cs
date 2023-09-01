@@ -178,7 +178,7 @@ internal static class Mapper
         return new ScheduleFileEntity()
         {
             Id = (int)record["Id"],
-            FilePath = (string)record["FilePath"],
+            FileId = (int)record["FileId"],
             ScheduleId = (int)record["ScheduleId"]
         };
     }

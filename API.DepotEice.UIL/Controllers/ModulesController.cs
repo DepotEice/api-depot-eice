@@ -30,10 +30,13 @@ public class ModulesController : ControllerBase
     private readonly IRoleRepository _roleRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserManager _userManager;
+    private readonly IFileManager _fileManager;
+    private readonly IFileRepository _fileRepository;
 
     public ModulesController(ILogger<ModulesController> logger, IMapper mapper, IModuleRepository moduleRepository,
         IScheduleRepository scheduleRepository, IScheduleFileRepository scheduleFileRepository,
-        IRoleRepository roleRepository, IUserRepository userRepository, IUserManager userManager)
+        IRoleRepository roleRepository, IUserRepository userRepository, IUserManager userManager, IFileManager fileManager,
+        IFileRepository fileRepository)
     {
         if (logger is null)
         {
@@ -75,6 +78,16 @@ public class ModulesController : ControllerBase
             throw new ArgumentNullException(nameof(userManager));
         }
 
+        if (fileManager is null)
+        {
+            throw new ArgumentNullException(nameof(fileManager));
+        }
+
+        if (fileRepository is null)
+        {
+            throw new ArgumentNullException(nameof(fileRepository));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _moduleRepository = moduleRepository;
@@ -83,6 +96,8 @@ public class ModulesController : ControllerBase
         _roleRepository = roleRepository;
         _userRepository = userRepository;
         _userManager = userManager;
+        _fileManager = fileManager;
+        _fileRepository = fileRepository;
     }
 
     /// <summary>
@@ -924,12 +939,40 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Save files to a schedule
+    /// </summary>
+    /// <param name="mId">
+    /// The id of the module to which the schedule belongs
+    /// </param>
+    /// <param name="sId">
+    /// The id of the schedule
+    /// </param>
+    /// <param name="files">
+    /// The list of files to save
+    /// </param>
+    /// <returns></returns>
     [HttpPost("{mId}/Schedules/{sId}/Files")]
-    public IActionResult PostScheduleFiles(int mId, int sId, [FromForm] ScheduleFileForm file)
+    [HasRoleAuthorize(RolesEnum.TEACHER, andAbove: false)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PostScheduleFiles(int mId, int sId, [FromForm] IEnumerable<IFormFile> files)
     {
-        if (!ModelState.IsValid)
+        if (mId <= 0)
         {
-            return BadRequest(ModelState);
+            return BadRequest($"Invalid module id {mId}");
+        }
+
+        if (sId <= 0)
+        {
+            return BadRequest($"Invalid schedule id {sId}");
+        }
+
+        if (files is null || files.Count() <= 0)
+        {
+            return BadRequest("No files were provided");
         }
 
         try
@@ -938,48 +981,83 @@ public class ModulesController : ControllerBase
 
             if (moduleFromRepo is null)
             {
-                return NotFound();
+                return NotFound($"There is no Module with ID \"{mId}\"");
+            }
+
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (userId is null)
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(mId);
+
+            if (!moduleUsers.Any(u => u.Id.Equals(userId)))
+            {
+                return Unauthorized("You are not allowed to perform this action");
             }
 
             ScheduleEntity? scheduleFromRepo = _scheduleRepository.GetByKey(sId);
 
             if (scheduleFromRepo is null)
             {
-                return NotFound();
+                return NotFound($"There is no Schedule with ID \"{sId}\"");
             }
 
-            string filePath = SaveImageAndGetPath(file);
-
-            ScheduleFileEntity entity = new ScheduleFileEntity()
+            foreach (IFormFile file in files)
             {
-                FilePath = filePath,
-                ScheduleId = sId
-            };
+                string fileName = $"{scheduleFromRepo.StartAt:s}-{file.FileName}";
 
-            int scheduleFileId = _scheduleFileRepository.Create(entity);
+                if (!await _fileManager.UploadObjectAsync(file, fileName))
+                {
+                    BadRequest($"The file {file.FileName} could not be uploaded");
+                }
 
-#if DEBUG
-            if (scheduleFileId <= 0)
-            {
-                System.IO.File.Delete(filePath);
-                return BadRequest(nameof(scheduleFileId));
+                FileEntity fileEntity = new()
+                {
+                    Key = fileName,
+                    Type = file.ContentType,
+                    Size = file.Length
+                };
+
+                int createdFileId = _fileRepository.Create(fileEntity);
+
+                if (createdFileId <= 0)
+                {
+                    BadRequest($"The file {file.FileName} could not be saved");
+                }
+
+                ScheduleFileEntity scheduleFileEntity = new ScheduleFileEntity
+                {
+                    ScheduleId = sId,
+                    FileId = createdFileId
+                };
+
+                int createdScheduleFileId = _scheduleFileRepository.Create(scheduleFileEntity);
+
+                if (createdScheduleFileId <= 0)
+                {
+                    BadRequest($"The file {file.FileName} could not be linked to the schedule");
+                }
             }
-#endif
 
-            ScheduleFileEntity? scheduleFileFromRepo = _scheduleFileRepository.GetByKey(scheduleFileId);
-
-            if (scheduleFileFromRepo is null)
-            {
-                return NotFound();
-            }
-
-            ScheduleFileModel? scheduleFile = _mapper.Map<ScheduleFileModel>(scheduleFileFromRepo);
-
-            return Ok(scheduleFile);
+            return NoContent();
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(PostScheduleFiles),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update a schedule, please contact the administrator");
+#endif
         }
     }
 
@@ -1011,25 +1089,25 @@ public class ModulesController : ControllerBase
 
             ScheduleFileModel scheduleFile = _mapper.Map<ScheduleFileModel>(scheduleFileFromRepo);
 
-            string filePath = scheduleFileFromRepo.FilePath;
+            int fileId = scheduleFileFromRepo.FileId;
 
-            FileInfo fileInfo = new FileInfo(filePath);
+            //FileInfo fileInfo = new FileInfo(filePath);
 
-            try
-            {
-                bool result = _scheduleFileRepository.Delete(fId);
+            //try
+            //{
+            //    bool result = _scheduleFileRepository.Delete(fId);
 
-                if (!result)
-                {
-                    return BadRequest($"The deletion of the file with ID \"{scheduleFile.Id}\" failed");
-                }
+            //    if (!result)
+            //    {
+            //        return BadRequest($"The deletion of the file with ID \"{scheduleFile.Id}\" failed");
+            //    }
 
-                fileInfo.Delete();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            //    fileInfo.Delete();
+            //}
+            //catch (Exception e)
+            //{
+            //    return BadRequest(e.Message);
+            //}
 
             return Ok();
         }

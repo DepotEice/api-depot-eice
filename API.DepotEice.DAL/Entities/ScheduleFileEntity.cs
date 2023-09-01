@@ -17,9 +17,9 @@ namespace API.DepotEice.DAL.Entities
         public int Id { get; set; }
 
         /// <summary>
-        /// Represent the <c>FilePath</c> column in the database
+        /// Represent the <c>FileId</c> column in the database
         /// </summary>
-        public string FilePath { get; set; } = string.Empty;
+        public int FileId { get; set; }
 
         /// <summary>
         /// Represent the <c>ScheduleId</c> column in the database

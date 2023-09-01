@@ -26,7 +26,9 @@ public class ScheduleFileRepository : RepositoryBase, IScheduleFileRepository
     public IEnumerable<ScheduleFileEntity> GetScheduleFiles(int scheduleId)
     {
         if (scheduleId <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(scheduleId));
+        }
 
         string query = "SELECT * FROM [dbo].[ScheduleFiles] WHERE [ScheduleId] = @scheduleId";
 
@@ -37,13 +39,16 @@ public class ScheduleFileRepository : RepositoryBase, IScheduleFileRepository
             .ExecuteReader(command, scheduleFile => scheduleFile.DbToScheduleFile());
     }
 
-    #region BASIC CRUD
-
     /// <inheritdoc/>
     /// <exception cref="NotImplementedException"></exception>
     public IEnumerable<ScheduleFileEntity> GetAll()
     {
-        throw new NotImplementedException();
+        string query = "SELECT * FROM [dbo].[ScheduleFiles]";
+
+        Command command = new Command(query);
+
+        return _connection
+            .ExecuteReader(command, scheduleFile => scheduleFile.DbToScheduleFile());
     }
 
     /// <inheritdoc/>
@@ -52,23 +57,27 @@ public class ScheduleFileRepository : RepositoryBase, IScheduleFileRepository
     public int Create(ScheduleFileEntity entity)
     {
         if (entity is null)
+        {
             throw new ArgumentNullException(nameof(entity));
+        }
 
         Command command = new Command("spCreateScheduleFile", true);
-        command.AddParameter("filePath", entity.FilePath);
+        command.AddParameter("fileId", entity.FileId);
         command.AddParameter("scheduleId", entity.ScheduleId);
 
-        string scalarResult = _connection.ExecuteScalar(command).ToString();
+        string? scalarResult = _connection.ExecuteScalar(command).ToString();
 
         if (string.IsNullOrEmpty(scalarResult))
+        {
             throw new DatabaseScalarNullException(nameof(scalarResult));
+        }
 
         return int.Parse(scalarResult);
     }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public ScheduleFileEntity GetByKey(int key)
+    public ScheduleFileEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));
@@ -95,7 +104,9 @@ public class ScheduleFileRepository : RepositoryBase, IScheduleFileRepository
     public bool Delete(int key)
     {
         if (key <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(key));
+        }
 
         string query = "DELETE FROM [dbo].[ScheduleFiles] WHERE [Id] = @id";
 
@@ -104,6 +115,4 @@ public class ScheduleFileRepository : RepositoryBase, IScheduleFileRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }
