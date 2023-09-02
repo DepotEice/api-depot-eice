@@ -1,4 +1,6 @@
-﻿namespace API.DepotEice.UIL.Interfaces
+﻿using API.DepotEice.UIL.Data;
+
+namespace API.DepotEice.UIL.Interfaces
 {
     /// <summary>
     /// 
@@ -21,10 +23,14 @@
         bool IsDirection { get; }
 
         /// <summary>
-        /// Check if User is in role
+        /// Check if the current user has a role in his claims
         /// </summary>
-        /// <param name="role"></param>
-        /// <returns></returns>
+        /// <param name="role">
+        /// The name of the role to check
+        /// </param>
+        /// <returns>
+        /// <see cref="bool"/> true if the user has the role, false otherwise
+        /// </returns>
         bool IsInRole(string role);
     }
 }

@@ -116,7 +116,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         command.AddParameter("userId", userId);
         command.AddParameter("moduleId", moduleId);
 
-        return _connection.ExecuteReader(command, u => (bool?)u["IsActive"]).SingleOrDefault();
+        return _connection.ExecuteReader(command, u => (bool?)u["IsAccepted"]).SingleOrDefault();
     }
 
     /// <summary>
@@ -133,9 +133,21 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     public IEnumerable<ModuleEntity> GetUserModules(string userId)
     {
         if (string.IsNullOrEmpty(userId))
+        {
             throw new ArgumentNullException(nameof(userId));
+        }
 
-        string query = "SELECT m.* FROM [dbo].[UserModules] um INNER JOIN [dbo].[Modules] m ON m.Id = um.[ModuleId] WHERE um.[UserId] = @userId";
+        string query =
+            @"SELECT 
+                m.* 
+            FROM 
+                [dbo].[UserModules] um 
+            INNER JOIN 
+                [dbo].[Modules] m 
+            ON 
+                m.Id = um.[ModuleId] 
+            WHERE 
+                um.[UserId] = @userId";
 
         Command command = new Command(query);
 
@@ -145,22 +157,63 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     }
 
     /// <summary>
-    /// 
+    /// Get all <see cref="ModuleEntity"/> related to <paramref name="userId"/> and <paramref name="role"/>
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="moduleId"></param>
-    /// <returns></returns>
+    /// <param name="moduleId">
+    /// The id of the module
+    /// </param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserModuleEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IEnumerable<UserModuleEntity> GetUserModules(int moduleId)
+    {
+        if (moduleId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
+
+        string query =
+            @"SELECT u.*
+            FROM UserModules AS um
+            INNER JOIN Users AS u ON u.Id = um.UserId
+            WHERE um.ModuleId = @moduleId";
+
+        Command command = new Command(query);
+
+        command.AddParameter("moduleId", moduleId);
+
+        return _connection.ExecuteReader(command, u => u.DBToUserModule());
+    }
+
+    /// <summary>
+    /// Add a user to a module. By default the user is not accepted
+    /// </summary>
+    /// <param name="userId">
+    /// The id of the user
+    /// </param>
+    /// <param name="moduleId">
+    /// The id of the module
+    /// </param>
+    /// <returns>
+    /// <see cref="bool"/> true if the user has been added to the module, false otherwise
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="ArgumentNullException"></exception>
     public bool AddUserToModule(string userId, int moduleId)
     {
         if (moduleId <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
 
         if (string.IsNullOrEmpty(userId))
+        {
             throw new ArgumentNullException(nameof(userId));
+        }
 
         string query = "INSERT INTO [dbo].[UserModules] (UserId, ModuleId) VALUES (@userId, @moduleId)";
+
         Command command = new Command(query);
 
         command.AddParameter("userId", userId);
@@ -169,10 +222,20 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
-    public bool AcceptUser(string userId, int moduleId, bool isAccepted = true)
+    public bool SetUserStatus(string userId, int moduleId, bool isAccepted = true)
     {
-        string query = "UPDATE [dbo].[UserModules] SET [IsAccepted] = @isAccepted WHERE [UserId] = @userId AND [ModuleId] = @moduleId";
+        string query =
+            @"UPDATE 
+                [dbo].[UserModules] 
+            SET 
+                [IsAccepted] = @isAccepted 
+            WHERE 
+                [UserId] = @userId 
+                AND 
+                [ModuleId] = @moduleId";
+
         Command command = new Command(query);
+
         command.AddParameter("userId", userId);
         command.AddParameter("moduleId", moduleId);
         command.AddParameter("isAccepted", isAccepted);
@@ -183,19 +246,24 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     public bool DeleteUserFromModule(string userId, int moduleId)
     {
         if (moduleId <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
 
         if (string.IsNullOrEmpty(userId))
+        {
             throw new ArgumentNullException(nameof(userId));
+        }
 
         string query = "DELETE FROM [dbo].[UsersModules] WHERE [UserId] = @userId AND [ModuleId] = @moduleId";
+
         Command command = new Command(query);
+
         command.AddParameter("userId", userId);
         command.AddParameter("moduleId", moduleId);
+
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #region BASIC CRUD
 
     /// <inheritdoc/>
     public IEnumerable<ModuleEntity> GetAll()
@@ -234,7 +302,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public ModuleEntity GetByKey(int key)
+    public ModuleEntity? GetByKey(int key)
     {
         if (key <= 0)
             throw new ArgumentOutOfRangeException(nameof(key));
@@ -285,6 +353,4 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
 
         return _connection.ExecuteNonQuery(command) > 0;
     }
-
-    #endregion
 }

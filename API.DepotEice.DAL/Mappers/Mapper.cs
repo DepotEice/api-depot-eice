@@ -55,6 +55,17 @@ internal static class Mapper
         return (T)instance;
     }
 
+    public static UserModuleEntity DBToUserModule(this IDataRecord record)
+    {
+        return new UserModuleEntity()
+        {
+            UserId = record["UserId"].ToString()
+                ?? throw new NullReferenceException("UserModules column UserId is null"),
+            ModuleId = (int)record["ModuleId"],
+            IsAccepted = (bool)record["IsAccepted"]
+        };
+    }
+
     public static FileEntity DbToFile(this IDataRecord record)
     {
         return new FileEntity()

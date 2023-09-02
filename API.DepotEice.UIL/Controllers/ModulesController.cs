@@ -309,32 +309,72 @@ public class ModulesController : ControllerBase
     [HttpPost("{mId}/RequestAcceptance")]
     public IActionResult RequestAcceptance(int mId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest("The module id is invalid");
+        }
+
         try
         {
-            var moduleFromRepo = _moduleRepository.GetByKey(mId);
+            string? userId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
 
             if (moduleFromRepo is null)
             {
-                return NotFound(nameof(mId));
+                return NotFound("There is no module with the specified id");
             }
 
             ModuleModel module = _mapper.Map<ModuleModel>(moduleFromRepo);
 
-            var moduleUsers = _moduleRepository.GetModuleUsers(mId, RolesData.TEACHER_ROLE);
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(mId);
 
-            var teacher = moduleUsers.SingleOrDefault();
-
-            if (teacher is not null)
+            if (moduleUsers.Any(mu => mu.Id.Equals(userId)))
             {
-                module.TeacherId = teacher.Id;
+                return BadRequest("You are already requested this module");
             }
 
-            return Ok(module);
+            UserEntity? userEntity = _userRepository.GetByKey(userId);
+
+            if (userEntity is null)
+            {
+                return BadRequest("There is no user with the specified id");
+            }
+
+            if (userEntity.DeletedAt is not null)
+            {
+                return BadRequest("You can't request a module because your account is deleted");
+            }
+
+            if (_userManager.IsInRole(TEACHER_ROLE))
+            {
+                return BadRequest("A teacher cannot ask to join a module");
+            }
+
+            bool result = _moduleRepository.AddUserToModule(userId, mId);
+
+
+            return Ok(result);
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown.\n{e.Message}\n{e.StackTrace}");
-            return BadRequest();
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(RequestAcceptance),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to add user to a module, please contact the administrator");
+#endif
         }
     }
 
@@ -1358,7 +1398,7 @@ public class ModulesController : ControllerBase
         {
             // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
             // cannot be accessible by guests or students. Only by Teacher or Higher
-            bool result = _moduleRepository.AcceptUser(sId, mId, decision);
+            bool result = _moduleRepository.SetUserStatus(sId, mId, decision);
 
             if (!result)
                 return BadRequest("Something went wrong ...");
