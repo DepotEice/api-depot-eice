@@ -84,24 +84,39 @@ namespace API.DepotEice.UIL.Controllers
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Get all the files of the application
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IActionResult GetFiles()
         {
             try
             {
-                var filesFromRepo = _fileRepository.GetAll();
+                string? userId = _userManager.GetCurrentUserId;
 
-                return Ok(filesFromRepo);
+                IEnumerable<FileEntity> filesFromRepo = _fileRepository.GetAll();
+
+                if (!string.IsNullOrEmpty(userId) && _userManager.IsInRole(TEACHER_ROLE))
+                {
+                    return Ok(filesFromRepo);
+                }
+
+                return Ok(filesFromRepo.Where(f => f.DeletedAt is not null));
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFiles)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFiles),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get files, please contact the administrator");
+                return BadRequest("An error occurred while trying to get all the files, please contact the administrator");
 #endif
             }
         }
@@ -134,13 +149,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetDefaultProfilePictureAsync)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetDefaultProfilePictureAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get the default profile picture file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get the default profile picture, please contact the administrator");
 #endif
             }
         }
@@ -192,13 +211,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFileAsync)}\" :\n" +
-                    $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFileByIdAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get a file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get a file by its id, please contact the administrator");
 #endif
             }
         }
@@ -208,12 +231,12 @@ namespace API.DepotEice.UIL.Controllers
         /// </summary>
         /// <param name="fileName">The name/key of the file</param>
         /// <returns>
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the name is null or an empty string or if the file is deleted.
-        /// <br />
-        /// <see cref="StatusCodes.Status404NotFound"/> IF the name doesn't retrieve any file from the database or if 
-        /// the file key doesn't retrieve any file from the AWS S3 bucket.
+        /// The file if it exists.
         /// </returns>
         [HttpGet("ByFileName/{fileName}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         public async Task<IActionResult> GetFileAsync(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -246,13 +269,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFileAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get a file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get a file by its name, please contact the administrator");
 #endif
             }
         }
@@ -261,16 +288,14 @@ namespace API.DepotEice.UIL.Controllers
         /// Save a file to the database and to AWS S3 bucket
         /// </summary>
         /// <param name="uploadFiles">The files to upload</param>
-        /// <param name="file">A file</param>
         /// <returns>
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the provided file is null or empty or if the file couldn't be uploaded to AWS
-        /// or if the file couldn't be saved to the database
-        /// <br />
-        /// <see cref="StatusCodes.Status200OK"/> If the file was successfully uploaded to AWS and saved to the database
-        /// <br />
-        /// <see cref="List{FileEntity}"/> The list of the saved files
+        /// The list of the created file IDs.
         /// </returns>
         [HttpPost]
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<int>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
         public async Task<IActionResult> SaveFilesAsync([FromForm] IEnumerable<IFormFile>? uploadFiles)
         {
             if (uploadFiles is null)
@@ -342,9 +367,13 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(SaveFilesAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(SaveFilesAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
@@ -357,8 +386,14 @@ namespace API.DepotEice.UIL.Controllers
         /// Upload a file for the Radzen HTML editor
         /// </summary>
         /// <param name="file"></param>
-        /// <returns>Object containing the url</returns>
+        /// <returns>
+        /// Object containing the url
+        /// </returns>
         [HttpPost("Article")]
+        [HasRoleAuthorize(RolesEnum.DIRECTION)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
         public async Task<IActionResult> UploadFileHTMLEditorAsync([FromForm] IFormFile file)
         {
             try
@@ -430,13 +465,80 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(UploadFileHTMLEditorAsync)}\" :\n" +
-                    $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(UploadFileHTMLEditorAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to upload a file for the text editor, please contact the administrator");
+                return BadRequest("An error occurred while trying to save a file for the Radzen HTML editor, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Delete a file by its id from the database and AWS
+        /// </summary>
+        /// <param name="fileId">
+        /// The id of the file to delete
+        /// </param>
+        /// <returns></returns>
+        [HttpDelete("/ByFileId/{fileId}")]
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        public async Task<IActionResult> DeleteFileAsync(int fileId)
+        {
+            if (fileId <= 0)
+            {
+                return BadRequest($"The provided file id is invalid");
+            }
+
+            try
+            {
+                FileEntity? fileEntity = _fileRepository.GetByKey(fileId);
+
+                if (fileEntity is null)
+                {
+                    return NotFound($"No file was found with id : \"{fileId}\"");
+                }
+
+                if (fileEntity.DeletedAt is not null)
+                {
+                    return BadRequest($"The file with id : \"{fileId}\" is already deleted");
+                }
+
+                if (!await _fileManager.DeleteObjectAsync(fileEntity.Key))
+                {
+                    return BadRequest($"Couldn't delete the file with id :\"{fileId}\"");
+                }
+
+                if (!_fileRepository.Delete(fileEntity.Id))
+                {
+                    return BadRequest($"Couldn't delete the file with id :\"{fileId}\"");
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(DeleteFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to delete a file by its id, please contact the administrator");
 #endif
             }
         }
@@ -444,16 +546,14 @@ namespace API.DepotEice.UIL.Controllers
         /// <summary>
         /// Delete a file from the database and from AWS S3 bucket
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns>
-        /// <see cref="StatusCodes.Status204NoContent"/> If the file was successfully deleted from the database and from AWS S3 bucket
-        /// <br />
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the provided file name is null or empty or if the file is already deleted
-        /// or if the file couldn't be deleted from the database or from AWS S3 bucket
-        /// <br />
-        /// <see cref="StatusCodes.Status404NotFound"/> If the file couldn't be found in the database
-        /// </returns>
-        [HttpDelete("{fileName}")]
+        /// <param name="fileName">The name of the file to delete</param>
+        /// <returns></returns>
+        [HttpDelete("ByFileName/{fileName}")]
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         public async Task<IActionResult> DeleteFileAsync(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -489,13 +589,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteFileAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(DeleteFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to delete the file, please contact the administrator");
+                return BadRequest("An error occurred while trying to delete a file by its file name, please contact the administrator");
 #endif
             }
         }

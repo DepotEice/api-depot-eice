@@ -72,8 +72,8 @@ internal static class Mapper
         {
             Id = (int)record["Id"],
             Key = (string)record["Key"],
-            Path = (string)record["Path"],
-            Size = (long)record["Size"],
+            Path = record["Path"] is DBNull ? null : (string)record["Path"],
+            Size = record["Size"] is DBNull ? null : (long)record["Size"],
             Type = (string)record["Type"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = record["UpdatedAt"] is DBNull ? null : (DateTime)record["UpdatedAt"],

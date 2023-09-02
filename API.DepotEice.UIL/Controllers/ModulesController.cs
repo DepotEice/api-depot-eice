@@ -439,33 +439,42 @@ public class ModulesController : ControllerBase
     public IActionResult Put(int id, [FromBody] ModuleForm form)
     {
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            ModuleEntity entity = form.Map<ModuleEntity>();
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(id);
 
-            entity.Id = id;
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"Module with ID \"{id}\" doesn't exist");
+            }
 
-            bool result = _moduleRepository.Update(id, entity);
+            moduleFromRepo = form.Map<ModuleEntity>();
+
+            moduleFromRepo.Id = id;
+
+            bool result = _moduleRepository.Update(id, moduleFromRepo);
 
             if (!result)
             {
                 return BadRequest($"The update of Module with ID \"{id}\" failed");
             }
 
-            var moduleFromRepo = _moduleRepository.GetByKey(id);
+            moduleFromRepo = _moduleRepository.GetByKey(id);
 
             if (moduleFromRepo is null)
             {
-                return NotFound($"Recently create module with ID \"{id}\" could not be found");
+                return NotFound($"Recently updated module with ID \"{id}\" could not be found");
             }
 
             ModuleModel? module = _mapper.Map<ModuleModel>(moduleFromRepo);
 
-            var moduleUsers = _moduleRepository.GetModuleUsers(id, RolesData.TEACHER_ROLE);
+            IEnumerable<UserEntity> moduleUsers = _moduleRepository.GetModuleUsers(id, TEACHER_ROLE);
 
-            var teacher = moduleUsers.SingleOrDefault();
+            UserEntity? teacher = moduleUsers.SingleOrDefault();
 
             if (teacher is not null)
             {
@@ -476,7 +485,18 @@ public class ModulesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(Put),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update a module, please contact the administrator");
+#endif
         }
     }
 
