@@ -254,7 +254,7 @@ public class ModulesController : ControllerBase
             foreach (var module in modulesFromRepo)
             {
                 IEnumerable<UserEntity> notAcceptedUsers = _moduleRepository
-                    .GetModuleUsers(module.Id, RolesData.STUDENT_ROLE, false);
+                    .GetModuleUsers(module.Id, STUDENT_ROLE, false);
 
                 var users = _mapper.Map<IEnumerable<UserRequestingModuleModel>>(notAcceptedUsers);
 
@@ -306,8 +306,13 @@ public class ModulesController : ControllerBase
         return Ok(userIsAccepted);
     }
 
-    [HttpPost("{mId}/RequestAcceptance")]
-    public IActionResult RequestAcceptance(int mId)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="mId"></param>
+    /// <returns></returns>
+    [HttpPost("{mId}/Request")]
+    public IActionResult AddUserToModule(int mId)
     {
         if (mId <= 0)
         {
@@ -366,7 +371,7 @@ public class ModulesController : ControllerBase
             _logger.LogError(
                 "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
                 DateTime.Now,
-                nameof(RequestAcceptance),
+                nameof(AddUserToModule),
                 e.Message,
                 e.StackTrace
             );
@@ -1391,23 +1396,107 @@ public class ModulesController : ControllerBase
         }
     }
 
-    [HttpPut("{mId}/Students/{sId}")]
-    public IActionResult StudentAcceptExempt(int mId, string sId, bool decision)
+    /// <summary>
+    /// Set the user status for the module. If the status is true, just change the accepted flag on the module for the 
+    /// user, but if the status is false, remove the user from the module.
+    /// Cannot set the status if the user is the teacher of the module.
+    /// </summary>
+    /// <param name="status">
+    /// The value of the status
+    /// </param>
+    /// <param name="mId">
+    /// The id of the module
+    /// </param>
+    /// <param name="sId">
+    /// The id of the student
+    /// </param>
+    /// <returns></returns>
+    [HttpPut("{mId}/Students/{sId}/Status")]
+    [HasRoleAuthorize(RolesEnum.TEACHER, true)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult SetUserModuleStatus([FromBody] bool status, int mId, string sId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest("Invalid module id");
+        }
+
+        if (string.IsNullOrEmpty(sId))
+        {
+            return BadRequest("Invalid student id");
+        }
+
         try
         {
-            // URL: .../Modules/{moduleId}/Students/{StudentId}?decision=false
-            // cannot be accessible by guests or students. Only by Teacher or Higher
-            bool result = _moduleRepository.SetUserStatus(sId, mId, decision);
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
 
-            if (!result)
-                return BadRequest("Something went wrong ...");
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no module with ID {mId}");
+            }
+
+            UserEntity? userFromRepo = _userRepository.GetByKey(sId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"There is no user with ID {sId}");
+            }
+
+            bool userIsStudent = _roleRepository
+                .GetUserRoles(userFromRepo.Id)
+                .Any(x => x.Name.Equals(STUDENT_ROLE));
+
+            if (!userIsStudent)
+            {
+                return BadRequest($"The user with ID {sId} is not a student");
+            }
+
+            IEnumerable<UserEntity> usersFromRepo = _moduleRepository.GetModuleUsers(mId);
+
+            if (!usersFromRepo.Any(x => x.Id.Equals(sId)))
+            {
+                return NotFound($"The user with ID {sId} is not a student of the module {mId}");
+            }
+
+            bool result;
+
+            if (!status)
+            {
+                result = _moduleRepository.DeleteUserFromModule(sId, mId);
+
+                if (!result)
+                {
+                    return BadRequest("Could not delete the user from the module");
+                }
+            }
+            else
+            {
+                result = _moduleRepository.SetUserStatus(sId, mId, status);
+
+                if (!result)
+                {
+                    return BadRequest("Could not set the status of the user");
+                }
+            }
 
             return NoContent();
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(SetUserModuleStatus),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to set the user status, please contact the administrator");
+#endif
         }
     }
 

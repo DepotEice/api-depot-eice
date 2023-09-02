@@ -94,6 +94,18 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         return _connection.ExecuteReader(command, u => u.DbToUser());
     }
 
+    /// <summary>
+    /// Get the status of the requested user in the module
+    /// </summary>
+    /// <param name="moduleId">
+    /// The id of the module
+    /// </param>
+    /// <param name="userId">
+    /// The id of the suer
+    /// </param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     public bool? GetUserModuleStatus(int moduleId, string userId)
     {
         if (moduleId <= 0)
@@ -243,6 +255,20 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         return _connection.ExecuteNonQuery(command) > 0;
     }
 
+    /// <summary>
+    /// Delete a UserModules record from the database where the user id and module id match
+    /// </summary>
+    /// <param name="userId">
+    /// The id of the user
+    /// </param>
+    /// <param name="moduleId">
+    /// The id of the module
+    /// </param>
+    /// <returns>
+    /// <c>true</c> If the record has been deleted, <c>false</c> otherwise
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     public bool DeleteUserFromModule(string userId, int moduleId)
     {
         if (moduleId <= 0)
@@ -255,7 +281,7 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
             throw new ArgumentNullException(nameof(userId));
         }
 
-        string query = "DELETE FROM [dbo].[UsersModules] WHERE [UserId] = @userId AND [ModuleId] = @moduleId";
+        string query = "DELETE FROM [dbo].[UserModules] WHERE [UserId] = @userId AND [ModuleId] = @moduleId";
 
         Command command = new Command(query);
 
