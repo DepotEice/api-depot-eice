@@ -112,6 +112,7 @@ public class AppointmentsController : ControllerBase
 
             if (!_userManager.IsInRole(DIRECTION_ROLE))
             {
+
                 foreach (var appointment in appointments)
                 {
                     if (!appointment.UserId.Equals(currentUserId))
@@ -166,6 +167,84 @@ public class AppointmentsController : ControllerBase
             return BadRequest(ex.Message);
 #else
             return BadRequest("An error occurred while trying to get appointments, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Get all the appointments, if the user is not in the direction role, the user id will be empty for all appointments
+    /// except the ones that belong to the user
+    /// </summary>
+    /// <param name="date">The date and time</param>
+    /// <param name="range">The range to select when selecting a date</param>
+    /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.GUEST, true)]
+    [HttpGet("Me")]
+    public IActionResult GetMe(DateTime? date, DateRange range = DateRange.Day)
+    {
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action");
+            }
+
+            var appointmentsFromRepo = _appointmentRepository.GetAll().Where(a => a.UserId.Equals(currentUserId));
+
+            var appointments = _mapper.Map<IEnumerable<AppointmentModel>>(appointmentsFromRepo);
+
+            if (date.HasValue)
+            {
+                DateTime givenDate = date.Value;
+
+                switch (range)
+                {
+                    case DateRange.Day:
+                        appointments = appointments.Where(a =>
+                            a.StartAt.Year == date.Value.Year &&
+                            a.StartAt.Month == date.Value.Month &&
+                            a.StartAt.Day == date.Value.Day);
+                        break;
+                    case DateRange.Week:
+                        DateTime startOfWeek = givenDate.AddDays(-(int)givenDate.DayOfWeek);
+                        DateTime endOfWeek = startOfWeek.AddDays(7);
+
+                        appointments = appointments.Where(a => a.StartAt >= startOfWeek && a.StartAt <= endOfWeek);
+                        break;
+                    case DateRange.Month:
+
+                        DateTime endOfMonth = givenDate.AddDays(35);
+
+                        appointments = appointments.Where(a =>
+                            a.StartAt.Year == date.Value.Year &&
+                            a.StartAt.Month >= givenDate.Month && a.StartAt.Month <= endOfMonth.Month);
+                        break;
+                    case DateRange.Year:
+                        appointments = appointments.Where(a => a.StartAt.Year == date.Value.Year);
+                        break;
+                    default:
+                        _logger.LogError("The date range is not valid");
+                        break;
+                }
+            }
+
+            return Ok(appointments);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during {fn}.\"{eMsg}\n{eStr}",
+                DateTime.Now,
+                nameof(GetMe),
+                ex.Message,
+                ex.StackTrace
+            );
+#if DEBUG
+            return BadRequest(ex.Message);
+#else
+            return BadRequest("An error occurred while trying to get current user's appointments, please contact the administrator");
 #endif
         }
     }
@@ -355,7 +434,7 @@ public class AppointmentsController : ControllerBase
     /// </summary>
     /// <param name="id">The id of the appointment to delete</param>
     /// <returns></returns>
-    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [HasRoleAuthorize(RolesEnum.GUEST)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -371,6 +450,18 @@ public class AppointmentsController : ControllerBase
             if (appointmentFromRepo is null)
             {
                 return NotFound("The appointment you are trying to delete doesn't exist");
+            }
+
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return BadRequest("You must be authenticated to perform this action");
+            }
+
+            if (!appointmentFromRepo.UserId.Equals(currentUserId) && !_userManager.IsInRole(DIRECTION_ROLE))
+            {
+                return Unauthorized("You are not allowed to delete another user's appointment");
             }
 
             bool deleteResult = _appointmentRepository.Delete(id);
