@@ -1125,7 +1125,7 @@ public class ModulesController : ControllerBase
 
             foreach (IFormFile file in files)
             {
-                string fileName = $"{scheduleFromRepo.StartAt:s}-{file.FileName}";
+                string fileName = $"{((DateTimeOffset)DateTime.UtcNow).ToUnixTimeMilliseconds()}-{file.FileName}";
 
                 if (!await _fileManager.UploadObjectAsync(file, fileName))
                 {

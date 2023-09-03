@@ -419,14 +419,20 @@ namespace API.DepotEice.UIL.Controllers
 
                 if (!await _fileManager.UploadObjectAsync(file, fileName))
                 {
-                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
-                        $"AWS");
+                    _logger.LogWarning(
+                        "{date} - The file \"{name}\" couldn't be uploaded to AWS",
+                        DateTime.Now,
+                        fileName
+                    );
 
                     return BadRequest($"The file \"{file.FileName}\" was not uploaded to AWS");
                 }
 
-                _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully uploaded " +
-                    $"to AWS");
+                _logger.LogInformation(
+                    "{date} - The file \"{fileName}\" was successfully uploaded to AWS",
+                    DateTime.Now,
+                    fileName
+                );
 
                 FileEntity fileEntity = _mapper.Map<FileEntity>(file);
 
@@ -548,7 +554,7 @@ namespace API.DepotEice.UIL.Controllers
         /// </summary>
         /// <param name="fileName">The name of the file to delete</param>
         /// <returns></returns>
-        [HttpDelete("ByFileName/{fileName}")]
+        [HttpDelete("/ByFileName/{fileName}")]
         [HasRoleAuthorize(RolesEnum.TEACHER)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
