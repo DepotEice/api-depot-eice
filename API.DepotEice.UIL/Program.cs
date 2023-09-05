@@ -131,6 +131,19 @@ public class Program
                 ValidateAudience = true,
                 ValidAudience = jwtAudience
             };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         builder.Services.AddAuthorization(options =>
@@ -193,6 +206,9 @@ public class Program
         builder.Services.AddTransient<IUserManager, UserManager>();
         builder.Services.AddTransient<IFileManager, FileManager>();
 
+        builder.Services.AddSingleton<ChatManager>();
+
+
         var app = builder.Build();
 
         if (app.Environment.IsDevelopment())
@@ -216,7 +232,7 @@ public class Program
 
         app.MapControllers();
 
-        app.MapHub<ChatHub>("/chat-hub");
+        app.MapHub<ChatHub>("/hub/chat");
 
         app.Run();
     }

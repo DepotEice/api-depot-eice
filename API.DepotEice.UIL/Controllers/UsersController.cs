@@ -348,7 +348,7 @@ public class UsersController : ControllerBase
     /// Get the profile picture of the user with the given ID. If no ID is given, the profile picture of the currently 
     /// authenticated user is returned.
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">The id of the user</param>
     /// <returns></returns>
     [HttpGet("ProfilePicture")]
     public async Task<IActionResult> GetProfilePicture([FromQuery] string? id)

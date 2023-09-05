@@ -134,7 +134,7 @@ public class TokenManager : ITokenManager
         }
 
         JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-        byte[] key = Encoding.UTF8.GetBytes(_configuration["JWT:JWT_SECRET"]);
+        byte[] key = Encoding.ASCII.GetBytes(_configuration["JWT:JWT_SECRET"]);
 
         TokenValidationParameters tokenValidationParameters = new TokenValidationParameters()
         {
