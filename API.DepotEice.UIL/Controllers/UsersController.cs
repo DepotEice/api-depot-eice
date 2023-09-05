@@ -452,12 +452,17 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get the user by the given ID.
+    /// </summary>
+    /// <param name="id">The user id</param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public IActionResult Get(string id)
     {
         if (string.IsNullOrEmpty(id))
         {
-            return BadRequest($"Provide the correct ID");
+            return BadRequest($"The id is invalid");
         }
 
         try
@@ -475,13 +480,14 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError(
-                $"{DateTime.Now} - An exception was thrown when trying to retrieve users from "
-                    + $"repository and return the data.\n{e.Message}\n{e.StackTrace}"
-            );
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+#endif
         }
-
-        return Ok();
     }
 
     [HttpPost]
@@ -633,7 +639,6 @@ public class UsersController : ControllerBase
             }
 
             string fileName = Path.GetRandomFileName().Split('.')[0];
-
 
             if (!await _fileManager.UploadObjectAsync(file, fileName))
             {

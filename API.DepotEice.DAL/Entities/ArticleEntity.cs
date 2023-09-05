@@ -17,6 +17,11 @@ namespace API.DepotEice.DAL.Entities
         public int Id { get; set; }
 
         /// <summary>
+        /// <see cref="ArticleEntity"/>'s main image ID
+        /// </summary>
+        public int MainImageId { get; set; }
+
+        /// <summary>
         /// <see cref="ArticleEntity"/>'s title
         /// </summary>
         public string Title { get; set; } = string.Empty;

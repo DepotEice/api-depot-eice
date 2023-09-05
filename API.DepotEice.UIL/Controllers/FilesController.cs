@@ -10,6 +10,7 @@ using API.DepotEice.UIL.Models;
 using AutoMapper;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -30,6 +31,7 @@ namespace API.DepotEice.UIL.Controllers
         private readonly IFileManager _fileManager;
         private readonly IFileRepository _fileRepository;
         private readonly IMapper _mapper;
+        private readonly IUserManager _userManager;
 
         /// <summary>
         /// Constructor
@@ -39,9 +41,10 @@ namespace API.DepotEice.UIL.Controllers
         /// <param name="fileManager"></param>
         /// <param name="fileRepository"></param>
         /// <param name="mapper"></param>
+        /// <param name="userManager"></param>
         /// <exception cref="ArgumentNullException"></exception>
         public FilesController(ILogger<FilesController> logger, IConfiguration configuration, IFileManager fileManager,
-            IFileRepository fileRepository, IMapper mapper)
+            IFileRepository fileRepository, IMapper mapper, IUserManager userManager)
         {
             if (logger is null)
             {
@@ -68,31 +71,52 @@ namespace API.DepotEice.UIL.Controllers
                 throw new ArgumentNullException(nameof(mapper));
             }
 
+            if (userManager is null)
+            {
+                throw new ArgumentNullException(nameof(userManager));
+            }
+
             _logger = logger;
             _configuration = configuration;
             _fileManager = fileManager;
             _fileRepository = fileRepository;
             _mapper = mapper;
+            _userManager = userManager;
         }
 
+        /// <summary>
+        /// Get all the files of the application
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IActionResult GetFiles()
         {
             try
             {
-                var filesFromRepo = _fileRepository.GetAll();
+                string? userId = _userManager.GetCurrentUserId;
 
-                return Ok(filesFromRepo);
+                IEnumerable<FileEntity> filesFromRepo = _fileRepository.GetAll();
+
+                if (!string.IsNullOrEmpty(userId) && _userManager.IsInRole(TEACHER_ROLE))
+                {
+                    return Ok(filesFromRepo);
+                }
+
+                return Ok(filesFromRepo.Where(f => f.DeletedAt is not null));
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFiles)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFiles),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get files, please contact the administrator");
+                return BadRequest("An error occurred while trying to get all the files, please contact the administrator");
 #endif
             }
         }
@@ -125,13 +149,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetDefaultProfilePictureAsync)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetDefaultProfilePictureAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get the default profile picture file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get the default profile picture, please contact the administrator");
 #endif
             }
         }
@@ -183,13 +211,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFileAsync)}\" :\n" +
-                    $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFileByIdAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get a file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get a file by its id, please contact the administrator");
 #endif
             }
         }
@@ -199,12 +231,12 @@ namespace API.DepotEice.UIL.Controllers
         /// </summary>
         /// <param name="fileName">The name/key of the file</param>
         /// <returns>
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the name is null or an empty string or if the file is deleted.
-        /// <br />
-        /// <see cref="StatusCodes.Status404NotFound"/> IF the name doesn't retrieve any file from the database or if 
-        /// the file key doesn't retrieve any file from the AWS S3 bucket.
+        /// The file if it exists.
         /// </returns>
         [HttpGet("ByFileName/{fileName}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         public async Task<IActionResult> GetFileAsync(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -237,13 +269,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetFileAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(GetFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to get a file, please contact the administrator");
+                return BadRequest("An error occurred while trying to get a file by its name, please contact the administrator");
 #endif
             }
         }
@@ -253,81 +289,91 @@ namespace API.DepotEice.UIL.Controllers
         /// </summary>
         /// <param name="uploadFiles">The files to upload</param>
         /// <returns>
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the provided file is null or empty or if the file couldn't be uploaded to AWS
-        /// or if the file couldn't be saved to the database
-        /// <br />
-        /// <see cref="StatusCodes.Status200OK"/> If the file was successfully uploaded to AWS and saved to the database
-        /// <br />
-        /// <see cref="List{FileEntity}"/> The list of the saved files
+        /// The list of the created file IDs.
         /// </returns>
         [HttpPost]
-        public async Task<IActionResult> SaveFileAsync(IList<IFormFile> uploadFiles)
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<int>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        public async Task<IActionResult> SaveFilesAsync([FromForm] IEnumerable<IFormFile>? uploadFiles)
         {
             if (uploadFiles is null)
             {
                 return BadRequest($"{nameof(uploadFiles)} is null");
             }
 
-            if (uploadFiles.Count <= 0)
-            {
-                return BadRequest($"{nameof(uploadFiles)} is empty");
-            }
-
             try
             {
-                List<FileEntity> files = new List<FileEntity>();
+                string? userId = _userManager.GetCurrentUserId;
 
-                foreach (var file in uploadFiles)
+                if (string.IsNullOrEmpty(userId))
                 {
-                    if (file.Length <= 0)
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+
+                List<int> createdFileIds = new();
+
+                foreach (var uploadFile in uploadFiles)
+                {
+                    if (uploadFile is null)
                     {
-                        return BadRequest($"{nameof(file)} is empty");
+                        return BadRequest($"{nameof(uploadFile)} is null");
                     }
 
-                    if (!await _fileManager.UploadObjectAsync(file, file.FileName))
+                    if (uploadFile.Length <= 0)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be uploaded to " +
+                        return BadRequest($"{nameof(uploadFile)} is empty");
+                    }
+
+                    if (!await _fileManager.UploadObjectAsync(uploadFile, uploadFile.FileName))
+                    {
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be uploaded to " +
                             $"AWS");
 
-                        return BadRequest($"The file \"{file.FileName}\" was not uploaded to AWS");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not uploaded to AWS");
                     }
 
-                    _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully uploaded " +
+                    _logger.LogInformation($"{DateTime.Now} - The file \"{uploadFile.FileName}\" was successfully uploaded " +
                         $"to AWS");
 
-                    FileEntity fileEntity = _mapper.Map<FileEntity>(file);
+                    FileEntity fileEntity = _mapper.Map<FileEntity>(uploadFile);
 
                     int createdFileId = _fileRepository.Create(fileEntity);
 
                     if (createdFileId <= 0)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be saved to " +
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be saved to " +
                             $"the database");
-                        return BadRequest($"The file \"{file.FileName}\" was not saved to the database");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not saved to the database");
                     }
 
-                    _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully saved " +
+                    _logger.LogInformation($"{DateTime.Now} - The file \"{uploadFile.FileName}\" was successfully saved " +
                         $"to the database");
 
                     FileEntity? _fileFromRepo = _fileRepository.GetByKey(createdFileId);
 
                     if (_fileFromRepo is null)
                     {
-                        _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be retrieved " +
+                        _logger.LogWarning($"{DateTime.Now} - The file \"{uploadFile.FileName}\" couldn't be retrieved " +
                                                        $"from the database");
-                        return BadRequest($"The file \"{file.FileName}\" was not retrieved from the database");
+                        return BadRequest($"The file \"{uploadFile.FileName}\" was not retrieved from the database");
                     }
 
-                    files.Add(_fileFromRepo);
+                    createdFileIds.Add(createdFileId);
                 }
 
-                return Ok(files);
+                return Ok(createdFileIds);
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(SaveFileAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(SaveFilesAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
@@ -337,18 +383,183 @@ namespace API.DepotEice.UIL.Controllers
         }
 
         /// <summary>
+        /// Upload a file for the Radzen HTML editor
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns>
+        /// Object containing the url
+        /// </returns>
+        [HttpPost("Article")]
+        [HasRoleAuthorize(RolesEnum.DIRECTION)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        public async Task<IActionResult> UploadFileHTMLEditorAsync([FromForm] IFormFile file)
+        {
+            try
+            {
+                if (file is null)
+                {
+                    return BadRequest($"{nameof(file)} is null");
+                }
+
+                if (file.Length <= 0)
+                {
+                    return BadRequest($"{nameof(file)} is empty");
+                }
+
+                string? userId = _userManager.GetCurrentUserId;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("You must be authenticated to perform this action");
+                }
+
+                string fileName = $"{userId}-{new Random().Next(0, 10000)}-{file.FileName}";
+
+                if (!await _fileManager.UploadObjectAsync(file, fileName))
+                {
+                    _logger.LogWarning(
+                        "{date} - The file \"{name}\" couldn't be uploaded to AWS",
+                        DateTime.Now,
+                        fileName
+                    );
+
+                    return BadRequest($"The file \"{file.FileName}\" was not uploaded to AWS");
+                }
+
+                _logger.LogInformation(
+                    "{date} - The file \"{fileName}\" was successfully uploaded to AWS",
+                    DateTime.Now,
+                    fileName
+                );
+
+                FileEntity fileEntity = _mapper.Map<FileEntity>(file);
+
+                int createdFileId = _fileRepository.Create(fileEntity);
+
+                if (createdFileId <= 0)
+                {
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be saved to " +
+                        $"the database");
+
+                    return BadRequest($"The file \"{file.FileName}\" was not saved to the database");
+                }
+
+                _logger.LogInformation($"{DateTime.Now} - The file \"{file.FileName}\" was successfully saved " +
+                    $"to the database");
+
+                FileEntity? _fileFromRepo = _fileRepository.GetByKey(createdFileId);
+
+                if (_fileFromRepo is null)
+                {
+                    _logger.LogWarning($"{DateTime.Now} - The file \"{file.FileName}\" couldn't be retrieved " +
+                        $"from the database");
+
+                    return BadRequest($"The file \"{file.FileName}\" was not retrieved from the database");
+                }
+
+
+                var fileModel = await _fileManager.GetObjectAsync(fileName);
+
+                if (fileModel is null)
+                {
+                    return NotFound("The file was not found");
+                }
+
+                return Ok(new { Url = $"https://localhost:7205/api/Files/ById/{createdFileId}" });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(UploadFileHTMLEditorAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to save a file for the Radzen HTML editor, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Delete a file by its id from the database and AWS
+        /// </summary>
+        /// <param name="fileId">
+        /// The id of the file to delete
+        /// </param>
+        /// <returns></returns>
+        [HttpDelete("/ByFileId/{fileId}")]
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        public async Task<IActionResult> DeleteFileAsync(int fileId)
+        {
+            if (fileId <= 0)
+            {
+                return BadRequest($"The provided file id is invalid");
+            }
+
+            try
+            {
+                FileEntity? fileEntity = _fileRepository.GetByKey(fileId);
+
+                if (fileEntity is null)
+                {
+                    return NotFound($"No file was found with id : \"{fileId}\"");
+                }
+
+                if (fileEntity.DeletedAt is not null)
+                {
+                    return BadRequest($"The file with id : \"{fileId}\" is already deleted");
+                }
+
+                if (!await _fileManager.DeleteObjectAsync(fileEntity.Key))
+                {
+                    return BadRequest($"Couldn't delete the file with id :\"{fileId}\"");
+                }
+
+                if (!_fileRepository.Delete(fileEntity.Id))
+                {
+                    return BadRequest($"Couldn't delete the file with id :\"{fileId}\"");
+                }
+
+                return NoContent();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(DeleteFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
+#if DEBUG
+                return BadRequest(e.Message);
+#else
+                return BadRequest("An error occurred while trying to delete a file by its id, please contact the administrator");
+#endif
+            }
+        }
+
+        /// <summary>
         /// Delete a file from the database and from AWS S3 bucket
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns>
-        /// <see cref="StatusCodes.Status204NoContent"/> If the file was successfully deleted from the database and from AWS S3 bucket
-        /// <br />
-        /// <see cref="StatusCodes.Status400BadRequest"/> If the provided file name is null or empty or if the file is already deleted
-        /// or if the file couldn't be deleted from the database or from AWS S3 bucket
-        /// <br />
-        /// <see cref="StatusCodes.Status404NotFound"/> If the file couldn't be found in the database
-        /// </returns>
-        [HttpDelete("{fileName}")]
+        /// <param name="fileName">The name of the file to delete</param>
+        /// <returns></returns>
+        [HttpDelete("/ByFileName/{fileName}")]
+        [HasRoleAuthorize(RolesEnum.TEACHER)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         public async Task<IActionResult> DeleteFileAsync(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -384,13 +595,17 @@ namespace API.DepotEice.UIL.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteFileAsync)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
-
+                _logger.LogError(
+                     "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                     DateTime.Now,
+                     nameof(DeleteFileAsync),
+                     e.Message,
+                     e.StackTrace
+                 );
 #if DEBUG
                 return BadRequest(e.Message);
 #else
-                return BadRequest("An error occurred while trying to delete the file, please contact the administrator");
+                return BadRequest("An error occurred while trying to delete a file by its file name, please contact the administrator");
 #endif
             }
         }

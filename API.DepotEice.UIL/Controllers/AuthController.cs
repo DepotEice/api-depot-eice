@@ -1,6 +1,7 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.Helpers.Tools;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
@@ -11,9 +12,11 @@ using DevHopTools.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.IIS.Core;
 using Newtonsoft.Json.Linq;
+using System.CodeDom.Compiler;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -518,7 +521,8 @@ public class AuthController : ControllerBase
     /// <see cref="StatusCodes.Status400BadRequest"/>
     /// <see cref="StatusCodes.Status401Unauthorized"/> If the current user is null or empty
     /// </returns>
-    [HttpGet(nameof(Authorize))]
+    [HttpGet($"{nameof(Authorize)}/{{jwtToken}}")]
+    [HasRoleAuthorize(RolesEnum.GUEST)]
     public IActionResult Authorize(string jwtToken)
     {
         if (string.IsNullOrEmpty(jwtToken))
@@ -535,7 +539,6 @@ public class AuthController : ControllerBase
                 return Unauthorized();
             }
 
-            // TODO : Implement the logic
             bool result = _tokenManager.ValidateJwtToken(currentUserId, jwtToken);
 
             return Ok(result);

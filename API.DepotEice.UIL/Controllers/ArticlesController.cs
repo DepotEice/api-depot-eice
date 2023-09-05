@@ -19,9 +19,6 @@ namespace API.DepotEice.UIL.Controllers;
 [ApiController]
 public class ArticlesController : ControllerBase
 {
-    private const string NOTEXIST = "The selected item does not exist ! Please try again or with another one.";
-    private const string ERROR = "Something went wrong ! Please contact the administrator ...";
-
     private readonly ILogger _logger;
     private readonly IMapper _mapper;
     private readonly IUserManager _userManager;
@@ -34,6 +31,7 @@ public class ArticlesController : ControllerBase
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="mapper"></param>
+    /// <param name="userManager"></param>
     /// <param name="articleRepository"></param>
     /// <param name="articleCommentRepository"></param>
     /// <param name="userRepository"></param>
@@ -89,36 +87,63 @@ public class ArticlesController : ControllerBase
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult Get()
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult Get(bool? onlyPinned = null, int? skip = null, int? top = null, bool? descending = null)
     {
         try
         {
-            List<ArticleModel> articles = new List<ArticleModel>();
-
             IEnumerable<ArticleEntity> articlesFromRepo = _articleRepository.GetAll();
 
-            foreach (ArticleEntity articleFromRepo in articlesFromRepo)
+            if (articlesFromRepo is null)
             {
-                UserEntity? userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
-
-                ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
-
-                if (userFromRepo is null)
-                {
-                    return NotFound("Article creator doesn't exist!");
-                }
-
-                article.userId = userFromRepo.Id;
-
-                articles.Add(article);
+                return NotFound();
             }
+
+            if (onlyPinned is not null && onlyPinned.Value)
+            {
+                articlesFromRepo = articlesFromRepo.Where(a => a.IsPinned == true);
+            }
+
+            if (skip.HasValue)
+            {
+                articlesFromRepo = articlesFromRepo.Skip(skip.Value);
+            }
+
+            if (top.HasValue)
+            {
+                articlesFromRepo = articlesFromRepo.Take(top.Value);
+            }
+
+            if (descending.HasValue)
+            {
+                if (descending.Value)
+                {
+                    articlesFromRepo = articlesFromRepo
+                        .OrderByDescending(a => a.UpdatedAt)
+                        .ThenByDescending(a => a.CreatedAt);
+                }
+                else
+                {
+                    articlesFromRepo = articlesFromRepo
+                        .OrderBy(a => a.UpdatedAt)
+                        .ThenBy(a => a.UpdatedAt);
+                }
+            }
+
+            IEnumerable<ArticleModel> articles = _mapper.Map<IEnumerable<ArticleModel>>(articlesFromRepo);
 
             return Ok(articles);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get all articles, please contact the administrator");
+#endif
         }
     }
 
@@ -153,13 +178,20 @@ public class ArticlesController : ControllerBase
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
 
-            article.userId = userFromRepo.Id;
+            article.UserId = userFromRepo.Id;
 
             return Ok(article);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to get the article with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 
@@ -175,6 +207,11 @@ public class ArticlesController : ControllerBase
     [HttpPost]
     public IActionResult Post([FromBody] ArticleForm form)
     {
+        if (form is null)
+        {
+            return BadRequest("The form is null");
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -182,14 +219,14 @@ public class ArticlesController : ControllerBase
 
         try
         {
-            ArticleEntity entity = _mapper.Map<ArticleEntity>(form);
-
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized("You must be authenticated to perform this action");
             }
+
+            ArticleEntity entity = _mapper.Map<ArticleEntity>(form);
 
             entity.UserId = userId;
 
@@ -197,14 +234,14 @@ public class ArticlesController : ControllerBase
 
             if (articleId <= 0)
             {
-                return BadRequest(nameof(articleId));
+                return BadRequest("The article creation failed");
             }
 
             ArticleEntity? articleFromRepo = _articleRepository.GetByKey(articleId);
 
             if (articleFromRepo is null)
             {
-                return NotFound(NOTEXIST);
+                return NotFound("The newly created article cannot be found");
             }
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
@@ -213,7 +250,14 @@ public class ArticlesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Post)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to create an article, please contact the administrator");
+#endif
         }
     }
 
@@ -223,9 +267,15 @@ public class ArticlesController : ControllerBase
     /// <param name="id"></param>
     /// <param name="form"></param>
     /// <returns></returns>
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [HttpPut("{id}")]
     public IActionResult Put(int id, [FromBody] ArticleForm form)
     {
+        if (form is null)
+        {
+            return BadRequest("The form is null");
+        }
+
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
@@ -233,48 +283,72 @@ public class ArticlesController : ControllerBase
 
         try
         {
-            ArticleEntity entity = _mapper.Map<ArticleEntity>(form);
-            entity.Id = id;
-
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized("You must be authenticated to perform this action");
             }
+
+            ArticleEntity entity = _mapper.Map<ArticleEntity>(form);
+
+            entity.Id = id;
 
             entity.UserId = userId;
 
-            bool result = _articleRepository.Update(id, entity);
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
 
-            if (!result)
-            {
-                return BadRequest(nameof(result));
-            }
-
-            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(entity.Id);
+            bool result = false;
 
             if (articleFromRepo is null)
             {
-                return NotFound("Updated article does not exist anymore");
+                id = _articleRepository.Create(entity);
+
+                if (id <= 0)
+                {
+                    return BadRequest("The article creation failed");
+                }
+
+                result = id > 0;
+            }
+            else
+            {
+                result = _articleRepository.Update(id, entity);
             }
 
-            UserEntity? userFromRepo = _userRepository.GetByKey(articleFromRepo.UserId);
-
-            if (userFromRepo is null)
+            if (!result)
             {
-                return NotFound("Article author doesn't exist!");
+                return BadRequest("The update of the article failed");
+            }
+
+            articleFromRepo = _articleRepository.GetByKey(entity.Id);
+
+            if (articleFromRepo is null)
+            {
+                return NotFound("The updated article cannot be found");
+            }
+
+            bool pinResult = _articleRepository.ArticlePinDecision(id, form.Pinned);
+
+            if (!pinResult)
+            {
+                return BadRequest("The pin decision of the article failed");
             }
 
             ArticleModel article = _mapper.Map<ArticleModel>(articleFromRepo);
-
-            article.userId = userFromRepo.Id;
 
             return Ok(article);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Put)}\" :\n" +
+               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to update the article with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 
@@ -286,20 +360,44 @@ public class ArticlesController : ControllerBase
     [HttpDelete("{id}")]
     public IActionResult Delete(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The id is invalid");
+        }
+
         try
         {
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+            if (articleFromRepo is null)
+            {
+                return NotFound($"The article with ID \"{id}\" doesn't exist");
+            }
+
+            if (articleFromRepo.DeletedAt is not null)
+            {
+                return BadRequest($"The article with ID \"{id}\" is already deleted");
+            }
+
             bool result = _articleRepository.Delete(id);
 
             if (!result)
             {
-                return BadRequest(ERROR);
+                return BadRequest("The deletion failed");
             }
 
-            return NoContent();
+            return Ok(result);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Delete)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to delete the article with ID \"{id}\", please contact the administrator");
+#endif
         }
     }
 
@@ -312,20 +410,25 @@ public class ArticlesController : ControllerBase
     [HttpPut("Restore/{id}")]
     public IActionResult Restore(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The id is invalid");
+        }
+
         try
         {
-            var articleFromRepo = _articleRepository.GetByKey(id);
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
 
             if (articleFromRepo is null)
             {
-                return NotFound(id);
+                return NotFound("There is not article with the provided id");
             }
 
             articleFromRepo.DeletedAt = null;
 
             if (!_articleRepository.Restore(id))
             {
-                return BadRequest(ERROR);
+                return BadRequest("Restoring the article failed");
             }
 
             return Ok();
@@ -345,11 +448,15 @@ public class ArticlesController : ControllerBase
     [AllowAnonymous]
     public IActionResult GetComments(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The id is invalid");
+        }
+
         try
         {
             IEnumerable<ArticleCommentModel> articleComments =
-            _mapper.Map<IEnumerable<ArticleCommentModel>>(_articleCommentRepository
-                .GetArticleComments(id));
+                _mapper.Map<IEnumerable<ArticleCommentModel>>(_articleCommentRepository.GetArticleComments(id));
 
             if (_userManager.IsDirection)
             {
@@ -362,7 +469,14 @@ public class ArticlesController : ControllerBase
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetComments)}\" :\n" +
+                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to get article comments, please contact the administrator");
+#endif
         }
     }
 
@@ -375,47 +489,71 @@ public class ArticlesController : ControllerBase
     [HttpPost("{id}/Comments")]
     public IActionResult PostComment(int id, [FromBody] ArticleCommentForm form)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The id is invalid");
+        }
+
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            if (!_articleRepository.ArticleExist(id))
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+            if (articleFromRepo is null)
             {
-                return NotFound(NOTEXIST);
+                return NotFound("There is no article with this id");
+            }
+
+            if (articleFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The article is deleted");
             }
 
             ArticleCommentEntity commentToCreate = _mapper.Map<ArticleCommentEntity>(form);
 
-            string? userID = _userManager.GetCurrentUserId;
+            string? userId = _userManager.GetCurrentUserId;
 
-            if (string.IsNullOrEmpty(userID))
+            if (string.IsNullOrEmpty(userId))
             {
                 return BadRequest();
             }
 
             commentToCreate.ArticleId = id;
+            commentToCreate.UserId = userId;
 
             int commentId = _articleCommentRepository.Create(commentToCreate);
 
             if (commentId <= 0)
             {
-                return BadRequest(nameof(commentId));
+                return BadRequest("The article comment couldn't be created");
             }
 
             ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(commentId);
 
             if (articleCommentFromRepo is null)
             {
-                return NotFound(NOTEXIST);
+                return NotFound("The newly created article comment could not be found");
             }
 
-            return Ok();
+            ArticleCommentModel articleComment = _mapper.Map<ArticleCommentModel>(articleCommentFromRepo);
+
+            return Ok(articleComment);
 
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(PostComment)}\" :\n" +
+                 $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to create an article comment, please contact the administrator");
+#endif
         }
     }
 
@@ -429,51 +567,85 @@ public class ArticlesController : ControllerBase
     [HttpPut("{id}/Comments/{cId}")]
     public IActionResult PutComment(int id, int cId, [FromBody] ArticleCommentForm form)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The article id is invalid");
+        }
+
+        if (cId <= 0)
+        {
+            return BadRequest("The comment id is invalid");
+        }
+
         if (!ModelState.IsValid)
+        {
             return BadRequest(ModelState);
+        }
 
         try
         {
-            if (!_articleRepository.ArticleExist(id))
-            {
-                return NotFound(NOTEXIST);
-            }
-
-            ArticleCommentEntity articleToCreate = _mapper.Map<ArticleCommentEntity>(form);
-
-            articleToCreate.ArticleId = id;
-
             string? userId = _userManager.GetCurrentUserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                return Unauthorized("You must be authenticated to perform this action");
             }
 
-            articleToCreate.UserId = userId;
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
 
-            bool result = _articleCommentRepository.Update(cId, articleToCreate);
-
-            if (!result)
+            if (articleFromRepo is null)
             {
-                return BadRequest(nameof(result));
+                return NotFound("There is no article with this id");
+            }
+
+            if (articleFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The article is deleted");
             }
 
             ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(cId);
 
             if (articleCommentFromRepo is null)
             {
-                return NotFound(NOTEXIST);
+                return NotFound("There is no comment with this id");
             }
 
-            ArticleCommentModel? comment = _mapper.Map<ArticleCommentModel>(articleCommentFromRepo);
+            if (articleCommentFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The comment is deleted");
+            }
+
+            _mapper.Map(form, articleCommentFromRepo);
+
+            bool result = _articleCommentRepository.Update(cId, articleCommentFromRepo);
+
+            if (!result)
+            {
+                return BadRequest("The update failed");
+            }
+
+            articleCommentFromRepo = _articleCommentRepository.GetByKey(cId);
+
+            if (articleCommentFromRepo is null)
+            {
+                return NotFound("The udpated article comment cannot be found");
+            }
+
+            ArticleCommentModel comment = _mapper.Map<ArticleCommentModel>(articleCommentFromRepo);
 
             return Ok(comment);
 
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(PutComment)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to update the article comment with ID \"{cId}\", please contact the administrator");
+#endif
         }
     }
 
@@ -486,25 +658,61 @@ public class ArticlesController : ControllerBase
     [HttpDelete("{id}/Comments/{cId}")]
     public IActionResult DeleteComment(int id, int cId)
     {
+        if (id <= 0)
+        {
+            return BadRequest("The article id is invalid");
+        }
+
+        if (cId <= 0)
+        {
+            return BadRequest("The comment id is invalid");
+        }
+
         try
         {
-            if (!_articleRepository.ArticleExist(id))
+            ArticleEntity? articleFromRepo = _articleRepository.GetByKey(id);
+
+            if (articleFromRepo is null)
             {
-                return NotFound(NOTEXIST);
+                return NotFound("There is no article with this id");
+            }
+
+            if (articleFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The article is deleted");
+            }
+
+            ArticleCommentEntity? articleCommentFromRepo = _articleCommentRepository.GetByKey(cId);
+
+            if (articleCommentFromRepo is null)
+            {
+                return NotFound("There is no comment with this id");
+            }
+
+            if (articleCommentFromRepo.DeletedAt is not null)
+            {
+                return BadRequest("The comment is deleted");
             }
 
             bool result = _articleCommentRepository.Delete(cId);
 
             if (!result)
             {
-                return BadRequest(ERROR);
+                return BadRequest("The deletion of the article comment failed");
             }
 
-            return NoContent();
+            return Ok(result);
         }
         catch (Exception e)
         {
+            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(DeleteComment)}\" :\n" +
+                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest($"An error occurred while trying to delete the article comment with ID \"{cId}\", please contact the administrator");
+#endif
         }
     }
 }

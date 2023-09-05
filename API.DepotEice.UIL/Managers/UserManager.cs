@@ -61,10 +61,14 @@ namespace API.DepotEice.UIL.Managers
         }
 
         /// <summary>
-        /// Check if User is in role
+        /// Check if the current user has a role in his claims
         /// </summary>
-        /// <param name="role"></param>
-        /// <returns></returns>
+        /// <param name="role">
+        /// The name of the role to check
+        /// </param>
+        /// <returns>
+        /// <see cref="bool"/> true if the user has the role, false otherwise
+        /// </returns>
         public bool IsInRole(string role)
         {
             return _httpContext.User.Claims.Any(c => c.Value.Equals(role));

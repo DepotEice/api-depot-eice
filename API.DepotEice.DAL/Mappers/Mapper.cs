@@ -55,14 +55,25 @@ internal static class Mapper
         return (T)instance;
     }
 
+    public static UserModuleEntity DBToUserModule(this IDataRecord record)
+    {
+        return new UserModuleEntity()
+        {
+            UserId = record["UserId"].ToString()
+                ?? throw new NullReferenceException("UserModules column UserId is null"),
+            ModuleId = (int)record["ModuleId"],
+            IsAccepted = (bool)record["IsAccepted"]
+        };
+    }
+
     public static FileEntity DbToFile(this IDataRecord record)
     {
         return new FileEntity()
         {
             Id = (int)record["Id"],
             Key = (string)record["Key"],
-            Path = (string)record["Path"],
-            Size = (long)record["Size"],
+            Path = record["Path"] is DBNull ? null : (string)record["Path"],
+            Size = record["Size"] is DBNull ? null : (long)record["Size"],
             Type = (string)record["Type"],
             CreatedAt = (DateTime)record["CreatedAt"],
             UpdatedAt = record["UpdatedAt"] is DBNull ? null : (DateTime)record["UpdatedAt"],
@@ -119,6 +130,7 @@ internal static class Mapper
         return new ArticleEntity()
         {
             Id = (int)record["Id"],
+            MainImageId = (int)record["MainImageId"],
             Title = (string)record["Title"],
             Body = (string)record["Body"],
             CreatedAt = (DateTime)record["CreatedAt"],
@@ -177,7 +189,7 @@ internal static class Mapper
         return new ScheduleFileEntity()
         {
             Id = (int)record["Id"],
-            FilePath = (string)record["FilePath"],
+            FileId = (int)record["FileId"],
             ScheduleId = (int)record["ScheduleId"]
         };
     }

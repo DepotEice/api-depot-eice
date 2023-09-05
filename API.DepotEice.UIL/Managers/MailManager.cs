@@ -18,6 +18,17 @@ namespace API.DepotEice.UIL.Managers
             throw new NullReferenceException($"{DateTime.Now} - There is no environment variable named : " +
                 $"\"DOMAIN_NAME\"");
 #endif
+
+        /// <summary>
+        /// Send an activation email to the user
+        /// </summary>
+        /// <param name="tokenId"></param>
+        /// <param name="userToken"></param>
+        /// <param name="destinationEmail"></param>
+        /// <returns>
+        /// <c>true</c> If the email was correctly sent. <c>false</c> Otherwise
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
         public static async Task<bool> SendActivationEmailAsync(string tokenId, string userToken, string destinationEmail)
         {
             MailjetClient client = new MailjetClient(
@@ -39,7 +50,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                     $"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}activation?token={userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}/activation?token={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
@@ -50,62 +61,21 @@ namespace API.DepotEice.UIL.Managers
         }
 
         /// <summary>
-        /// Send the account activation email
+        /// Send a password reset email to the user
         /// </summary>
-        /// <param name="tokenId"></param>
-        /// <param name="userToken"></param>
-        /// <param name="destinationEmail"></param>
-        public static bool SendActivationEmail(string tokenId, string userToken, string destinationEmail)
-        {
-
-            try
-            {
-                MailAddress fromAdresse = new("pid.depot@gmail.com", "EICE Dépôt");
-                MailAddress toAdresse = new(destinationEmail, "To display name");
-                const string fromPassword = "pazn gnsz llov qccp"; // PASSWORD 16 DIGITS. Se trouve sur bureau GMAIL_TOKEN_PASSWORD.png
-                const string subject = "PID - Activitation du compte";
-
-                StringBuilder body = new StringBuilder();
-                body.Append("<h1>Bonjour \"Nom\"</h1>");
-                body.Append("<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p>");
-
-#if DEBUG
-                body.Append($"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>");
-#else
-                body.Append($"<a href=\"https://www.{DOMAIN_NAME}activation?token={userToken}\">Cliquez-ici</a>");
-#endif
-
-                using (MailMessage mail = new())
-                {
-                    mail.From = fromAdresse;
-                    mail.To.Add(toAdresse);
-                    mail.Subject = subject;
-                    mail.Body = body.ToString();
-                    mail.IsBodyHtml = true;
-
-                    using (SmtpClient smtp = new("smtp.gmail.com", 587))
-                    {
-                        smtp.Credentials = new NetworkCredential(fromAdresse.Address, fromPassword);
-                        smtp.EnableSsl = true;
-                        smtp.Timeout = 10000;
-                        smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                        smtp.Send(mail);
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
+        /// <param name="userId">the ID of the user</param>
+        /// <param name="userToken">The token</param>
+        /// <param name="destinationEmail">The destination email</param>
+        /// <returns>
+        /// <c>true</c> If the email was successfully sent. <c>false</c> Otherwise
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
         public static async Task<bool> SendPasswordRequestEmailAsync(string userId, string userToken, string destinationEmail)
         {
             MailjetClient client = new MailjetClient(
                 Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PUBLIC") ??
                     throw new NullReferenceException("There is no Environment variable named TFE_MAILJET_API_KEY_PUBLIC"),
-                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ?? 
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ??
                     throw new NullReferenceException("There is no environment variable named TFE_MAILJET_API_KEY_PRIVATE"));
 
             MailjetRequest request = new MailjetRequest()
@@ -121,7 +91,7 @@ namespace API.DepotEice.UIL.Managers
 #if DEBUG
                     $"<a href=\"https://localhost:7245/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}activation?token={userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
@@ -131,52 +101,85 @@ namespace API.DepotEice.UIL.Managers
             return response.Messages.Length == 1;
         }
 
-        public static bool SendPasswordRequestEmail(string userId, string userToken, string email)
+        /// <summary>
+        /// Send an email to confirm the appointment
+        /// </summary>
+        /// <param name="userName">The name of the user</param>
+        /// <param name="appointmentId">The id of the appointment</param>
+        /// <param name="destinationEmail"></param>
+        /// <returns>
+        /// <c>true</c> If the email was successfully sent. <c>false</c> Otherwise
+        /// </returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public static async Task<bool> SendAppointmentConfirmedEmail(string userName, int appointmentId, string destinationEmail)
         {
-            if (string.IsNullOrEmpty(email))
+            MailjetClient client = new MailjetClient(
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PUBLIC") ??
+                    throw new NullReferenceException("There is no Environment variable named TFE_MAILJET_API_KEY_PUBLIC"),
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ??
+                    throw new NullReferenceException("There is no environment variable named TFE_MAILJET_API_KEY_PRIVATE"));
+
+            MailjetRequest request = new MailjetRequest()
             {
-                throw new ArgumentNullException(nameof(email));
-            }
+                Resource = Send.Resource
+            };
 
-            try
-            {
-                MailAddress fromAdresse = new("pid.depot@gmail.com", "EICE Dépôt");
-                MailAddress toAdresse = new(email, "To display name");
-                const string fromPassword = "pazn gnsz llov qccp"; // PASSWORD 16 DIGITS. Se trouve sur bureau GMAIL_TOKEN_PASSWORD.png
-                const string subject = "PID - Mot de passe oublié";
-
-                StringBuilder body = new StringBuilder();
-                body.Append("<h1>Bonjour \"Nom\"</h1>");
-                body.Append("<p>Veuillez cliquer sur le lien ci-dessous pour créer un nouveau mot de passe</p>");
-
+            TransactionalEmail email = new TransactionalEmailBuilder()
+                .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
+                .WithSubject("EICE - Rendez-vous confirmé")
+                .WithHtmlPart(
+                    $"<h1>Bonjour \"{userName}\"</h1> " +
+                   "<p>Votre rendez-vous a bien été confirmé</p> " +
 #if DEBUG
-                body.Append($"<a href=\"https://localhost:7245/updatePassword/{userId}/{userToken}\">Cliquez-ici</a>");
+                    $"<a href=\"https://localhost:7245/profile/appointments/{appointmentId}\">Cliquez-ici</a>")
 #else
-                body.Append($"<a href=\"https://www.{DOMAIN_NAME}activation?token={userToken}\">Cliquez-ici</a>");
+                    $"<a href=\"https://www.{DOMAIN_NAME}/profile/appointments/{appointmentId}\">Cliquez-ici</a>")
 #endif
-                using (MailMessage mail = new())
-                {
-                    mail.From = fromAdresse;
-                    mail.To.Add(toAdresse);
-                    mail.Subject = subject;
-                    mail.Body = body.ToString();
-                    mail.IsBodyHtml = true;
+                .WithTo(new SendContact(destinationEmail))
+                .Build();
+            TransactionalEmailResponse response = await client.SendTransactionalEmailAsync(email);
 
-                    using (SmtpClient smtp = new("smtp.gmail.com", 587))
-                    {
-                        smtp.Credentials = new NetworkCredential(fromAdresse.Address, fromPassword);
-                        smtp.EnableSsl = true;
-                        smtp.Timeout = 10000;
-                        smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                        smtp.Send(mail);
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
+            return response.Messages.Length == 1;
+        }
+
+        /// <summary>
+        /// Send an email to confirm the deletion
+        /// </summary>
+        /// <param name="userName"></param>
+        /// <param name="appoitmentDate"></param>
+        /// <param name="destinationEmail"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        public static async Task<bool> SendAppointmentDeletedMail(string userName, DateTime appoitmentDate, string destinationEmail)
+        {
+            MailjetClient client = new MailjetClient(
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PUBLIC") ??
+                    throw new NullReferenceException("There is no Environment variable named TFE_MAILJET_API_KEY_PUBLIC"),
+                Environment.GetEnvironmentVariable("TFE_MAILJET_API_KEY_PRIVATE") ??
+                    throw new NullReferenceException("There is no environment variable named TFE_MAILJET_API_KEY_PRIVATE"));
+
+            MailjetRequest request = new MailjetRequest()
             {
-                throw;
-            }
+                Resource = Send.Resource
+            };
+
+            TransactionalEmail email = new TransactionalEmailBuilder()
+                .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
+                .WithSubject("EICE - Rendez-vous supprimé")
+                .WithHtmlPart(
+                    $"<h1>Bonjour \"{userName}\"</h1> " +
+                    $"<p>Votre rendez-vous du {appoitmentDate.ToString("F")} a été annulé/supprimé</p> " +
+                    $"<p>Pour reprogrammer un nouveau rendez-vous, suivant le lien suivant</p>" +
+#if DEBUG
+                    $"<a href=\"https://localhost:7245/appointments\">Cliquez-ici</a>")
+#else
+                    $"<a href=\"https://www.{DOMAIN_NAME}/appointments\">Cliquez-ici</a>")
+#endif
+                .WithTo(new SendContact(destinationEmail))
+                .Build();
+            TransactionalEmailResponse response = await client.SendTransactionalEmailAsync(email);
+
+            return response.Messages.Length == 1;
         }
     }
 }
