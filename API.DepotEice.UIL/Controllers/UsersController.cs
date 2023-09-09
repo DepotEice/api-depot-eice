@@ -463,7 +463,7 @@ public class UsersController : ControllerBase
 
             IEnumerable<UserEntity> usersFromRepo = _userRepository
                 .GetAll()
-                .Where(u => !u.Id.Equals(currentUserId) && u.DeletedAt is not null);
+                .Where(u => !u.Id.Equals(currentUserId) && u.DeletedAt is null);
 
             IEnumerable<UserModel> usersToReturn = _mapper.Map<IEnumerable<UserModel>>(usersFromRepo);
 
