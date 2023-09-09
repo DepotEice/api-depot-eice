@@ -123,7 +123,7 @@ public class MessageRepository : RepositoryBase, IMessageRepository
             throw new ArgumentOutOfRangeException(nameof(key));
         }
 
-        string query = "SELECT * FROM [dbo].[Messages] WHERE [Messages].[Id] = Id";
+        string query = "SELECT * FROM [dbo].[Messages] WHERE [Messages].[Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", key);

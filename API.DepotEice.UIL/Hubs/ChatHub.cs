@@ -3,6 +3,8 @@ using API.DepotEice.DAL.IRepositories;
 using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Managers;
+using API.DepotEice.UIL.Models;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -22,9 +24,10 @@ namespace API.DepotEice.UIL.Hubs
         private readonly ChatManager _chatManager;
         private readonly IMessageRepository _messageRepository;
         private readonly IUserManager _userManager;
+        private readonly IMapper _mapper;
 
         public ChatHub(ILogger<ChatHub> logger, ChatManager chatManager, IMessageRepository messageRepository,
-            IUserManager userManager)
+            IUserManager userManager, IMapper mapper)
         {
             if (logger is null)
             {
@@ -46,10 +49,16 @@ namespace API.DepotEice.UIL.Hubs
                 throw new ArgumentNullException(nameof(userManager));
             }
 
+            if (mapper is null)
+            {
+                throw new ArgumentNullException(nameof(mapper));
+            }
+
             _logger = logger;
             _chatManager = chatManager;
             _messageRepository = messageRepository;
             _userManager = userManager;
+            _mapper = mapper;
         }
 
         /// <inheritdoc/>
@@ -145,7 +154,9 @@ namespace API.DepotEice.UIL.Hubs
                 return;
             }
 
-            if (!SaveMessage(Context.ConnectionId, userId, message))
+            MessageModel? sentMessage = SaveMessage(Context.ConnectionId, userId, message);
+
+            if (sentMessage is null)
             {
                 _logger.LogError(
                     "Could not save the message \"{message}\" sent to \"{id}\" by \"{sender}\"",
@@ -164,7 +175,7 @@ namespace API.DepotEice.UIL.Hubs
 
             string[] connectedUsers = _chatManager.GetUsers(userId);
 
-            await Clients.Clients(connectedUsers).SendAsync("receiveMessage", message);
+            await Clients.Clients(connectedUsers).SendAsync("receiveMessage", sentMessage);
         }
 
         /// <summary>
@@ -177,7 +188,7 @@ namespace API.DepotEice.UIL.Hubs
         /// true If the message was properly saved to the database
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
-        private bool SaveMessage(string requesterConnectionId, string userId, string message)
+        private MessageModel? SaveMessage(string requesterConnectionId, string userId, string message)
         {
             if (string.IsNullOrEmpty(requesterConnectionId))
             {
@@ -200,15 +211,29 @@ namespace API.DepotEice.UIL.Hubs
             {
                 _logger.LogError("Could not retrieve the logged in user id");
 
-                return false;
+                return null;
             }
 
-            return _messageRepository.Create(new MessageEntity()
+            int messageId = _messageRepository.Create(new MessageEntity()
             {
                 Content = message,
                 SenderId = senderId,
                 ReceiverId = userId
-            }) > 0;
+            });
+
+            if (messageId <= 0)
+            {
+                return null;
+            }
+
+            MessageEntity? messageFromRepo = _messageRepository.GetByKey(messageId);
+
+            if (messageFromRepo is null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<MessageModel>(messageFromRepo);
         }
     }
 }
