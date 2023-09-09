@@ -176,6 +176,82 @@ namespace API.DepotEice.UIL.Hubs
             string[] connectedUsers = _chatManager.GetUsers(userId);
 
             await Clients.Clients(connectedUsers).SendAsync("receiveMessage", sentMessage);
+
+            await Clients.Caller.SendAsync("messageSent", sentMessage);
+        }
+
+        /// <summary>
+        /// Set all the message from sender to receiver as read
+        /// </summary>
+        /// <param name="senderId">The id of the messages sender</param>
+        /// <param name="receiverId">The id of the messages receiver</param>
+        /// <returns></returns>
+        [HubMethodName("acknowledgeConversation")]
+        public async Task AcknowledgeConversation(string senderId, string receiverId)
+        {
+            if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(receiverId))
+            {
+                await Clients.Caller.SendAsync(
+                    "sendMessageError",
+                    "You need to provide the sender and the receiver"
+                );
+
+                return;
+            }
+
+            if (!_messageRepository.MarkConversationAsRead(senderId, receiverId))
+            {
+                _logger.LogError(
+                    "Could not mark the conversation between \"{sender}\" and \"{receiver}\" as read",
+                    senderId,
+                    receiverId
+                );
+
+                await Clients.Caller.SendAsync(
+                    "sendMessageError",
+                    "An error occurred. Could not mark the conversation as read"
+                );
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Mark a message between a sender and a receiver as read
+        /// </summary>
+        /// <param name="senderId">The id of the sender</param>
+        /// <param name="receiverId">The id of the receiver</param>
+        /// <param name="messageId">The id of the message</param>
+        /// <returns></returns>
+        [HubMethodName("acknowledgeMessage")]
+        public async Task AcknowledgeMessage(string senderId, string receiverId, int messageId)
+        {
+            if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(receiverId) || messageId <= 0)
+            {
+                await Clients.Caller.SendAsync(
+                    "sendMessageError",
+                    "You need to provide the sender, the receiver and the message"
+                );
+
+                return;
+            }
+
+            if (!_messageRepository.MarkAsRead(senderId, receiverId, messageId))
+            {
+                _logger.LogError(
+                    "Could not mark the message \"{message}\" sent by \"{sender}\" to \"{receiver}\" as read",
+                    messageId,
+                    senderId,
+                    receiverId
+                );
+
+                await Clients.Caller.SendAsync(
+                    "sendMessageError",
+                    "An error occurred. Could not mark the message as read"
+                );
+
+                return;
+            }
         }
 
         /// <summary>

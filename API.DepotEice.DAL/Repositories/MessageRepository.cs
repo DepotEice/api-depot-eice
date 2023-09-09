@@ -41,19 +41,15 @@ public class MessageRepository : RepositoryBase, IMessageRepository
     }
 
     /// <summary>
-    /// Mark all the messages sent by the sender and received by the receiver as read
+    /// Set all the message between sender and receiver as read
     /// </summary>
-    /// <param name="senderId">
-    /// The id of the sender
-    /// </param>
-    /// <param name="receiverId">
-    /// The id of the receiver
-    /// </param>
+    /// <param name="senderId">The id of the sender</param>
+    /// <param name="receiverId">The id of the receiver</param>
     /// <returns>
-    /// true if the messages have been marked as read, false otherwise
+    /// true If the messages have been marked as read, false otherwise
     /// </returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public bool MarkAsRead(string senderId, string receiverId)
+    public bool MarkConversationAsRead(string senderId, string receiverId)
     {
         if (string.IsNullOrEmpty(senderId))
         {
@@ -65,12 +61,56 @@ public class MessageRepository : RepositoryBase, IMessageRepository
             throw new ArgumentNullException(nameof(receiverId));
         }
 
-        string query = "UPDATE [Messages] SET [IsRead] = 1 WHERE ([SenderId] = @senderId) AND ([ReceiverId] = @receiverId)";
+        string query = "UPDATE [Messages] SET [Read] = 1 WHERE ([SenderId] = @senderId) AND ([ReceiverId] = @receiverId)";
 
         Command command = new Command(query);
 
         command.AddParameter("senderId", senderId);
         command.AddParameter("receiverId", receiverId);
+
+        return _connection.ExecuteNonQuery(command) > 0;
+    }
+
+    /// <summary>
+    /// Mark a message between sender and receiver as read
+    /// </summary>
+    /// <param name="senderId">The id of the message sender</param>
+    /// <param name="receiverId">The id of the message receiver</param>
+    /// <param name="messageId">The id of the message</param>
+    /// <returns>
+    /// true If the message has been marked as read, false otherwise
+    /// </returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public bool MarkAsRead(string senderId, string receiverId, int messageId)
+    {
+        if (string.IsNullOrEmpty(senderId))
+        {
+            throw new ArgumentNullException(nameof(senderId));
+        }
+
+        if (string.IsNullOrEmpty(receiverId))
+        {
+            throw new ArgumentNullException(nameof(receiverId));
+        }
+
+        if (messageId < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(messageId));
+        }
+
+        string query =
+            @"UPDATE [Messages] 
+            SET [IsRead] = 1 
+            WHERE ([SenderId] = @senderId) 
+            AND ([ReceiverId] = @receiverId)
+            AND ([Id] = @id)";
+
+        Command command = new Command(query);
+
+        command.AddParameter("senderId", senderId);
+        command.AddParameter("receiverId", receiverId);
+        command.AddParameter("id", messageId);
 
         return _connection.ExecuteNonQuery(command) > 0;
     }

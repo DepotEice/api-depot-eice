@@ -202,7 +202,7 @@ namespace API.DepotEice.UIL.Controllers
                     return Unauthorized("You are not authorized to perform this action");
                 }
 
-                return Ok(_messageRepository.MarkAsRead(currentUserId, receiverId));
+                return Ok(_messageRepository.MarkConversationAsRead(currentUserId, receiverId));
             }
             catch (Exception e)
             {
