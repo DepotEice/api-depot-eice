@@ -1,5 +1,6 @@
 ﻿using API.DepotEice.DAL.Entities;
 using API.DepotEice.DAL.IRepositories;
+using API.DepotEice.UIL.AuthorizationAttributes;
 using API.DepotEice.UIL.Data;
 using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
@@ -9,6 +10,7 @@ using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
 
@@ -433,6 +435,54 @@ public class UsersController : ControllerBase
             return BadRequest(e.Message);
 #else
             return BadRequest("An error occurred while trying to get user's, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Get all the available users from the database without the current user and the deleted users
+    /// </summary>
+    /// <returns>
+    /// List of all the users.
+    /// </returns>
+    [HttpGet("available")]
+    [HasRoleAuthorize(RolesEnum.GUEST)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetAvailableUsers()
+    {
+        try
+        {
+            string? currentUserId = _userManager.GetCurrentUserId;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized("You must be authenticated to perform this action!");
+            }
+
+            IEnumerable<UserEntity> usersFromRepo = _userRepository
+                .GetAll()
+                .Where(u => !u.Id.Equals(currentUserId) && u.DeletedAt is not null);
+
+            IEnumerable<UserModel> usersToReturn = _mapper.Map<IEnumerable<UserModel>>(usersFromRepo);
+
+            return Ok(usersToReturn);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(GetAvailableUsers),
+                e.Message,
+                e.StackTrace
+            );
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get available users, please contact the administrator");
 #endif
         }
     }
