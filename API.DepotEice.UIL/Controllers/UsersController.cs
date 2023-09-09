@@ -112,6 +112,43 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// Get all the students
+    /// </summary>
+    /// <returns>
+    /// List of all the students
+    /// </returns>
+    [HttpGet("Students")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult GetStudents()
+    {
+        try
+        {
+            IEnumerable<UserEntity> usersFromRepo = _userRepository.GetUsersByRole(STUDENT_ROLE);
+
+            IEnumerable<UserModel> users = _mapper.Map<IEnumerable<UserModel>>(usersFromRepo);
+
+            return Ok(users);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetStudents),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get students, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
     /// Update the profile picture of the user
     /// </summary>
     /// <param name="files">The form file</param>

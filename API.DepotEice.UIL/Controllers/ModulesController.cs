@@ -1384,35 +1384,218 @@ public class ModulesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get all the students in the module. If status is specified, the user with the specified status will be selected.
+    /// Otherwise only accepted users in the module will be returned
+    /// </summary>
+    /// <param name="mId">The id of the module</param>
+    /// <param name="status">The status of the users. Can be null</param>
+    /// <returns>
+    /// List of all the students of the module
+    /// </returns>
     [HttpGet("{mId}/Students")]
-    public IActionResult ModuleStudents(int mId)
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult GetModuleStudents(int mId, bool? status = null)
     {
+        if (mId <= 0)
+        {
+            return BadRequest("The provided module id is invalid");
+        }
+
         try
         {
-            IEnumerable<UserModel> students = _moduleRepository.GetModuleUsers(mId).Select(x => x.Map<UserModel>());
+            IEnumerable<UserEntity> studentsFromRepo;
+
+            if (status.HasValue)
+            {
+                studentsFromRepo = _moduleRepository.GetModuleUsers(mId, STUDENT_ROLE, status.Value);
+            }
+            else
+            {
+                studentsFromRepo = _moduleRepository.GetModuleUsers(mId, STUDENT_ROLE, true);
+            }
+
+            IEnumerable<UserModel> students = _mapper.Map<IEnumerable<UserModel>>(studentsFromRepo);
+
             return Ok(students);
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(GetModuleStudents),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get module students, please contact the administrator");
+#endif
         }
     }
 
-    [HttpPost("{mId}/Students/{sId}")]
-    public IActionResult StudentApply(int mId, string sId)
+    /// <summary>
+    /// Add a student with the specified id and the specified student id to the module. If the student is already in 
+    /// the module, nothing will happen. The student status will be set to accepted
+    /// </summary>
+    /// <param name="mId">The id of the module</param>
+    /// <param name="sId">The id of the user</param>
+    /// <returns></returns>
+    [HttpPut("{mId}/Students/{sId}")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult AddStudent(int mId, string sId)
     {
+        if (mId <= 0)
+        {
+            return BadRequest("The provided module id is invalid");
+        }
+
+        if (string.IsNullOrEmpty(sId))
+        {
+            return BadRequest("The provided student id is invalid");
+        }
+
         try
         {
-            bool result = _moduleRepository.AddUserToModule(sId, mId);
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
 
-            if (!result)
-                return BadRequest("Something went wrong ...");
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no module with ID {mId}");
+            }
+
+            UserEntity? studentFromRepo = _userRepository.GetByKey(sId);
+
+            if (studentFromRepo is null)
+            {
+                return NotFound($"There is no student with ID {sId}");
+            }
+
+            bool isStudent = _roleRepository.GetUserRoles(studentFromRepo.Id).Any(x => x.Name.Equals(RolesData.STUDENT_ROLE));
+
+            if (!isStudent)
+            {
+                return BadRequest($"The user with ID {sId} is not a student");
+            }
+
+            bool isAlreadyInModule = _moduleRepository.GetModuleUsers(mId, STUDENT_ROLE, true).Any(x => x.Id.Equals(sId));
+
+            if (isAlreadyInModule)
+            {
+                return NoContent();
+            }
+
+            if (!_moduleRepository.AddUserToModule(sId, mId))
+            {
+                return BadRequest($"The user with ID {sId} could not be added to the module with ID {mId}");
+            }
+
+            if (!_moduleRepository.SetUserStatus(sId, mId, true))
+            {
+                return BadRequest($"The user with ID {sId} could not be set as accepted in the module with ID {mId}");
+            }
 
             return NoContent();
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(AddStudent),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to add student to module, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Delete a student with the specified id and the specified student id from the module. If the student is not in
+    /// the module, nothing will happen
+    /// </summary>
+    /// <param name="mId">The id of the module</param>
+    /// <param name="sId">The id of the student</param>
+    /// <returns></returns>
+    [HttpDelete("{mId}/Students/{sId}")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult DeleteStudent(int mId, string sId)
+    {
+        if (mId <= 0)
+        {
+            return BadRequest("The provided module id is invalid");
+        }
+
+        if (string.IsNullOrEmpty(sId))
+        {
+            return BadRequest("The provided student id is invalid");
+        }
+
+        try
+        {
+            ModuleEntity? moduleFromRepo = _moduleRepository.GetByKey(mId);
+
+            if (moduleFromRepo is null)
+            {
+                return NotFound($"There is no module with ID {mId}");
+            }
+
+            UserEntity? studentFromRepo = _userRepository.GetByKey(sId);
+
+            if (studentFromRepo is null)
+            {
+                return NotFound($"There is no student with ID {sId}");
+            }
+
+            bool isStudent = _roleRepository.GetUserRoles(studentFromRepo.Id).Any(x => x.Name.Equals(RolesData.STUDENT_ROLE));
+
+            if (!isStudent)
+            {
+                return BadRequest($"The user with ID {sId} is not a student");
+            }
+
+            bool isAlreadyInModule = _moduleRepository.GetModuleUsers(mId, STUDENT_ROLE, true).Any(x => x.Id.Equals(sId));
+
+            if (!isAlreadyInModule)
+            {
+                return NoContent();
+            }
+
+            if (!_moduleRepository.DeleteUserFromModule(sId, mId))
+            {
+                return BadRequest($"The user with ID {sId} could not be deleted from the module with ID {mId}");
+            }
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fnName}\":\n{e.Message}\"\n\"{e.StackTrace}\"",
+                DateTime.Now,
+                nameof(DeleteStudent),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to remove a student of a module, please contact the administrator");
+#endif
         }
     }
 
@@ -1517,24 +1700,6 @@ public class ModulesController : ControllerBase
 #else
             return BadRequest("An error occurred while trying to set the user status, please contact the administrator");
 #endif
-        }
-    }
-
-    [HttpDelete("{mId}/Students/{sId}")]
-    public IActionResult StudentDelete(int mId, string sId)
-    {
-        try
-        {
-            bool result = _moduleRepository.DeleteUserFromModule(sId, mId);
-
-            if (!result)
-                return BadRequest("Something went wrong ...");
-
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
         }
     }
 
