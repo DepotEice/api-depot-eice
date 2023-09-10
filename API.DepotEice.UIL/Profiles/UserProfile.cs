@@ -19,9 +19,9 @@ namespace API.DepotEice.UIL.Profiles
                 .ForMember(
                     dest => dest.ProfilePictureUrl,
                     opt => opt.MapFrom(
-                        src => 
-                            src.ProfilePictureId.HasValue 
-                                ? $"https://localhost:7205/api/Files/ById/{src.ProfilePictureId}" 
+                        src =>
+                            src.ProfilePictureId.HasValue
+                                ? $"https://localhost:7205/api/Files/ById/{src.ProfilePictureId}"
                                 : $"https://localhost:7205/api/Files/DefaultProfilePicture"));
 
             CreateMap<UserEntity, UserRequestingModuleModel>();

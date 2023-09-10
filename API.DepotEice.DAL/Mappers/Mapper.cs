@@ -148,8 +148,12 @@ internal static class Mapper
         {
             Id = (int)record["Id"],
             Content = (string)record["Content"],
-            SenderId = (string)record["SenderId"],
-            ReceiverId = (string)record["ReceiverId"]
+            SenderId = record["SenderId"].ToString() ??
+                throw new NullReferenceException("The property SenderId is null"),
+            ReceiverId = record["ReceiverId"].ToString() ??
+                throw new NullReferenceException("The property ReceiverId is null"),
+            SentAt = (DateTime)record["SentAt"],
+            Read = (bool)record["Read"]
         };
     }
 

@@ -1,37 +1,39 @@
-﻿namespace API.DepotEice.DAL.Entities
+﻿using API.DepotEice.DAL.Entities;
+
+namespace API.DepotEice.UIL.Models
 {
     /// <summary>
-    /// Represent the <c>Messages</c> table in the database
+    /// Represents a model class for chat messages.
     /// </summary>
-    public class MessageEntity
+    public class MessageModel
     {
         /// <summary>
-        /// <see cref="MessageEntity"/>'s ID in the database
+        /// Gets or sets the unique identifier of the message.
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// <see cref="MessageEntity"/>'s content
+        /// Gets or sets the content of the message.
         /// </summary>
         public string Content { get; set; } = string.Empty;
 
         /// <summary>
-        /// ID of <see cref="UserEntity"/> sending the message
+        /// Gets or sets the unique identifier of the sender of the message.
         /// </summary>
         public string SenderId { get; set; } = string.Empty;
 
         /// <summary>
-        /// ID of <see cref="UserEntity"/> receving the message
+        /// Gets or sets the unique identifier of the receiver of the message.
         /// </summary>
         public string ReceiverId { get; set; } = string.Empty;
 
         /// <summary>
-        /// The datetime when the message was sent
+        /// Gets or sets the timestamp when the message was sent.
         /// </summary>
         public DateTime SentAt { get; set; }
 
         /// <summary>
-        /// Flag to know if the message has been read. Default value is false
+        /// Gets or sets a value indicating whether the message has been read by the receiver.
         /// </summary>
         public bool Read { get; set; }
     }

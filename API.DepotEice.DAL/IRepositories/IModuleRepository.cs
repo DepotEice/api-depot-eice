@@ -4,8 +4,39 @@ namespace API.DepotEice.DAL.IRepositories;
 
 public interface IModuleRepository : IRepositoryBase<int, ModuleEntity>
 {
+    /// <summary>
+    /// Get all the users of the given module
+    /// </summary>
+    /// <param name="moduleId">The id of the module</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     IEnumerable<UserEntity> GetModuleUsers(int moduleId);
+
+    /// <summary>
+    /// Get all the users who have a specific role name for the given module
+    /// </summary>
+    /// <param name="moduleId">The id of the module</param>
+    /// <param name="role">The name of the role</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role);
+
+    /// <summary>
+    /// Get all the users who have a specific role name and with the given status for the given module
+    /// </summary>
+    /// <param name="moduleId">The id of the module</param>
+    /// <param name="role">The name of the role</param>
+    /// <param name="isAccepted">Status of the users in the module</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role, bool isAccepted);
     IEnumerable<ModuleEntity> GetUserModules(string userId);
 

@@ -12,15 +12,19 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
     public ModuleRepository(IDevHopConnection connection) : base(connection) { }
 
     /// <summary>
-    /// 
+    /// Get all the users of the given module
     /// </summary>
-    /// <param name="moduleId"></param>
-    /// <returns></returns>
+    /// <param name="moduleId">The id of the module</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public IEnumerable<UserEntity> GetModuleUsers(int moduleId)
     {
         if (moduleId <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(moduleId));
+        }
 
         string query =
             @"SELECT u.* 
@@ -29,11 +33,22 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
             WHERE [ModuleId] = @moduleId";
 
         Command command = new Command(query);
+
         command.AddParameter("moduleId", moduleId);
 
         return _connection.ExecuteReader(command, x => x.DbToUser());
     }
 
+    /// <summary>
+    /// Get all the users who have a specific role name for the given module
+    /// </summary>
+    /// <param name="moduleId">The id of the module</param>
+    /// <param name="role">The name of the role</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     public IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role)
     {
         if (moduleId <= 0)
@@ -64,6 +79,17 @@ public class ModuleRepository : RepositoryBase, IModuleRepository
         return _connection.ExecuteReader(command, u => u.DbToUser());
     }
 
+    /// <summary>
+    /// Get all the users who have a specific role name and with the given status for the given module
+    /// </summary>
+    /// <param name="moduleId">The id of the module</param>
+    /// <param name="role">The name of the role</param>
+    /// <param name="isAccepted">Status of the users in the module</param>
+    /// <returns>
+    /// <see cref="IEnumerable{T}"/> where T is <see cref="UserEntity"/>
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
     public IEnumerable<UserEntity> GetModuleUsers(int moduleId, string role, bool isAccepted)
     {
         if (moduleId <= 0)
