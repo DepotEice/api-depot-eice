@@ -5,31 +5,48 @@ networks:
 
 services:
   api-depot-eice:
-    image: aspirio/api-depot-eice
+    image: aspirio/api-depot-eice:latest
     networks:
-      depot-eice:
+      - depot-eice
     ports:
-      - "5000:80"
+      - "5000:5000"
+      # - "5005:443"
     environment:
-      ASPNETCORE_URLS: "http://+:80"
-      ASPNETCORE_HTTP_POST: 5000
-      JWT_AUDIENCE: "audience"
-      JWT_ISSUER: "issuer"
+      ASPNETCORE_URLS: http://+:5000 #;https://+:443
+      ASPNETCORE_HTTP_PORT: 5000
+      # ASPNETCORE_HTTPS_PORT: 5005
+      # ASPNETCORE_Kestrel__Certificates__Default__Password: certificatePassword@187
+      # ASPNETCORE_Kestrel__Certificates__Default__Path: /https/aspnetapp.pfx
+      JWT_AUDIENCE: "IPAMC - EICE"
+      JWT_ISSUER: "IPAMC - EICE"
       JWT_SECRET: "wtpp-JfGWkyViHdg4bW_Hrfx_jlD01mxLnBexWsEHVu97aVfcd2FgvmP-mHufvltwEb9mGG61eBLft-O2W7V0A"
       PASSWORD_SALT: "5C2iqv9FSwEIqiD9ZOrDCQhvK8OFnVJUCelLsikTZBUk4xuZnt4HlFj1PbbiHimx58LAGtZc9+tbEI9pyT9x4A=="
-      MSSQL_CONNECTION_STRING: "Data Source=db-depot-eice,1433;Initial Catalog=DepotEice;User ID=sa;Password=somePassword@187;Trusted_Connection=False;Integrated Security=False;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"
-      TFE_MAILJET_API_KEY_PUBLIC: "f40de3ed16e8436773cc3621e8fc13ce"
-      TFE_MAILJET_API_KEY_PRIVATE: "197c47c5615c7b157f8aff7d5f631547"
-      DOMAIN_NAME: ""
+      DOMAIN_NAME: "tfe-depot-eice.com"
+      AWS_BUCKET_NAME: "depot-eice"
+      AWS_REGION_ENDPOINT: "EUWest3"
     depends_on:
       - db-depot-eice
+      - nginx-depot-eice
+    restart: always
+    # volumes:
+    #   - ~/.aspnet/https:/https:ro
 
   db-depot-eice:
     image: "mcr.microsoft.com/mssql/server:2022-latest"
     networks:
-      depot-eice:
+      - depot-eice
     ports:
       - "1433:1433"
     environment:
+      MSSQL_PID: Express
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "somePassword@187"
+      MSSQL_SA_PASSWORD: "some_Password187"
+
+  nginx-depot-eice:
+    image: nginx:latest
+    networks:
+      - depot-eice
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
