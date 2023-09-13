@@ -8,6 +8,7 @@ using DevHopTools.DataAccess.Connections;
 using DevHopTools.DataAccess.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Net;
@@ -36,6 +37,11 @@ public class Program
             {
                 webBuilder.AddUserSecrets<Program>();
             }
+        });
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.ListenAnyIP(5000);
         });
 
         builder.Services.AddCors();
@@ -214,17 +220,22 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
-            app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Depot.Eice v1"));
         }
+
+        app.UseSwagger();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Depot.Eice v1"));
+
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        });
 
         app.UseStaticFiles();
 
+        // TODO: Remove this and add an exception
         app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
         app.UseRouting();
-
-        app.UseHttpsRedirection();
 
         app.UseAuthentication();
 
