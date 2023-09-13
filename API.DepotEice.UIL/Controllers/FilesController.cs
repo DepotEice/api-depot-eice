@@ -467,7 +467,7 @@ namespace API.DepotEice.UIL.Controllers
                     return NotFound("The file was not found");
                 }
 
-                return Ok(new { Url = $"https://localhost:7205/api/Files/ById/{createdFileId}" });
+                return Ok(new { Url = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/Files/ById/{createdFileId}" });
             }
             catch (Exception e)
             {
