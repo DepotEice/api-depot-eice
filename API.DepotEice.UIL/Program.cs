@@ -39,10 +39,12 @@ public class Program
             }
         });
 
+#if RELEASE
         builder.WebHost.ConfigureKestrel(options =>
         {
             options.ListenAnyIP(5000);
         });
+#endif
 
         builder.Services.AddCors();
         builder.Services.AddControllers();

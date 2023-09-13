@@ -4,8 +4,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Linq;
-using SQLitePCL;
 
 namespace API.DepotEice.UIL.Managers;
 
@@ -138,8 +136,13 @@ public class TokenManager : ITokenManager
 
         TokenValidationParameters tokenValidationParameters = new TokenValidationParameters()
         {
+#if DEBUG
             ValidIssuer = _configuration["JWT:JWT_ISSUER"],
             ValidAudience = _configuration["JWT:JWT_AUDIENCE"],
+#else
+            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+#endif
             ValidateIssuer = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuerSigningKey = true,
@@ -169,14 +172,26 @@ public class TokenManager : ITokenManager
         }
         catch (SecurityTokenException e)
         {
-            _logger.LogInformation($"{DateTime.Now} - The token verification for token \"{jwtToken}\" failed\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogInformation(
+                "{date} - The token verification for token \"{jwtToken}\" failed\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                jwtToken,
+                e.Message,
+                e.StackTrace
+            );
+
             return false;
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception occurred during \"{nameof(ValidateJwtToken)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception occurred during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(ValidateJwtToken),
+                e.Message,
+                e.StackTrace
+            );
+
             return false;
         }
     }
