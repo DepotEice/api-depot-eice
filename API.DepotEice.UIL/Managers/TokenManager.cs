@@ -132,7 +132,14 @@ public class TokenManager : ITokenManager
         }
 
         JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+#if DEBUG
         byte[] key = Encoding.ASCII.GetBytes(_configuration["JWT:JWT_SECRET"]);
+#else
+        byte[] key = Encoding.ASCII.GetBytes(
+            Environment.GetEnvironmentVariable("JWT_SECRET") ??
+                throw new NullReferenceException($"There is no environment variable named JWT_SECRET")
+            );
+#endif
 
         TokenValidationParameters tokenValidationParameters = new TokenValidationParameters()
         {
@@ -140,8 +147,10 @@ public class TokenManager : ITokenManager
             ValidIssuer = _configuration["JWT:JWT_ISSUER"],
             ValidAudience = _configuration["JWT:JWT_AUDIENCE"],
 #else
-            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
-            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
+            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ??
+                throw new NullReferenceException($"There is no environment variable named JWT_ISSUER"),
+            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
+                throw new NullReferenceException($"There is no environment variable named JWT_AUDIENCE"),
 #endif
             ValidateIssuer = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
@@ -152,7 +161,8 @@ public class TokenManager : ITokenManager
 
         try
         {
-            ClaimsPrincipal validatedToken = tokenHandler.ValidateToken(jwtToken, tokenValidationParameters, out SecurityToken securityToken);
+            ClaimsPrincipal validatedToken = tokenHandler
+                .ValidateToken(jwtToken, tokenValidationParameters, out SecurityToken securityToken);
 
             Claim? validatedTokenUserIdClaim = validatedToken.Claims.SingleOrDefault(c => c.Type.Equals(ClaimTypes.Sid));
 
