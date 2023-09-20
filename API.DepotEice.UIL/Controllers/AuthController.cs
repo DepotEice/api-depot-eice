@@ -456,7 +456,7 @@ public class AuthController : ControllerBase
     /// doesn't exist either
     /// <see cref="StatusCodes.Status400BadRequest"/>
     /// </returns>
-    [HttpGet(nameof(Activate))]
+    [HttpPost(nameof(Activate))]
     public IActionResult Activate(string tokenId, string tokenValue)
     {
         if (string.IsNullOrEmpty(tokenId) || string.IsNullOrWhiteSpace(tokenId))
@@ -502,8 +502,13 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Activate)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(Activate),
+                e.Message,
+                e.StackTrace
+            );
 #if DEBUG
             return BadRequest(e.Message);
 #else

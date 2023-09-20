@@ -48,9 +48,9 @@ namespace API.DepotEice.UIL.Managers
                 .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
                     "<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p> " +
 #if DEBUG
-                    $"<a href=\"https://localhost:7245/activation/{tokenId}/{userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://localhost:7245/activation?tokenId={tokenId}&tokenValue{userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}/activation?token={userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}/activation?tokenId={tokenId}&tokenValue{userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
