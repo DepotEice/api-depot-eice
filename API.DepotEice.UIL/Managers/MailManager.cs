@@ -89,9 +89,9 @@ namespace API.DepotEice.UIL.Managers
                 .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
                     "<p>Veuillez cliquer sur le lien ci-dessous pour réinitialiser votre mot de passe</p> " +
 #if DEBUG
-                    $"<a href=\"https://localhost:7245/reset-password/{userId}/{userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://localhost:7245/reset-password?userId={userId}&token={userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}/reset-password/{userId}/{userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}/reset-password?userId={userId}&token={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
