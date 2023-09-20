@@ -655,7 +655,6 @@ public class ModulesController : ControllerBase
     /// <see cref="IEnumerable{T}"/> where T is <see cref="ScheduleModel"/>
     /// </returns>
     [HttpGet("{mId}/Schedules")]
-    [HasRoleAuthorize(RolesEnum.STUDENT, andAbove: true)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ScheduleModel>))]
     public IActionResult GetSchedules(int mId, DateTime? selectedDate = null, DateRange range = DateRange.Day)
     {

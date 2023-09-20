@@ -311,11 +311,13 @@ public class AuthController : ControllerBase
     /// <param name="passwordForm">The Password registerForm</param>
     /// <param name="token">The tokenValue provided by mail</param>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK" /> If the operation was successful
-    /// <see cref="StatusCodes.Status400BadRequest"/>
-    /// <see cref="StatusCodes.Status404NotFound"/> If the tokenValue doesn't exist
+    /// 204 No content if the operation was successful
     /// </returns>
     [HttpPost(nameof(ResetPassword))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult ResetPassword([FromBody] PasswordForm passwordForm, string token)
     {
         if (passwordForm is null)
@@ -326,6 +328,11 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
+        }
+
+        if (string.IsNullOrEmpty(token) || string.IsNullOrWhiteSpace(token))
+        {
+            return BadRequest("The token is required");
         }
 
         try
@@ -360,8 +367,13 @@ public class AuthController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during {nameof(ResetPassword)} :\n" +
-                $"\"{e.Message}\"\n\"{e.Message}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during {fn} :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(ResetPassword),
+                e.Message,
+                e.StackTrace
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
