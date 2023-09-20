@@ -368,7 +368,7 @@ public class AuthController : ControllerBase
         catch (Exception e)
         {
             _logger.LogError(
-                "{date} - An exception was thrown during {fn} :\n\"{eMsg}\"\n\"{eStr}\"",
+                "{date} - An exception was thrown during {fn} :\n{eMsg}\n{eStr}",
                 DateTime.Now,
                 nameof(ResetPassword),
                 e.Message,
