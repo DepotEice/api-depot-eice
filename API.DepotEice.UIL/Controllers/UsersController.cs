@@ -6,10 +6,8 @@ using API.DepotEice.UIL.Interfaces;
 using API.DepotEice.UIL.Models;
 using API.DepotEice.UIL.Models.Forms;
 using AutoMapper;
-using Mailjet.Client.Resources;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using static API.DepotEice.UIL.Data.RolesData;
 
 namespace API.DepotEice.UIL.Controllers;
