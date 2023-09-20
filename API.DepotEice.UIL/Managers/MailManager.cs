@@ -45,7 +45,7 @@ namespace API.DepotEice.UIL.Managers
             TransactionalEmail email = new TransactionalEmailBuilder()
                 .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
                 .WithSubject("Activation de votre compte Depot EICE")
-                .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
+                .WithHtmlPart("<h1>Bonjour</h1> " +
                     "<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p> " +
 #if DEBUG
                     $"<a href=\"https://localhost:7245/activation?tokenId={tokenId}&tokenValue{userToken}\">Cliquez-ici</a>")
