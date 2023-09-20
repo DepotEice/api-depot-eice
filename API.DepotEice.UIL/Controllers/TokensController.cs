@@ -44,12 +44,23 @@ namespace API.DepotEice.UIL.Controllers
             _userTokenRepository = userTokenRepository;
         }
 
+        /// <summary>
+        /// Validate the given token
+        /// </summary>
+        /// <param name="token">The token to validate</param>
+        /// <returns>
+        /// Nothing if the token is valid
+        /// </returns>
         [HttpGet(nameof(IsValid))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesErrorResponseType(typeof(string))]
         public IActionResult IsValid(string token)
         {
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) || string.IsNullOrWhiteSpace(token))
             {
-                return BadRequest();
+                return BadRequest("The token is required");
             }
 
             UserTokenEntity? tokenFromRepo = _userTokenRepository
@@ -66,7 +77,7 @@ namespace API.DepotEice.UIL.Controllers
                 return BadRequest("Token is used or expired");
             }
 
-            return Ok("Token is valid");
+            return NoContent();
         }
     }
 }
