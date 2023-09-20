@@ -48,9 +48,9 @@ namespace API.DepotEice.UIL.Managers
                 .WithHtmlPart("<h1>Bonjour</h1> " +
                     "<p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte</p> " +
 #if DEBUG
-                    $"<a href=\"https://localhost:7245/activation?tokenId={tokenId}&tokenValue{userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://localhost:7245/activation?tokenId={tokenId}&tokenValue={userToken}\">Cliquez-ici</a>")
 #else
-                    $"<a href=\"https://www.{DOMAIN_NAME}/activation?tokenId={tokenId}&tokenValue{userToken}\">Cliquez-ici</a>")
+                    $"<a href=\"https://www.{DOMAIN_NAME}/activation?tokenId={tokenId}&tokenValue={userToken}\">Cliquez-ici</a>")
 #endif
                 .WithTo(new SendContact(destinationEmail))
                 .Build();
@@ -86,7 +86,7 @@ namespace API.DepotEice.UIL.Managers
             TransactionalEmail email = new TransactionalEmailBuilder()
                 .WithFrom(new SendContact("soultan.hatsijev@hainaut-promsoc.be"))
                 .WithSubject("Mot de passe oublié")
-                .WithHtmlPart("<h1>Bonjour \"Nom\"</h1> " +
+                .WithHtmlPart("<h1>Bonjour</h1> " +
                     "<p>Veuillez cliquer sur le lien ci-dessous pour réinitialiser votre mot de passe</p> " +
 #if DEBUG
                     $"<a href=\"https://localhost:7245/reset-password?userId={userId}&token={userToken}\">Cliquez-ici</a>")

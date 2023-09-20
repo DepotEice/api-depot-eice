@@ -393,12 +393,12 @@ public class AuthController : ControllerBase
     /// tokenValue couldn't be found
     /// <see cref="StatusCodes.Status400BadRequest"/>
     /// </returns>
-    [HttpPost(nameof(RequestPassword))]
+    [HttpGet(nameof(RequestPassword))]
     public async Task<IActionResult> RequestPassword(string email)
     {
         if (string.IsNullOrEmpty(email))
         {
-            return BadRequest("The body content cannot be null or empty");
+            return BadRequest("You must provide the email");
         }
 
         try
@@ -410,7 +410,7 @@ public class AuthController : ControllerBase
 #if DEBUG
                 return NotFound($"There is no user with this email address : \"{email}\"");
 #else
-                return Ok();
+                return NoContent();
 #endif
             }
 
@@ -441,12 +441,17 @@ public class AuthController : ControllerBase
                 return BadRequest("The mail couldn't be sent!, please contact the administrator");
             }
 
-            return Ok();
+            return NoContent();
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(RequestPassword)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                nameof(RequestPassword),
+                e.Message,
+                e.StackTrace
+            );
 #if DEBUG
             return BadRequest(e.Message);
 #else
