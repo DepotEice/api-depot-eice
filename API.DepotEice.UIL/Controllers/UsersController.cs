@@ -804,6 +804,10 @@ public class UsersController : ControllerBase
     /// <returns></returns>
     [Authorize]
     [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Delete(string? id = null)
     {
         try
@@ -812,7 +816,7 @@ public class UsersController : ControllerBase
 
             if (!string.IsNullOrEmpty(userId))
             {
-                if (!_userManager.IsInRole(RolesData.DIRECTION_ROLE))
+                if (!_userManager.IsInRole(DIRECTION_ROLE))
                 {
                     return Unauthorized("You are not authorized to delete other user's account");
                 }
@@ -820,6 +824,7 @@ public class UsersController : ControllerBase
             else
             {
                 userId = _userManager.GetCurrentUserId;
+
                 if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized("You must be authenticated to perform this action");
@@ -838,19 +843,24 @@ public class UsersController : ControllerBase
                 return BadRequest("The user account is already deleted");
             }
 
-            var deleteResult = _userRepository.Delete(userId);
+            bool deleteResult = _userRepository.Delete(userId);
 
             if (!deleteResult)
             {
                 return BadRequest("The user account could not be deleted");
             }
 
-            return Ok("The user account was successfully deleted");
+            return NoContent();
         }
         catch (Exception e)
         {
-            _logger.LogError("{dt} - An exception was thrown during \"{fun}\":\n{msg}\"\n{stack}", DateTime.Now,
-                nameof(UploadProfilePicture), e.Message, e.StackTrace);
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\":\n{eMsg}\"\n{eStr}",
+                DateTime.Now,
+                nameof(UploadProfilePicture),
+                e.Message,
+                e.StackTrace
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
