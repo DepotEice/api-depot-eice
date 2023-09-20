@@ -50,6 +50,9 @@ public class UserEntity
     /// </summary>
     public string? LastName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Represent <c>Users</c> table's <c>Gender</c> column
+    /// </summary>
     public string? Gender { get; set; } = string.Empty;
 
     /// <summary>

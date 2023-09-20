@@ -27,6 +27,8 @@ namespace API.DepotEice.UIL.Profiles
             CreateMap<UserEntity, UserRequestingModuleModel>();
 
             CreateMap<UserForm, UserEntity>();
+
+            CreateMap<RegisterForm, UserEntity>();
         }
     }
 }
