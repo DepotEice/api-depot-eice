@@ -451,8 +451,11 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Get all users.
     /// </summary>
-    /// <returns><see cref="StatusCodes.Status200OK"/> if the operation is successful.</returns>
+    /// <returns>All the users in the app</returns>
     [HttpGet()]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Get()
     {
         try
@@ -465,8 +468,13 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n{eMsg}\n{eStr}",
+                DateTime.Now,
+                nameof(Get),
+                e.Message,
+                e.StackTrace
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
