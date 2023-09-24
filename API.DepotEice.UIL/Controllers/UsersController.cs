@@ -28,6 +28,7 @@ public class UsersController : ControllerBase
     private readonly IUserManager _userManager;
     private readonly IFileManager _fileManager;
     private readonly IFileRepository _fileRepository;
+    private readonly IAddressRepository _addressRepository;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -51,7 +52,8 @@ public class UsersController : ControllerBase
         IUserManager userManager,
         IFileManager fileManager,
         IFileRepository fileRepository
-    )
+,
+        IAddressRepository addressRepository)
     {
         if (logger is null)
         {
@@ -98,6 +100,11 @@ public class UsersController : ControllerBase
             throw new ArgumentNullException(nameof(fileRepository));
         }
 
+        if (addressRepository is null)
+        {
+            throw new ArgumentNullException(nameof(addressRepository));
+        }
+
         _logger = logger;
         _mapper = mapper;
         _userRepository = userRepository;
@@ -107,6 +114,7 @@ public class UsersController : ControllerBase
         _userManager = userManager;
         _fileManager = fileManager;
         _fileRepository = fileRepository;
+        _addressRepository = addressRepository;
     }
 
     /// <summary>
@@ -386,8 +394,14 @@ public class UsersController : ControllerBase
     /// authenticated user is returned.
     /// </summary>
     /// <param name="id">The id of the user</param>
-    /// <returns></returns>
+    /// <returns>
+    /// The file content
+    /// </returns>
     [HttpGet("ProfilePicture")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfilePicture([FromQuery] string? id)
     {
         try
@@ -435,8 +449,13 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(GetProfilePicture)}\" :\n" +
-               $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(GetProfilePicture),
+                e.Message,
+                e.StackTrace
+            );
 
 #if DEBUG
             return BadRequest(e.Message);
@@ -450,10 +469,11 @@ public class UsersController : ControllerBase
     /// Get all users.
     /// </summary>
     /// <returns>All the users in the app</returns>
-    [HttpGet()]
+    [HttpGet]
     [HasRoleAuthorize(RolesEnum.DIRECTION)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult Get()
     {
         try
@@ -477,7 +497,7 @@ public class UsersController : ControllerBase
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to get user's, please contact the administrator");
+            return BadRequest("An error occurred while trying to get users, please contact the administrator");
 #endif
         }
     }
@@ -530,18 +550,39 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get all the teachers from the database
+    /// </summary>
+    /// <returns>
+    /// The list of all available teachers
+    /// </returns>
     [HttpGet("teachers")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult GetTeachers()
     {
         try
         {
-            var users = _userRepository.GetUsersByRole(RolesData.TEACHER_ROLE);
+            IEnumerable<UserEntity> users = _userRepository
+                .GetUsersByRole(TEACHER_ROLE)
+                .Where(u => u.DeletedAt is null);
 
             return Ok(users);
         }
         catch (Exception e)
         {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(GetTeachers),
+                e.Message,
+                e.StackTrace
+            );
+#if DEBUG
             return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get teachers, please contact the administrator");
+#endif
         }
     }
 
@@ -549,8 +590,13 @@ public class UsersController : ControllerBase
     /// Get the user by the given ID.
     /// </summary>
     /// <param name="id">The user id</param>
-    /// <returns></returns>
+    /// <returns>
+    /// Get the user information by the given ID.
+    /// </returns>
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserModel))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Get(string id)
     {
         if (string.IsNullOrEmpty(id))
@@ -573,20 +619,19 @@ public class UsersController : ControllerBase
         }
         catch (Exception e)
         {
-            _logger.LogError($"{DateTime.Now} - An exception was thrown during \"{nameof(Get)}\" :\n" +
-                $"\"{e.Message}\"\n\"{e.StackTrace}\"");
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(Get),
+                e.Message,
+                e.StackTrace
+            );
 #if DEBUG
             return BadRequest(e.Message);
 #else
-            return BadRequest("An error occurred while trying to get addresses, please contact the administrator");
+            return BadRequest("An error occurred while trying to get user, please contact the administrator");
 #endif
         }
-    }
-
-    [HttpPost]
-    public IActionResult Post([FromBody] UserForm form)
-    {
-        return Ok();
     }
 
     /// <summary>
@@ -595,13 +640,16 @@ public class UsersController : ControllerBase
     /// <param name="id">The ID of the user to update.</param>
     /// <param name="form">The updated user information.</param>
     /// <returns>
-    /// <see cref="StatusCodes.Status200OK"/> If the user was successfully updated.
-    /// <see cref="StatusCodes.Status400BadRequest"/> If the ID or body is invalid.
-    /// <see cref="StatusCodes.Status404NotFound"/> If the user with the specified ID does not exist.
-    /// <see cref="StatusCodes.Status500InternalServerError"/> if there is an error during the upload or database operations.
+    /// The updated user information.
     /// </returns>
     [HttpPut]
-    public async Task<IActionResult> Put([FromBody] UserForm form, [FromQuery] string? id)
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserModel))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public IActionResult Put([FromBody] UserForm form, [FromQuery] string? id)
     {
         if (form is null)
         {
@@ -877,18 +925,6 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("{uId}/Appointments")]
-    public IActionResult GetAppointments(string uId)
-    {
-        return Ok();
-    }
-
-    [HttpPost("{uId}/Appointments")]
-    public IActionResult PostAppointment(string uId, [FromBody] AppointmentForm form)
-    {
-        return Ok();
-    }
-
     /// <summary>
     /// Update user's password
     /// </summary>
@@ -958,6 +994,97 @@ public class UsersController : ControllerBase
             return BadRequest(e.Message);
 #else
             return BadRequest("An error occurred while trying to update the password, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Get all the addresses of the user with the given ID. Requires the user to be authenticated and to be in the 
+    /// direction role.
+    /// </summary>
+    /// <param name="userId">The id of the user</param>
+    /// <returns>
+    /// The list of all addresses belonging to the user with the given ID.
+    /// </returns>
+    [HttpGet("{userId}/Addresses")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<AddressModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetAddresses(string userId)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest($"The user ID is invalid");
+        }
+
+        try
+        {
+            IEnumerable<AddressEntity> addressesFromRepo = _addressRepository.GetAll().Where(a => a.UserId.Equals(userId));
+
+            IEnumerable<AddressModel> addressesToReturn = _mapper.Map<IEnumerable<AddressModel>>(addressesFromRepo);
+
+            return Ok(addressesToReturn);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(GetAddresses),
+                e.Message,
+                e.StackTrace
+            );
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's addresses, please contact the administrator");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Get the user roles by the given user ID
+    /// </summary>
+    /// <param name="userId">The id of the user</param>
+    /// <returns>
+    /// The list of all roles belonging to the user with the given ID.
+    /// </returns>
+    [HttpGet("{userId}/Roles")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<RoleModel>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetRoles(string userId)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest($"The user ID is invalid");
+        }
+
+        try
+        {
+            IEnumerable<RoleEntity> rolesFromRepo = _roleRepository.GetUserRoles(userId);
+
+            IEnumerable<RoleModel> rolesToReturn = _mapper.Map<IEnumerable<RoleModel>>(rolesFromRepo);
+
+            return Ok(rolesToReturn);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(GetRoles),
+                e.Message,
+                e.StackTrace
+            );
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to get user's roles, please contact the administrator");
 #endif
         }
     }
