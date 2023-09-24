@@ -131,7 +131,9 @@ public class UsersController : ControllerBase
     {
         try
         {
-            IEnumerable<UserEntity> usersFromRepo = _userRepository.GetUsersByRole(STUDENT_ROLE);
+            IEnumerable<UserEntity> usersFromRepo = _userRepository
+                .GetUsersByRole(STUDENT_ROLE)
+                .Where(u => u.DeletedAt is null);
 
             IEnumerable<UserModel> users = _mapper.Map<IEnumerable<UserModel>>(usersFromRepo);
 
