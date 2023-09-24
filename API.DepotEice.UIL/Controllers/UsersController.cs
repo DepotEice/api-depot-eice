@@ -1089,6 +1089,92 @@ public class UsersController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update the user role by the given user ID and role ID
+    /// </summary>
+    /// <param name="userId">The id of the user</param>
+    /// <param name="roleId">The id of the role</param>
+    /// <returns>
+    /// Nothing if the operation is successful. Otherwise, return an error
+    /// </returns>
+    [HttpPut("{userId}/Role/{roleId}")]
+    [HasRoleAuthorize(RolesEnum.DIRECTION)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult UpdateUserRole(string userId, string roleId)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest($"The user ID is invalid");
+        }
+
+        if (string.IsNullOrEmpty(roleId) || string.IsNullOrWhiteSpace(roleId))
+        {
+            return BadRequest($"The role ID is invalid");
+        }
+
+        try
+        {
+            UserEntity? userFromRepo = _userRepository.GetByKey(userId);
+
+            if (userFromRepo is null)
+            {
+                return NotFound($"The requested user does not exist");
+            }
+
+            if (userFromRepo.DeletedAt is not null)
+            {
+                return BadRequest($"The user is not active");
+            }
+
+            RoleEntity? roleFromRepo = _roleRepository.GetByKey(roleId);
+
+            if (roleFromRepo is null)
+            {
+                return NotFound($"The requested role does not exist");
+            }
+
+            IEnumerable<RoleEntity> userRoles = _roleRepository.GetUserRoles(userId);
+
+            foreach (var role in userRoles)
+            {
+                bool result = _roleRepository.RemoveUser(role.Id, userId);
+
+                if (!result)
+                {
+                    return BadRequest($"The role \"{role.Name}\" could not be removed from the user");
+                }
+            }
+
+            bool addResult = _roleRepository.AddUser(roleId, userId);
+
+            if (!addResult)
+            {
+                return BadRequest($"The role \"{roleFromRepo.Name}\" could not be added to the user");
+            }
+
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "{date} - An exception was thrown during \"{fn}\" :\n\"{eMsg}\"\n\"{eStr}\"",
+                DateTime.Now,
+                nameof(UpdateUserRole),
+                e.Message,
+                e.StackTrace
+            );
+
+#if DEBUG
+            return BadRequest(e.Message);
+#else
+            return BadRequest("An error occurred while trying to update user role, please contact the administrator");
+#endif
+        }
+    }
+
     private string GetSalt()
     {
 #if DEBUG
