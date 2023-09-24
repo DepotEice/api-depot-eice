@@ -1,5 +1,8 @@
 ﻿namespace API.DepotEice.UIL.Models
 {
+    /// <summary>
+    /// The user model
+    /// </summary>
     public class UserModel
     {
         /// <summary>
