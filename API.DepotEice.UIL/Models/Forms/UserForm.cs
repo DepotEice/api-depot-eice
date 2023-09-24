@@ -1,4 +1,6 @@
-﻿namespace API.DepotEice.UIL.Models.Forms
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace API.DepotEice.UIL.Models.Forms
 {
     /// <summary>
     /// Represents a form for creating or updating a user.
@@ -13,7 +15,7 @@
         /// <summary>
         /// Gets or sets the school email of the user.
         /// </summary>
-        public string SchoolEmail { get; set; } = string.Empty;
+        public string? SchoolEmail { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the first name of the user.
@@ -33,7 +35,7 @@
         /// <summary>
         /// Get or sets the birth date of the user
         /// </summary>
-        public string Gender { get; set; } = string.Empty;
+        public string? Gender { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the mobile number of the user.
