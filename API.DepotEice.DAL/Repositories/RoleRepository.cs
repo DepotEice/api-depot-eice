@@ -145,12 +145,14 @@ public class RoleRepository : RepositoryBase, IRoleRepository
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"></exception>
-    public RoleEntity GetByKey(string key)
+    public RoleEntity? GetByKey(string key)
     {
         if (string.IsNullOrEmpty(key))
+        {
             throw new ArgumentNullException(nameof(key));
+        }
 
-        string query = "SELECT * FROM [dbo].[Roles] tWHERE [Id] = @id";
+        string query = "SELECT * FROM [dbo].[Roles] WHERE [Id] = @id";
 
         Command command = new Command(query);
         command.AddParameter("id", key);
