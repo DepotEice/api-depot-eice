@@ -10,12 +10,12 @@
         /// <summary>
         /// The ID of the profile picture file 
         /// </summary>
-        public string ProfilePictureUrl { get; set; } = string.Empty;
+        public string? ProfilePictureUrl { get; set; } = string.Empty;
 
         /// <summary>
         /// User main email address
         /// </summary>
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; } = string.Empty;
 
         /// <summary>
         /// User school email address defined by the school
@@ -30,22 +30,22 @@
         /// <summary>
         /// User first name
         /// </summary>
-        public string FirstName { get; set; } = string.Empty;
+        public string? FirstName { get; set; } = string.Empty;
 
         /// <summary>
         /// User last name
         /// </summary>
-        public string LastName { get; set; } = string.Empty;
+        public string? LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// User gender
         /// </summary>
-        public string Gender { get; set; } = string.Empty;
+        public string? Gender { get; set; } = string.Empty;
 
         /// <summary>
         /// User birth date
         /// </summary>
-        public DateTime BirthDate { get; set; }
+        public DateTime? BirthDate { get; set; }
 
         /// <summary>
         /// User mobile phone number
