@@ -1119,6 +1119,9 @@ public class UsersController : ControllerBase
 
         try
         {
+            userId = userId.ToUpper();
+            roleId = roleId.ToUpper();
+
             UserEntity? userFromRepo = _userRepository.GetByKey(userId);
 
             if (userFromRepo is null)
